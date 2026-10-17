@@ -1,0 +1,110 @@
+/* Editor & CodeMirror Styling */
+
+.editor-header-toolbar {
+  height: 36px;
+  background-color: var(--color-surface-base);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+.editor-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.tool-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-editor);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 24px;
+}
+
+.tool-btn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
+}
+
+.tool-btn.active {
+  background-color: rgba(0, 229, 255, 0.12);
+  border-color: var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+}
+
+.tool-separator {
+  width: 1px;
+  height: 16px;
+  background-color: var(--color-border-subtle);
+  margin: 0 4px;
+}
+
+/* CodeMirror Host Container */
+.cm-host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  font-family: var(--font-editor);
+  font-size: 13px;
+}
+
+.cm-editor {
+  height: 100% !important;
+  background-color: var(--color-editor-background) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.cm-scroller {
+  font-family: var(--font-editor) !important;
+  line-height: 1.6 !important;
+  overflow: auto !important;
+  padding: 12px 0;
+}
+
+.cm-gutters {
+  background-color: var(--color-editor-background) !important;
+  color: var(--color-text-dim) !important;
+  border-right: 1px solid var(--color-border-subtle) !important;
+  padding-right: 8px !important;
+}
+
+.cm-activeLineGutter {
+  background-color: rgba(0, 229, 255, 0.08) !important;
+  color: var(--color-accent-cyan) !important;
+}
+
+.cm-activeLine {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.cm-cursor {
+  border-left-color: var(--color-accent-cyan) !important;
+  border-left-width: 2px !important;
+}
+
+.cm-selectionBackground, ::selection {
+  background: rgba(0, 229, 255, 0.25) !important;
+}
+
+/* Specific Markdown Tokens */
+.cm-header { color: var(--color-accent-sky); font-weight: 700; }
+.cm-link { color: var(--color-accent-cyan); text-decoration: underline; }
+.cm-quote { color: var(--color-text-muted); font-style: italic; }
+.cm-comment { color: var(--color-text-dim); }
+.cm-keyword { color: var(--color-accent-violet); }
+.cm-string { color: var(--color-accent-emerald); }

@@ -1,0 +1,171 @@
+import { marked } from 'marked';
+import createDOMPurify from 'dompurify';
+
+/**
+ * Service for secure, deterministic parsing and sanitization of Markdown documents.
+ */
+export class MarkdownService {
+  constructor() {
+    this.configureMarked();
+    this.initPurify();
+  }
+
+  initPurify() {
+    if (typeof window !== 'undefined') {
+      this.purify = createDOMPurify(window);
+    } else {
+      this.purify = createDOMPurify();
+    }
+  }
+
+  getPurify() {
+    if (!this.purify && typeof window !== 'undefined') {
+      this.purify = createDOMPurify(window);
+    }
+    return this.purify || createDOMPurify();
+  }
+
+  configureMarked() {
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      pedantic: false,
+    });
+  }
+
+  /**
+   * Extracts YAML frontmatter if present.
+   * @param {string} rawMarkdown
+   * @returns {{ frontmatter: Record<string, any> | null, content: string }}
+   */
+  extractFrontmatter(rawMarkdown) {
+    if (!rawMarkdown || typeof rawMarkdown !== 'string') {
+      return { frontmatter: null, content: '' };
+    }
+
+    const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+    const match = rawMarkdown.match(frontmatterRegex);
+
+    if (!match) {
+      return { frontmatter: null, content: rawMarkdown };
+    }
+
+    const rawYaml = match[1];
+    const content = rawMarkdown.slice(match[0].length);
+    const frontmatter = {};
+
+    // Safe key-value and array parser for frontmatter
+    const lines = rawYaml.split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      const colonIdx = trimmed.indexOf(':');
+      if (colonIdx !== -1) {
+        const key = trimmed.slice(0, colonIdx).trim();
+        let val = trimmed.slice(colonIdx + 1).trim();
+
+        // Parse array syntax: [item1, item2]
+        if (val.startsWith('[') && val.endsWith(']')) {
+          val = val
+            .slice(1, -1)
+            .split(',')
+            .map(item => item.trim().replace(/^['"]|['"]$/g, ''))
+            .filter(Boolean);
+        } else {
+          val = val.replace(/^['"]|['"]$/g, '');
+        }
+        frontmatter[key] = val;
+      }
+    }
+
+    return { frontmatter, content };
+  }
+
+  /**
+   * Pre-processes Markdown for Obsidian-style WikiLinks [[Target]] and ![[Image]]
+   * @param {string} markdown
+   * @returns {string}
+   */
+  preprocessWikiLinks(markdown) {
+    if (!markdown) return '';
+
+    // Handle embedded image wiki links: ![[image.png]]
+    let processed = markdown.replace(/!\[\[(.*?)\]\]/g, (match, path) => {
+      const cleanPath = path.trim();
+      return `\n<div class="wiki-embed-media"><img src="${encodeURI(cleanPath)}" alt="${cleanPath}" onerror="this.onerror=null;this.classList.add('broken-embed');this.alt='Media embed: ${cleanPath}'" /></div>\n`;
+    });
+
+    // Handle standard wiki links: [[Page Target|Display Name]] or [[Page Target]]
+    processed = processed.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (match, target, display) => {
+      const cleanTarget = target.trim();
+      const text = display ? display.trim() : cleanTarget;
+      return `<a class="wiki-link" href="#" data-wiki-target="${encodeURIComponent(cleanTarget)}">${text}</a>`;
+    });
+
+    return processed;
+  }
+
+  /**
+   * Parses Markdown to sanitized HTML.
+   * @param {string} rawMarkdown
+   * @returns {{ html: string, frontmatter: Record<string, any> | null }}
+   */
+  render(rawMarkdown) {
+    if (!rawMarkdown) {
+      return { html: '', frontmatter: null };
+    }
+
+    const { frontmatter, content } = this.extractFrontmatter(rawMarkdown);
+    const preprocessed = this.preprocessWikiLinks(content);
+    
+    // Parse using marked
+    let rawHtml = '';
+    try {
+      rawHtml = marked.parse(preprocessed);
+    } catch (err) {
+      const purify = this.getPurify();
+      rawHtml = `<div class="render-error">Error parsing markdown: ${purify.sanitize(err.message)}</div>`;
+    }
+
+    const purify = this.getPurify();
+    // Sanitize output strictly
+    const sanitizedHtml = purify.sanitize(rawHtml, {
+      ALLOWED_TAGS: [
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'p', 'a', 'b', 'i', 'strong', 'em', 'strike', 's', 'del',
+        'code', 'pre', 'blockquote',
+        'ul', 'ol', 'li', 'hr', 'br',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'img', 'span', 'div',
+        'input',
+      ],
+      ALLOWED_ATTR: [
+        'href', 'title', 'alt', 'src', 'class', 'style', 'id',
+        'type', 'checked', 'disabled', 'data-wiki-target',
+      ],
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+      FORBID_TAGS: ['script', 'style', 'iframe', 'frame', 'object', 'embed', 'form'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
+    });
+
+    return { html: sanitizedHtml, frontmatter };
+  }
+
+  /**
+   * Computes statistics for document content.
+   * @param {string} text
+   * @returns {{ words: number, chars: number, readingMinutes: number }}
+   */
+  computeStats(text) {
+    if (!text || typeof text !== 'string') {
+      return { words: 0, chars: 0, readingMinutes: 0 };
+    }
+    const chars = text.length;
+    const words = (text.trim().match(/\S+/g) || []).length;
+    const readingMinutes = Math.max(1, Math.ceil(words / 225));
+    return { words, chars, readingMinutes };
+  }
+}
+
+export const markdownService = new MarkdownService();

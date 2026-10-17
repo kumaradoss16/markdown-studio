@@ -1,0 +1,147 @@
+/* Main Desktop Layout */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-app-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header Area */
+.app-header {
+  height: var(--header-height);
+  background-color: var(--color-header-background);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Main Workspace Middle Grid */
+.workspace-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.workspace-sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--color-sidebar-background);
+  border-right: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 0.15s ease;
+}
+
+.workspace-sidebar.collapsed {
+  width: 0;
+  border-right: none;
+  visibility: hidden;
+}
+
+/* Main Content Area: Tabs + Dual Split */
+.main-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background-color: var(--color-editor-background);
+}
+
+/* Document Tabs Bar */
+.document-tabs-bar {
+  height: var(--tabs-height);
+  background-color: var(--color-app-background);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* Split Content Panels Container */
+.dual-split-pane {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dual-split-pane.view-source {
+  grid-template-columns: 1fr;
+}
+.dual-split-pane.view-source .preview-pane {
+  display: none;
+}
+
+.dual-split-pane.view-preview {
+  grid-template-columns: 1fr;
+}
+.dual-split-pane.view-preview .editor-pane {
+  display: none;
+}
+
+/* Editor & Preview Panes */
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  border-right: 1px solid var(--color-border-subtle);
+  background-color: var(--color-editor-background);
+  overflow: hidden;
+}
+
+.preview-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  background-color: var(--color-preview-background);
+  overflow: hidden;
+}
+
+/* Status Bar */
+.app-status-bar {
+  height: var(--status-height);
+  background-color: var(--color-status-background);
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-family: var(--font-editor);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  z-index: 10;
+}

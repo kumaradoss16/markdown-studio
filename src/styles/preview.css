@@ -1,0 +1,355 @@
+/* Live Markdown Preview Styling */
+
+.preview-header {
+  height: 36px;
+  background-color: var(--color-surface-base);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.preview-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-editor);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--color-accent-emerald);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.preview-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.parser-badge {
+  background-color: var(--color-surface-hover);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  font-family: var(--font-editor);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-accent-teal);
+}
+
+/* Preview Scrollable Body */
+.preview-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  color: var(--color-text-primary);
+  font-family: var(--font-preview);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+/* Classification and Security Badges */
+.badge-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.spec-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-editor);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.spec-badge.sec {
+  background-color: rgba(0, 229, 255, 0.1);
+  border: 1px solid var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
+}
+
+.spec-badge.rev {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--color-accent-emerald);
+  color: var(--color-accent-emerald);
+}
+
+.spec-badge.secret {
+  background-color: rgba(244, 63, 94, 0.1);
+  border: 1px solid var(--color-accent-rose);
+  color: var(--color-accent-rose);
+}
+
+/* Document Title & Subtitles */
+.preview-doc-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.doc-jp-title {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.preview-doc-lead {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+}
+
+/* CAD Wireframe Diagram Card */
+.cad-wireframe-card {
+  background-color: #080c14;
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cad-wireframe-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+.cad-svg-container {
+  width: 100%;
+  height: 180px;
+}
+
+.cad-caption {
+  margin-top: 8px;
+  font-family: var(--font-editor);
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Status Dashboard Grid */
+.section-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 22px 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.section-meta {
+  font-family: var(--font-editor);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-card .label {
+  font-family: var(--font-editor);
+  font-size: 9.5px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.metric-card .val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.metric-card .sub {
+  font-size: 10.5px;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+}
+
+.metric-card .sub.success {
+  color: var(--color-accent-emerald);
+}
+
+/* Floor Plan Deck Layouts */
+.deck-container {
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-card);
+  padding: 14px;
+  margin-top: 14px;
+}
+
+.deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-editor);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.deck-header .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+.deck-header .dot.cyan { background-color: var(--color-accent-cyan); }
+.deck-header .dot.emerald { background-color: var(--color-accent-emerald); }
+
+.pods-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.deck-pod {
+  background-color: var(--color-surface-base);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.deck-pod .pod-name {
+  font-family: var(--font-editor);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.deck-pod .pod-type {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.deck-pod.highlight {
+  border-color: var(--color-accent-teal);
+  background-color: rgba(20, 184, 166, 0.1);
+}
+
+.deck-strip {
+  background-color: var(--color-surface-base);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  padding: 6px 10px;
+  font-family: var(--font-editor);
+  font-size: 9.5px;
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Standard Markdown elements inside preview */
+.preview-content h1, .preview-content h2, .preview-content h3 {
+  color: #fff;
+  margin-top: 1.4em;
+  margin-bottom: 0.6em;
+}
+.preview-content h1 { font-size: 22px; }
+.preview-content h2 { font-size: 18px; }
+.preview-content h3 { font-size: 15px; }
+
+.preview-content p {
+  margin-bottom: 1em;
+  color: var(--color-text-secondary);
+}
+
+.preview-content pre {
+  background-color: var(--color-surface-base);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  overflow-x: auto;
+  font-family: var(--font-editor);
+  font-size: 12px;
+  margin: 14px 0;
+}
+
+.preview-content code {
+  font-family: var(--font-editor);
+  background-color: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--color-accent-cyan);
+}
+
+.preview-content blockquote {
+  border-left: 3px solid var(--color-accent-cyan);
+  padding-left: 12px;
+  color: var(--color-text-muted);
+  margin: 12px 0;
+}
+
+.preview-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+}
+
+.preview-content th, .preview-content td {
+  border: 1px solid var(--color-border-default);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.preview-content th {
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+}
+
+.preview-content .wiki-link {
+  color: var(--color-accent-cyan);
+  text-decoration: underline;
+  cursor: pointer;
+}

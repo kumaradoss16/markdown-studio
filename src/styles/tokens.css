@@ -1,0 +1,69 @@
+:root {
+  /* Surface and Background Colors */
+  --color-app-background: #0b0e14;
+  --color-sidebar-background: #0d121b;
+  --color-header-background: #0b0f16;
+  --color-editor-background: #0d1118;
+  --color-preview-background: #0c1017;
+  --color-status-background: #080b10;
+  
+  --color-surface-base: #141a24;
+  --color-surface-hover: #1c2433;
+  --color-surface-active: #222d40;
+  --color-surface-card: #121822;
+  --color-surface-modal: #151b27;
+
+  /* Borders & Separators */
+  --color-border-subtle: #19212e;
+  --color-border-default: #232d3f;
+  --color-border-card: #222c3c;
+  --color-border-accent: #00e5ff;
+  --color-border-active: #00e5ff;
+
+  /* Typography Colors */
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-text-dim: #475569;
+  --color-text-inverse: #0b0e14;
+
+  /* Accents & States */
+  --color-accent-cyan: #00e5ff;
+  --color-accent-teal: #14b8a6;
+  --color-accent-sky: #38bdf8;
+  --color-accent-emerald: #10b981;
+  --color-accent-violet: #a855f7;
+  --color-accent-purple: #c084fc;
+  --color-accent-amber: #f59e0b;
+  --color-accent-rose: #f43f5e;
+  --color-focus-ring: rgba(0, 229, 255, 0.4);
+
+  /* Status Colors */
+  --color-status-clean: #10b981;
+  --color-status-dirty: #f59e0b;
+  --color-status-saving: #38bdf8;
+  --color-status-error: #f43f5e;
+
+  /* Fonts */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-editor: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  --font-preview: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Sizing and Spacing */
+  --header-height: 44px;
+  --tabs-height: 38px;
+  --status-height: 28px;
+  --sidebar-width: 280px;
+
+  /* Radii */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.7);
+  --shadow-accent-glow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
