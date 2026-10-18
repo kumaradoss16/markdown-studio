@@ -266,12 +266,58 @@ Calculations for 2.4 RPM rotational gravity and centrifugal station keeping.
    * @param {string} [initialContent='']
    * @returns {Promise<{ path: string, name: string }>}
    */
+  /**
+   * Creates a new file.
+   * @param {string} filePath
+   * @param {string} [initialContent='']
+   * @returns {Promise<{ path: string, name: string }>}
+   */
   async createFile(filePath, initialContent = '') {
     if (this.virtualStorage.has(filePath)) {
       throw new StudioError(ErrorCode.INVALID_INPUT, 'A file with that name already exists.');
     }
     await this.saveFile(filePath, initialContent);
     return { path: filePath, name: this.getFileName(filePath) };
+  }
+
+  /**
+   * Renames a file path.
+   * @param {string} oldPath
+   * @param {string} newPath
+   */
+  async renameFile(oldPath, newPath) {
+    const file = await this.readFile(oldPath);
+    await this.saveFile(newPath, file.content);
+    this.virtualStorage.delete(oldPath);
+    this.fileMetadata.delete(oldPath);
+    return { oldPath, newPath, name: this.getFileName(newPath) };
+  }
+
+  /**
+   * Duplicates a file with a copy suffix.
+   * @param {string} filePath
+   * @returns {Promise<{ path: string, name: string }>}
+   */
+  async duplicateFile(filePath) {
+    const file = await this.readFile(filePath);
+    const dotIdx = filePath.lastIndexOf('.');
+    const ext = dotIdx !== -1 ? filePath.slice(dotIdx) : '';
+    const base = dotIdx !== -1 ? filePath.slice(0, dotIdx) : filePath;
+    const copyPath = `${base} (copy)${ext}`;
+    return await this.createFile(copyPath, file.content);
+  }
+
+  /**
+   * Deletes a file.
+   * @param {string} filePath
+   */
+  async deleteFile(filePath) {
+    if (this.virtualStorage.has(filePath)) {
+      this.virtualStorage.delete(filePath);
+      this.fileMetadata.delete(filePath);
+      return true;
+    }
+    return false;
   }
 
   getFileName(filePath) {

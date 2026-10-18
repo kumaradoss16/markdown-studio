@@ -253,6 +253,29 @@ export class DocumentStateManager {
   getOpenDocuments() {
     return Array.from(this.documents.values());
   }
+
+  /**
+   * Reorders an open document tab relative to another.
+   * @param {string} sourceId
+   * @param {string} targetId
+   */
+  reorderDocument(sourceId, targetId) {
+    if (!this.documents.has(sourceId) || sourceId === targetId) return;
+    const entries = Array.from(this.documents.entries());
+    const sourceIdx = entries.findIndex(([id]) => id === sourceId);
+    if (sourceIdx === -1) return;
+
+    const [removed] = entries.splice(sourceIdx, 1);
+    if (!targetId || !this.documents.has(targetId)) {
+      entries.push(removed);
+    } else {
+      const targetIdx = entries.findIndex(([id]) => id === targetId);
+      entries.splice(targetIdx, 0, removed);
+    }
+
+    this.documents = new Map(entries);
+    eventBus.emit(AppEvents.DOCUMENT_OPENED, this.getActiveDocument());
+  }
 }
 
 export const documentStateManager = new DocumentStateManager();

@@ -44,16 +44,26 @@
   --color-status-saving: #38bdf8;
   --color-status-error: #f43f5e;
 
-  /* Fonts */
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-editor: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
-  --font-preview: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Fonts & Typography Stack */
+  --font-ui: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-editor: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', Consolas, monospace;
+  --font-preview: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Typography Scale */
+  --font-size-label: 12px;
+  --font-size-label-lg: 13px;
+  --font-size-tab: 13px;
+  --font-size-menu: 13.5px;
+  --font-size-editor: 14.5px;
+  --font-size-status: 11.5px;
+  --line-height-editor: 1.6;
 
   /* Sizing and Spacing */
   --header-height: 44px;
   --tabs-height: 38px;
   --status-height: 28px;
   --sidebar-width: 280px;
+  --splitter-size: 6px;
 
   /* Radii */
   --radius-xs: 3px;

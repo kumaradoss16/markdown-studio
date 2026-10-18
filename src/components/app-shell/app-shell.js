@@ -68,9 +68,10 @@ export class AppShellComponent {
         <div class="header-right">
           <!-- View Modes -->
           <div class="view-mode-toggle">
-            <button class="view-mode-btn" id="modeSourceBtn">&lt;&gt; Source</button>
-            <button class="view-mode-btn active" id="modeSplitBtn">◫ Split</button>
-            <button class="view-mode-btn" id="modePreviewBtn">👁 Live Preview</button>
+            <button class="view-mode-btn" id="modeSourceBtn" title="Source Only">&lt;&gt; Source</button>
+            <button class="view-mode-btn active" id="modeSplitHBtn" title="Horizontal Split">◫ Split H</button>
+            <button class="view-mode-btn" id="modeSplitVBtn" title="Vertical Split">⬒ Split V</button>
+            <button class="view-mode-btn" id="modePreviewBtn" title="Live Preview Only">👁 Preview</button>
           </div>
 
           <!-- Quick Formatting -->
@@ -125,6 +126,7 @@ export class AppShellComponent {
           <nav class="document-tabs-bar" id="tabsContainer"></nav>
           <div class="dual-split-pane" id="splitPaneContainer">
             <section class="editor-pane" id="editorContainer"></section>
+            <div class="pane-splitter" id="paneSplitter" title="Drag to resize panels"></div>
             <section class="preview-pane" id="previewContainer"></section>
           </div>
         </main>
@@ -135,6 +137,8 @@ export class AppShellComponent {
     `;
 
     this.attachEvents();
+    this.setupSplitter();
+    this.setupSyncScroll();
   }
 
   attachEvents() {
@@ -153,26 +157,35 @@ export class AppShellComponent {
       eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-file' });
     });
 
+    // New Folder
+    this.container.querySelector('#headerNewFolderBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-folder' });
+    });
+
     // View modes
     const splitContainer = this.container.querySelector('#splitPaneContainer');
     const sourceBtn = this.container.querySelector('#modeSourceBtn');
-    const splitBtn = this.container.querySelector('#modeSplitBtn');
+    const splitHBtn = this.container.querySelector('#modeSplitHBtn');
+    const splitVBtn = this.container.querySelector('#modeSplitVBtn');
     const previewBtn = this.container.querySelector('#modePreviewBtn');
 
     const setMode = (mode) => {
       sourceBtn?.classList.toggle('active', mode === 'SOURCE');
-      splitBtn?.classList.toggle('active', mode === 'DUAL SPLIT');
+      splitHBtn?.classList.toggle('active', mode === 'DUAL SPLIT');
+      splitVBtn?.classList.toggle('active', mode === 'SPLIT VERTICAL');
       previewBtn?.classList.toggle('active', mode === 'PREVIEW');
 
       splitContainer.className = 'dual-split-pane';
       if (mode === 'SOURCE') splitContainer.classList.add('view-source');
       if (mode === 'PREVIEW') splitContainer.classList.add('view-preview');
+      if (mode === 'SPLIT VERTICAL') splitContainer.classList.add('split-vertical');
 
       eventBus.emit(AppEvents.VIEW_MODE_CHANGED, mode);
     };
 
     sourceBtn?.addEventListener('click', () => setMode('SOURCE'));
-    splitBtn?.addEventListener('click', () => setMode('DUAL SPLIT'));
+    splitHBtn?.addEventListener('click', () => setMode('DUAL SPLIT'));
+    splitVBtn?.addEventListener('click', () => setMode('SPLIT VERTICAL'));
     previewBtn?.addEventListener('click', () => setMode('PREVIEW'));
 
     // Focus mode toggle
@@ -233,5 +246,99 @@ export class AppShellComponent {
     this.container.querySelector('#hLink')?.addEventListener('click', () => {
       document.querySelector('#toolWiki')?.click();
     });
+  }
+
+  setupSplitter() {
+    const splitContainer = this.container.querySelector('#splitPaneContainer');
+    const splitter = this.container.querySelector('#paneSplitter');
+    if (!splitter || !splitContainer) return;
+
+    let isDragging = false;
+
+    splitter.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isDragging = true;
+      splitter.classList.add('dragging');
+      const isVertical = splitContainer.classList.contains('split-vertical');
+      document.body.style.cursor = isVertical ? 'row-resize' : 'col-resize';
+
+      const onMouseMove = (ev) => {
+        if (!isDragging) return;
+        const rect = splitContainer.getBoundingClientRect();
+        const isVert = splitContainer.classList.contains('split-vertical');
+
+        if (isVert) {
+          const clientY = ev.clientY - rect.top;
+          let percent = (clientY / rect.height) * 100;
+          percent = Math.max(15, Math.min(85, percent));
+          splitContainer.style.setProperty('--editor-split-size', `${percent}%`);
+          splitContainer.style.setProperty('--preview-split-size', `calc(${100 - percent}% - var(--splitter-size))`);
+        } else {
+          const clientX = ev.clientX - rect.left;
+          let percent = (clientX / rect.width) * 100;
+          percent = Math.max(15, Math.min(85, percent));
+          splitContainer.style.setProperty('--editor-split-size', `${percent}%`);
+          splitContainer.style.setProperty('--preview-split-size', `calc(${100 - percent}% - var(--splitter-size))`);
+        }
+      };
+
+      const onMouseUp = () => {
+        if (isDragging) {
+          isDragging = false;
+          splitter.classList.remove('dragging');
+          document.body.style.removeProperty('cursor');
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        }
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  setupSyncScroll() {
+    let isSyncing = false;
+
+    const getEditorScroller = () => document.querySelector('.cm-scroller');
+    const getPreviewScroller = () => document.querySelector('#previewScrollArea');
+
+    const syncFromEditor = () => {
+      if (isSyncing) return;
+      const ed = getEditorScroller();
+      const prev = getPreviewScroller();
+      if (!ed || !prev) return;
+
+      const maxEd = ed.scrollHeight - ed.clientHeight;
+      if (maxEd <= 0) return;
+      const ratio = ed.scrollTop / maxEd;
+
+      isSyncing = true;
+      prev.scrollTop = ratio * (prev.scrollHeight - prev.clientHeight);
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+
+    const syncFromPreview = () => {
+      if (isSyncing) return;
+      const ed = getEditorScroller();
+      const prev = getPreviewScroller();
+      if (!ed || !prev) return;
+
+      const maxPrev = prev.scrollHeight - prev.clientHeight;
+      if (maxPrev <= 0) return;
+      const ratio = prev.scrollTop / maxPrev;
+
+      isSyncing = true;
+      ed.scrollTop = ratio * (ed.scrollHeight - ed.clientHeight);
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+
+    document.addEventListener('scroll', (e) => {
+      if (e.target && e.target.classList && e.target.classList.contains('cm-scroller')) {
+        syncFromEditor();
+      } else if (e.target && e.target.id === 'previewScrollArea') {
+        syncFromPreview();
+      }
+    }, true);
   }
 }

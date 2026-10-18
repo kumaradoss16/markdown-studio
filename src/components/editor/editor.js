@@ -7,6 +7,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { saveCoordinator } from '../../core/save-coordinator.js';
 import { AppEvents, eventBus } from '../../app/events.js';
+import { EditorCommandMenuController } from './slash-menu.js';
 
 export class EditorComponent {
   constructor(container) {
@@ -15,6 +16,7 @@ export class EditorComponent {
     this.showLineNumbers = true;
     this.rawMode = false;
     this.currentDocId = null;
+    this.commandController = new EditorCommandMenuController(this);
     this.setupListeners();
   }
 
@@ -73,6 +75,11 @@ export class EditorComponent {
     `;
 
     this.attachToolbarEvents();
+    const cmHost = this.container.querySelector('#cmHost');
+    if (cmHost) {
+      this.commandController.attach(cmHost);
+    }
+
     const activeDoc = documentStateManager.getActiveDocument();
     if (activeDoc) {
       this.loadDocument(activeDoc);
@@ -101,6 +108,7 @@ export class EditorComponent {
         if (update.docChanged && this.currentDocId) {
           const newContent = update.state.doc.toString();
           documentStateManager.updateContent(this.currentDocId, newContent);
+          this.commandController.handleTextUpdate(this.view);
         }
         if (update.selectionSet) {
           const pos = update.state.selection.main.head;
@@ -109,6 +117,7 @@ export class EditorComponent {
             line: line.number,
             col: pos - line.from + 1,
           });
+          this.commandController.handleSelectionUpdate(this.view);
         }
       }),
     ];

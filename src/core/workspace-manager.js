@@ -1,5 +1,6 @@
 import { AppEvents, eventBus } from '../app/events.js';
 import { fileSystemService } from '../services/filesystem-service.js';
+import { documentStateManager } from './document-state-manager.js';
 
 /**
  * WorkspaceManager handles the active vault structure, folders, files, tags, and local graph.
@@ -81,15 +82,136 @@ export class WorkspaceManager {
     eventBus.emit(AppEvents.WORKSPACE_CHANGED, { sorted: true, asc: this.sortAsc });
   }
 
-  async loadFiles() {
-    try {
-      const files = await fileSystemService.listWorkspace(this.vaultRoot);
-      eventBus.emit(AppEvents.WORKSPACE_CHANGED, { files });
-      return files;
-    } catch (err) {
-      console.warn('Failed to load workspace files:', err);
-      return [];
+  /**
+   * Sanitizes and validates a filename against invalid OS characters.
+   * @param {string} name
+   * @returns {boolean}
+   */
+  isValidFilename(name) {
+    if (!name || typeof name !== 'string') return false;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === '.' || trimmed === '..') return false;
+    // Reject OS forbidden characters: \ / : * ? " < > |
+    if (/[\\/:*?"<>|]/.test(trimmed)) return false;
+    // Windows reserved device names
+    const reserved = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+    if (reserved.test(trimmed)) return false;
+    return true;
+  }
+
+  /**
+   * Creates a new folder in the workspace.
+   * @param {string} folderName
+   * @param {string} [parentPath='ExampleVault']
+   */
+  createFolder(folderName, parentPath = 'ExampleVault') {
+    if (!this.isValidFilename(folderName)) {
+      throw new Error(`Invalid folder name "${folderName}". Cannot contain \\ / : * ? " < > |`);
     }
+    const fullPath = `${parentPath}/${folderName.trim()}`;
+    if (this.folders.some(f => f.path === fullPath)) {
+      throw new Error(`Folder "${folderName}" already exists.`);
+    }
+    const folder = { name: folderName.trim(), path: fullPath, items: [] };
+    this.folders.push(folder);
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { folderCreated: folder });
+    return folder;
+  }
+
+  /**
+   * Adds a new file into the knowledge base.
+   * @param {string} fileName
+   * @param {string} [content='']
+   * @param {string} [parentPath='ExampleVault']
+   */
+  async createFile(fileName, content = '', parentPath = 'ExampleVault') {
+    const cleanName = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
+    const baseName = cleanName.replace('.md', '');
+    if (!this.isValidFilename(baseName)) {
+      throw new Error(`Invalid file name "${fileName}". Cannot contain \\ / : * ? " < > |`);
+    }
+    const fullPath = `${parentPath}/${cleanName}`;
+    await fileSystemService.createFile(fullPath, content || `# ${baseName}\n\n`);
+    const node = { name: baseName, path: fullPath, icon: 'doc' };
+    this.knowledgeBase.push(node);
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { fileCreated: node });
+    return node;
+  }
+
+  /**
+   * Renames an item in the workspace tree.
+   * @param {string} oldPath
+   * @param {string} newName
+   */
+  async renameItem(oldPath, newName) {
+    const cleanName = newName.replace('.md', '');
+    if (!this.isValidFilename(cleanName)) {
+      throw new Error(`Invalid file name "${newName}". Cannot contain \\ / : * ? " < > |`);
+    }
+    const parts = oldPath.split('/');
+    parts.pop();
+    const newPath = `${parts.join('/')}/${cleanName}.md`;
+
+    await fileSystemService.renameFile(oldPath, newPath);
+
+    // Update in knowledgeBase
+    const kbItem = this.knowledgeBase.find(k => k.path === oldPath);
+    if (kbItem) {
+      kbItem.name = cleanName;
+      kbItem.path = newPath;
+    }
+
+    // Update in recents
+    const recent = this.recents.find(r => r.path === oldPath);
+    if (recent) {
+      recent.name = `${cleanName}.md`;
+      recent.path = newPath;
+    }
+
+    // Update any open document in documentStateManager
+    for (const doc of documentStateManager.documents.values()) {
+      if (doc.path === oldPath) {
+        doc.path = newPath;
+        doc.name = `${cleanName}.md`;
+        eventBus.emit(AppEvents.DOCUMENT_CHANGED, doc);
+      }
+    }
+
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { renamed: { oldPath, newPath } });
+    return { oldPath, newPath };
+  }
+
+  /**
+   * Duplicates a file in the workspace.
+   * @param {string} itemPath
+   */
+  async duplicateItem(itemPath) {
+    const res = await fileSystemService.duplicateFile(itemPath);
+    const nodeName = res.name.replace('.md', '');
+    const node = { name: nodeName, path: res.path, icon: 'doc' };
+    this.knowledgeBase.push(node);
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { fileCreated: node });
+    return node;
+  }
+
+  /**
+   * Deletes an item from the workspace tree.
+   * @param {string} itemPath
+   */
+  async deleteItem(itemPath) {
+    await fileSystemService.deleteFile(itemPath);
+    this.knowledgeBase = this.knowledgeBase.filter(k => k.path !== itemPath);
+    this.recents = this.recents.filter(r => r.path !== itemPath);
+    for (const folder of this.folders) {
+      folder.items = folder.items.filter(i => i.path !== itemPath);
+    }
+    for (const doc of documentStateManager.documents.values()) {
+      if (doc.path === itemPath) {
+        documentStateManager.closeDocument(doc.id, true);
+      }
+    }
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { deleted: itemPath });
+    return true;
   }
 }
 

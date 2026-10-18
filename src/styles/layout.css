@@ -91,32 +91,70 @@ html, body {
 .dual-split-pane {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: var(--editor-split-size, 1fr) var(--splitter-size) var(--preview-split-size, 1fr);
+  grid-template-rows: 1fr;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.dual-split-pane.split-vertical {
+  grid-template-columns: 1fr;
+  grid-template-rows: var(--editor-split-size, 1fr) var(--splitter-size) var(--preview-split-size, 1fr);
 }
 
 .dual-split-pane.view-source {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
 }
-.dual-split-pane.view-source .preview-pane {
-  display: none;
+.dual-split-pane.view-source .preview-pane,
+.dual-split-pane.view-source .pane-splitter {
+  display: none !important;
 }
 
 .dual-split-pane.view-preview {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
 }
-.dual-split-pane.view-preview .editor-pane {
-  display: none;
+.dual-split-pane.view-preview .editor-pane,
+.dual-split-pane.view-preview .pane-splitter {
+  display: none !important;
+}
+
+/* Pane Splitter Handle */
+.pane-splitter {
+  background-color: var(--color-border-subtle);
+  transition: background-color 0.15s ease;
+  z-index: 5;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dual-split-pane:not(.split-vertical) .pane-splitter {
+  cursor: col-resize;
+  width: var(--splitter-size);
+  height: 100%;
+}
+
+.dual-split-pane.split-vertical .pane-splitter {
+  cursor: row-resize;
+  height: var(--splitter-size);
+  width: 100%;
+}
+
+.pane-splitter:hover,
+.pane-splitter.dragging {
+  background-color: var(--color-accent-cyan) !important;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
 }
 
 /* Editor & Preview Panes */
 .editor-pane {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-width: 180px;
+  min-height: 120px;
   height: 100%;
-  border-right: 1px solid var(--color-border-subtle);
   background-color: var(--color-editor-background);
   overflow: hidden;
 }
@@ -124,7 +162,8 @@ html, body {
 .preview-pane {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-width: 180px;
+  min-height: 120px;
   height: 100%;
   background-color: var(--color-preview-background);
   overflow: hidden;

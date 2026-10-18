@@ -1,5 +1,6 @@
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { saveCoordinator } from '../../core/save-coordinator.js';
+import { workspaceManager } from '../../core/workspace-manager.js';
 import { markdownService } from '../../services/markdown-service.js';
 import { qualityChecker, DiagnosticSeverity } from '../../services/quality-checker.js';
 import { tocGenerator } from '../../services/toc-generator.js';
@@ -24,6 +25,12 @@ export class DialogsComponent {
       this.showConfirmClose(payload.docId, payload.docName);
     } else if (payload.type === 'save-as' || payload.type === 'new-file') {
       this.showFileInputDialog(payload);
+    } else if (payload.type === 'new-folder') {
+      this.showNewFolderDialog(payload);
+    } else if (payload.type === 'rename') {
+      this.showRenameDialog(payload);
+    } else if (payload.type === 'delete-confirm') {
+      this.showDeleteConfirmDialog(payload);
     } else if (payload.type === 'command-palette') {
       this.showCommandPalette();
     } else if (payload.type === 'export') {
@@ -90,6 +97,7 @@ export class DialogsComponent {
           <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--color-text-secondary);">File Name / Relative Path</label>
           <input type="text" id="dialogFileNameInput" value="${payload.defaultName || 'Untitled.md'}" 
                  style="width: 100%; padding: 6px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-family: var(--font-editor); font-size: 12px; outline: none;" />
+          <div id="dialogFileError" style="color: var(--color-accent-rose); font-size: 11px; margin-top: 6px; display: none;"></div>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" id="dialogFileCancelBtn">Cancel</button>
@@ -100,21 +108,35 @@ export class DialogsComponent {
 
     document.body.appendChild(overlay);
     const input = overlay.querySelector('#dialogFileNameInput');
+    const errorEl = overlay.querySelector('#dialogFileError');
     input.focus();
     input.select();
 
     const submit = async () => {
       const val = input.value.trim();
       if (!val) return;
+      const cleanBase = val.replace(/\.md$/, '').split('/').pop();
+      if (!workspaceManager.isValidFilename(cleanBase)) {
+        if (errorEl) {
+          errorEl.textContent = `Invalid filename "${val}". Cannot contain \\ / : * ? " < > | or Windows reserved names.`;
+          errorEl.style.display = 'block';
+        }
+        return;
+      }
       overlay.remove();
 
-      if (isNew) {
-        const fullPath = val.includes('/') ? val : `ExampleVault/${val}`;
-        const initialText = payload.initialContent || '# ' + val.replace('.md', '');
-        documentStateManager.createDocument(val, initialText, fullPath);
-      } else {
-        const fullPath = val.includes('/') ? val : `ExampleVault/${val}`;
-        await saveCoordinator.saveAs(payload.docId, fullPath);
+      try {
+        if (isNew) {
+          const fullPath = val.includes('/') ? val : `ExampleVault/${val}`;
+          const initialText = payload.initialContent || '# ' + cleanBase;
+          await workspaceManager.createFile(cleanBase, initialText, val.includes('/') ? val.substring(0, val.lastIndexOf('/')) : 'ExampleVault');
+          documentStateManager.createDocument(cleanBase + '.md', initialText, fullPath);
+        } else {
+          const fullPath = val.includes('/') ? val : `ExampleVault/${val}`;
+          await saveCoordinator.saveAs(payload.docId, fullPath);
+        }
+      } catch (err) {
+        eventBus.emit(AppEvents.NOTIFICATION, { type: 'error', message: err.message });
       }
     };
 
@@ -125,6 +147,158 @@ export class DialogsComponent {
 
     overlay.querySelector('#dialogFileCancelBtn')?.addEventListener('click', () => overlay.remove());
     overlay.querySelector('#dialogFileSubmitBtn')?.addEventListener('click', submit);
+  }
+
+  showNewFolderDialog(payload = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-header">New Folder</div>
+        <div class="modal-body">
+          <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--color-text-secondary);">Folder Name</label>
+          <input type="text" id="dialogFolderNameInput" placeholder="e.g. specs, guides, architecture" 
+                 style="width: 100%; padding: 6px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-family: var(--font-editor); font-size: 12px; outline: none;" />
+          <div id="dialogFolderError" style="color: var(--color-accent-rose); font-size: 11px; margin-top: 6px; display: none;"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="dialogFolderCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="dialogFolderSubmitBtn">Create Folder</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#dialogFolderNameInput');
+    const errorEl = overlay.querySelector('#dialogFolderError');
+    input.focus();
+
+    const submit = () => {
+      const val = input.value.trim();
+      if (!val) return;
+      if (!workspaceManager.isValidFilename(val)) {
+        if (errorEl) {
+          errorEl.textContent = `Invalid folder name "${val}". Cannot contain \\ / : * ? " < > | or Windows reserved names.`;
+          errorEl.style.display = 'block';
+        }
+        return;
+      }
+
+      try {
+        const parentPath = payload.parentPath || 'ExampleVault';
+        workspaceManager.createFolder(val, parentPath);
+        overlay.remove();
+        eventBus.emit(AppEvents.NOTIFICATION, { type: 'success', message: `Folder "${val}" created.` });
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = err.message;
+          errorEl.style.display = 'block';
+        }
+      }
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submit();
+      if (e.key === 'Escape') overlay.remove();
+    });
+
+    overlay.querySelector('#dialogFolderCancelBtn')?.addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#dialogFolderSubmitBtn')?.addEventListener('click', submit);
+  }
+
+  showRenameDialog(payload = {}) {
+    const currentName = (payload.name || payload.path || 'Untitled').replace(/\.md$/, '');
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-header">Rename Item</div>
+        <div class="modal-body">
+          <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--color-text-secondary);">New Name</label>
+          <input type="text" id="dialogRenameInput" value="${currentName}" 
+                 style="width: 100%; padding: 6px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-family: var(--font-editor); font-size: 12px; outline: none;" />
+          <div id="dialogRenameError" style="color: var(--color-accent-rose); font-size: 11px; margin-top: 6px; display: none;"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="dialogRenameCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="dialogRenameSubmitBtn">Rename</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#dialogRenameInput');
+    const errorEl = overlay.querySelector('#dialogRenameError');
+    input.focus();
+    input.select();
+
+    const submit = async () => {
+      const val = input.value.trim();
+      if (!val || val === currentName) {
+        overlay.remove();
+        return;
+      }
+      const cleanName = val.replace(/\.md$/, '');
+      if (!workspaceManager.isValidFilename(cleanName)) {
+        if (errorEl) {
+          errorEl.textContent = `Invalid filename "${val}". Cannot contain \\ / : * ? " < > | or Windows reserved names.`;
+          errorEl.style.display = 'block';
+        }
+        return;
+      }
+
+      try {
+        await workspaceManager.renameItem(payload.path, cleanName);
+        overlay.remove();
+        eventBus.emit(AppEvents.NOTIFICATION, { type: 'success', message: `Renamed to "${cleanName}.md".` });
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = err.message;
+          errorEl.style.display = 'block';
+        }
+      }
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submit();
+      if (e.key === 'Escape') overlay.remove();
+    });
+
+    overlay.querySelector('#dialogRenameCancelBtn')?.addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#dialogRenameSubmitBtn')?.addEventListener('click', submit);
+  }
+
+  showDeleteConfirmDialog(payload = {}) {
+    const itemName = payload.name || payload.path || 'this item';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-header">Delete Item</div>
+        <div class="modal-body">
+          Are you sure you want to permanently delete <strong>${itemName}</strong>?<br>
+          <span style="font-size: 11px; color: var(--color-text-muted); display: block; margin-top: 6px;">This action cannot be undone and will remove the file from your workspace.</span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="dialogDeleteCancelBtn">Cancel</button>
+          <button class="btn btn-danger" id="dialogDeleteConfirmBtn">Delete Permanently</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#dialogDeleteCancelBtn')?.addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#dialogDeleteConfirmBtn')?.addEventListener('click', async () => {
+      try {
+        await workspaceManager.deleteItem(payload.path);
+        overlay.remove();
+        eventBus.emit(AppEvents.NOTIFICATION, { type: 'success', message: `Deleted "${itemName}".` });
+      } catch (err) {
+        overlay.remove();
+        eventBus.emit(AppEvents.NOTIFICATION, { type: 'error', message: `Failed to delete: ${err.message}` });
+      }
+    });
   }
 
   showCommandPalette() {

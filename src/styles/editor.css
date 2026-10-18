@@ -71,7 +71,10 @@
 
 .cm-scroller {
   font-family: var(--font-editor) !important;
-  line-height: 1.6 !important;
+  font-size: var(--font-size-editor) !important;
+  line-height: var(--line-height-editor, 1.6) !important;
+  font-variant-ligatures: normal !important;
+  font-feature-settings: "liga" 1, "calt" 1 !important;
   overflow: auto !important;
   padding: 12px 0;
 }
