@@ -12,6 +12,20 @@ import { saveCoordinator } from '../core/save-coordinator.js';
 import { AppEvents, eventBus } from './events.js';
 
 export async function bootstrapApp(rootElement) {
+  // 0. Restore saved theme and font preferences
+  try {
+    const savedTheme = localStorage.getItem('devspirehub:theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    const savedFontSize = localStorage.getItem('devspirehub:fontSize');
+    if (savedFontSize) {
+      document.documentElement.style.setProperty('--font-size-editor', savedFontSize);
+    }
+  } catch (e) {
+    console.warn('LocalStorage unavailable for theme restoration:', e);
+  }
+
   // 1. Mount App Shell
   const appShell = new AppShellComponent(rootElement);
   appShell.render();

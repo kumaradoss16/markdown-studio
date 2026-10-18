@@ -180,9 +180,41 @@ export class AppShellComponent {
       document.querySelector('.workspace-sidebar')?.classList.toggle('collapsed');
     });
 
-    // PDF export
+    // PDF / Export button in header
     this.container.querySelector('#pdfExportBtn')?.addEventListener('click', () => {
-      window.print();
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'export' });
+    });
+
+    // Settings button
+    this.container.querySelector('#settingsBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'settings' });
+    });
+
+    // Vault selector info
+    this.container.querySelector('#vaultDropdownBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.NOTIFICATION, {
+        type: 'info',
+        message: `Vault: ${workspaceManager.getVaultName()} • ${workspaceManager.knowledgeBase.length} docs loaded`
+      });
+    });
+
+    // Window control buttons
+    this.container.querySelector('.window-dot.close')?.addEventListener('click', () => {
+      if (window.__TAURI_INTERNALS__) {
+        import('@tauri-apps/api/window').then(w => w.getCurrentWindow().close()).catch(() => {});
+      } else {
+        eventBus.emit(AppEvents.NOTIFICATION, { type: 'info', message: 'Studio session running in local-first browser environment.' });
+      }
+    });
+    this.container.querySelector('.window-dot.minimize')?.addEventListener('click', () => {
+      if (window.__TAURI_INTERNALS__) {
+        import('@tauri-apps/api/window').then(w => w.getCurrentWindow().minimize()).catch(() => {});
+      }
+    });
+    this.container.querySelector('.window-dot.maximize')?.addEventListener('click', () => {
+      if (window.__TAURI_INTERNALS__) {
+        import('@tauri-apps/api/window').then(w => w.getCurrentWindow().toggleMaximize()).catch(() => {});
+      }
     });
 
     // Formatting shortcuts from header

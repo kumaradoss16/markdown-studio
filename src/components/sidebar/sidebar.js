@@ -152,6 +152,20 @@ export class SidebarComponent {
   }
 
   attachEvents() {
+    // Search button
+    this.container.querySelector('#sidebarSearchBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'command-palette' });
+    });
+
+    // Sort button
+    this.container.querySelector('#sidebarSortBtn')?.addEventListener('click', () => {
+      workspaceManager.toggleSort();
+      eventBus.emit(AppEvents.NOTIFICATION, {
+        type: 'info',
+        message: `Sorted knowledge base ${workspaceManager.sortAsc ? 'A-Z' : 'Z-A'}`
+      });
+    });
+
     // File click handler
     this.container.querySelectorAll('.sidebar-item').forEach(el => {
       el.addEventListener('click', async () => {
@@ -162,7 +176,8 @@ export class SidebarComponent {
           const fileData = await fileSystemService.readFile(path);
           documentStateManager.openDocument(fileData.path, fileData.content, fileData.hash, fileData.mtime);
         } catch {
-          documentStateManager.createDocument(fileData?.name || path.split('/').pop(), '', path);
+          const fallbackName = path.split('/').pop() || 'Untitled.md';
+          documentStateManager.createDocument(fallbackName, '', path);
         }
       });
     });

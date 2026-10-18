@@ -166,6 +166,56 @@ export class MarkdownService {
     const readingMinutes = Math.max(1, Math.ceil(words / 225));
     return { words, chars, readingMinutes };
   }
+
+  /**
+   * Generates a complete standalone HTML document with embedded CSS.
+   * @param {{ name?: string, content?: string }} doc
+   * @returns {string}
+   */
+  generateStandaloneHtml(doc) {
+    if (!doc) return '';
+    const { html } = this.render(doc.content || '');
+    const title = doc.name ? doc.name.replace('.md', '') : 'DevspireHub Document';
+    const cleanTitle = this.getPurify().sanitize(title);
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${cleanTitle}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 24px;
+      color: #1e293b;
+      background: #ffffff;
+    }
+    h1, h2, h3, h4 { color: #0f172a; margin-top: 1.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+    code { font-family: 'JetBrains Mono', Consolas, monospace; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    pre code { background: none; color: inherit; padding: 0; }
+    blockquote { border-left: 4px solid #00e5ff; margin: 16px 0; padding-left: 14px; color: #475569; }
+    table { border-collapse: collapse; width: 100%; margin: 18px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+    th { background: #f8fafc; font-weight: 600; }
+    img { max-width: 100%; height: auto; border-radius: 6px; }
+    .metric-card { display: inline-block; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-right: 8px; }
+    .metric-card .val { font-size: 1.25rem; font-weight: bold; color: #0284c7; }
+    @media print {
+      body { margin: 0; padding: 0; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <article class="markdown-body">
+    ${html}
+  </article>
+</body>
+</html>`;
+  }
 }
 
 export const markdownService = new MarkdownService();

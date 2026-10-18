@@ -503,6 +503,12 @@
   color: #fff;
 }
 
+.export-option-card:hover {
+  background-color: var(--color-surface-hover) !important;
+  border-color: var(--color-accent-cyan) !important;
+  transform: translateY(-1px);
+}
+
 /* Toast Notifications */
 .toast-container {
   position: fixed;

@@ -71,6 +71,16 @@ export class WorkspaceManager {
     eventBus.emit(AppEvents.WORKSPACE_CHANGED, { activeTagFilter: this.activeTagFilter });
   }
 
+  toggleSort() {
+    this.sortAsc = this.sortAsc === undefined ? false : !this.sortAsc;
+    this.knowledgeBase.sort((a, b) => {
+      return this.sortAsc 
+        ? a.name.localeCompare(b.name) 
+        : b.name.localeCompare(a.name);
+    });
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { sorted: true, asc: this.sortAsc });
+  }
+
   async loadFiles() {
     try {
       const files = await fileSystemService.listWorkspace(this.vaultRoot);

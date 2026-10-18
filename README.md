@@ -8,7 +8,9 @@ DevspireHub Markdown Studio combines a sleek studio layout, file and workspace e
 
 ## Key Features
 
-- **Professional Studio Workspace:** Dual-split editor and preview layout with custom dark cyberpunk aesthetic matching workstation reference designs.
+- **Professional Studio Workspace:** Dual-split editor and preview layout with custom cyberpunk aesthetic matching workstation reference designs.
+- **Multi-Theme Switcher (Release 0.2):** Instant runtime switching between Cyberpunk Dark, Paper Clean Light, Monokai Pro Charcoal, and Matrix Emerald themes with persistent storage.
+- **Export Engine (Release 0.2):** Export documents as standalone styled HTML (with embedded CSS), raw Markdown (`.md`), or clean print-formatted PDF (`@media print`).
 - **CodeMirror 6 Core:** Native Markdown syntax highlighting, line numbers gutter, active line tracking, find & replace (`@codemirror/search`), and formatting toolbar.
 - **Live GFM Preview:** GitHub Flavored Markdown rendering with strict DOMPurify sanitization preventing script execution, XSS, and dangerous URI schemes.
 - **Document Lifecycle & Dirty Tracking:** Revision-aware document models (`CLEAN`, `DIRTY`, `SAVING`, `SAVE_ERROR`, `EXTERNAL_CHANGE`) with unsaved tab close confirmation dialogs.

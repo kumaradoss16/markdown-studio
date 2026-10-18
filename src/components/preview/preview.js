@@ -40,6 +40,13 @@ export class PreviewComponent {
       <div class="preview-scroll-area" id="previewScrollArea"></div>
     `;
 
+    const exportBtn = this.container.querySelector('#previewExportBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'export' });
+      });
+    }
+
     const activeDoc = documentStateManager.getActiveDocument();
     this.renderPreview(activeDoc);
   }
