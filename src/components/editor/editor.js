@@ -9,6 +9,7 @@ import { saveCoordinator } from '../../core/save-coordinator.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { EditorCommandMenuController } from './slash-menu.js';
 import { formattingKeymap, toggleInlineFormat, applyBlockFormat } from '../../features/editor/commands/formatting.js';
+import { codeBlockDecorations } from '../../features/editor/extensions/code-block.js';
 import { remoteDraftService } from '../../services/remote-draft-service.js';
 import { revisionComparisonService } from '../../services/revision-comparison-service.js';
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
@@ -179,6 +180,7 @@ export class EditorComponent {
 
   createEditorState(initialText = '') {
     const extensions = [
+      codeBlockDecorations,
       history(),
       search({ top: true }),
       oneDark,

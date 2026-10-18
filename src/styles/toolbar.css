@@ -257,3 +257,212 @@
   border-radius: 3px;
   border: 1px solid #233140;
 }
+
+/* Color Picker Popover in Selection Toolbar */
+.floating-color-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.color-indicator-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.color-underline-bar {
+  width: 12px;
+  height: 2.5px;
+  background: linear-gradient(90deg, #EF4444, #F59E0B, #10B981, #38BDF8, #818CF8);
+  border-radius: 1px;
+  margin-top: 1px;
+}
+
+.color-palette-popover {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  background: #131B24;
+  border: 1px solid #25313C;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 2600;
+  animation: bubblePopIn 0.1s ease-out;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.2);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+/* Enhanced Code Blocks in CodeMirror 6 Editor */
+.cm-code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #16202B;
+  border: 1px solid #25313C;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 5px 12px;
+  margin-top: 12px;
+  font-family: var(--font-toolbar-mono, monospace);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cm-code-block-lang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cm-code-block-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38BDF8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.cm-code-block-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cm-code-block-copy-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.cm-code-block-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #F1F5F9;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.cm-code-block-copy-btn.copied {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+}
+
+/* Enhanced Code Blocks in Live Preview Pane */
+.fenced-code-container {
+  margin: 18px 0;
+  border: 1px solid #25313C;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0E141B;
+}
+
+.fenced-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #16202B;
+  border-bottom: 1px solid #25313C;
+  padding: 6px 12px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fenced-code-lang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-toolbar-mono, monospace);
+}
+
+.fenced-code-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38BDF8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.fenced-code-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fenced-code-copy-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.fenced-code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #F1F5F9;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.fenced-code-copy-btn.copied {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+}
+
+.fenced-code-container pre {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow-x: auto;
+}
+
+.fenced-code-container pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  color: #E2E8F0;
+  font-family: var(--font-editor, "JetBrains Mono", Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.55;
+}

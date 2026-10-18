@@ -14,10 +14,9 @@ export class AppShellComponent {
       <header class="app-header">
         <!-- Header Left -->
         <div class="header-left">
-          <div class="window-dots">
-            <div class="window-dot close" title="Close"></div>
-            <div class="window-dot minimize" title="Minimize"></div>
-            <div class="window-dot maximize" title="Maximize"></div>
+          <div class="markforge-brand" title="MarkForge Markdown Studio">
+            <img src="/markforge-icon.png" alt="MarkForge Logo" class="markforge-logo" width="24" height="24" />
+            <span class="markforge-title">MarkForge</span>
           </div>
 
           <button class="header-btn" id="headerSidebarToggle" title="Toggle Sidebar (⌘B)">

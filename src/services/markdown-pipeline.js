@@ -297,19 +297,42 @@ export class MarkdownPipeline {
       pedantic: false
     });
 
-    if (withHeadingIds) {
-      let headingIndex = 0;
-      markedInstance.use({
-        renderer: {
+    let headingIndex = 0;
+    markedInstance.use({
+      renderer: {
+        ...(withHeadingIds ? {
           heading({ tokens, depth }) {
             const renderedText = this.parser.parseInline(tokens);
             const headingMeta = headings[headingIndex++];
             const anchorId = headingMeta ? headingMeta.anchor : generateAnchor(renderedText, 0);
             return `<h${depth} id="${anchorId}">${renderedText}</h${depth}>\n`;
           }
+        } : {}),
+        code({ text, lang }) {
+          const rawLang = (lang || 'text').trim().split(/\s+/)[0];
+          const cleanLang = rawLang.toLowerCase() || 'text';
+          const displayLang = cleanLang.toUpperCase();
+          const escapedCode = (text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+          return `<div class="fenced-code-container" data-language="${cleanLang}">` +
+            `<div class="fenced-code-header">` +
+            `<div class="fenced-code-lang"><span class="fenced-code-dot"></span><span class="fenced-code-label">${displayLang}</span></div>` +
+            `<button class="fenced-code-copy-btn" type="button" aria-label="Copy code">` +
+            `<svg class="code-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+            `<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>` +
+            `<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>` +
+            `</svg><span class="code-copy-label">Copy</span></button>` +
+            `</div>` +
+            `<pre><code class="language-${cleanLang}">${escapedCode}</code></pre>` +
+            `</div>\n`;
         }
-      });
-    }
+      }
+    });
 
     let rawHtml = '';
     try {
@@ -324,16 +347,19 @@ export class MarkdownPipeline {
     const sanitizedHtml = purify.sanitize(rawHtml, {
       ALLOWED_TAGS: [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'p', 'a', 'b', 'i', 'strong', 'em', 'strike', 's', 'del',
+        'p', 'a', 'b', 'i', 'strong', 'em', 'strike', 's', 'del', 'u',
         'code', 'pre', 'blockquote',
         'ul', 'ol', 'li', 'hr', 'br',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
         'img', 'span', 'div', 'article', 'section',
-        'input',
+        'input', 'button', 'svg', 'path', 'rect', 'line', 'polyline', 'circle', 'ellipse',
       ],
       ALLOWED_ATTR: [
         'href', 'title', 'alt', 'src', 'class', 'style', 'id',
-        'type', 'checked', 'disabled', 'data-wiki-target', 'name'
+        'type', 'checked', 'disabled', 'data-wiki-target', 'name',
+        'data-language', 'data-code', 'aria-label',
+        'viewBox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+        'd', 'x', 'y', 'width', 'height', 'rx', 'ry', 'x1', 'y1', 'x2', 'y2', 'points',
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
       FORBID_TAGS: ['script', 'style', 'iframe', 'frame', 'object', 'embed', 'form', 'base'],

@@ -216,5 +216,51 @@ export class PreviewComponent {
         }
       });
     });
+
+    // Attach fenced code block copy button listeners
+    scrollArea.querySelectorAll('.fenced-code-copy-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const container = btn.closest('.fenced-code-container');
+        const codeEl = container?.querySelector('pre code');
+        const codeText = codeEl ? codeEl.textContent : '';
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(codeText);
+          } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+          }
+
+          btn.classList.add('copied');
+          btn.innerHTML = `
+            <svg class="code-copy-icon check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span class="code-copy-label" style="color: #10B981; font-weight: 600;">Copied!</span>
+          `;
+
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = `
+              <svg class="code-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span class="code-copy-label">Copy</span>
+            `;
+          }, 2000);
+        } catch (err) {
+          console.warn('Failed to copy preview code snippet:', err);
+        }
+      });
+    });
   }
 }

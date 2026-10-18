@@ -14,13 +14,14 @@ export const INLINE_FORMATS = {
 };
 
 /**
- * Strips all inline markdown formatting delimiters from a text string.
+ * Strips all inline markdown formatting delimiters and styling spans from a text string.
  * @param {string} text
  * @returns {string}
  */
 export function stripInlineFormatting(text) {
   if (!text) return '';
   return text
+    .replace(/<span\s+style="color:\s*[^";]+;?"[^>]*>(.*?)<\/span>/gi, '$1') // strip colored spans
     .replace(/<\/?[uU]>/g, '')         // strip <u> and </u>
     .replace(/\*\*(.*?)\*\*/g, '$1')     // strip bold **text**
     .replace(/~~(.*?)~~/g, '$1')         // strip strikethrough ~~text~~
@@ -28,6 +29,98 @@ export function stripInlineFormatting(text) {
     .replace(/\$([^$]+)\$/g, '$1')       // strip inline math $math$
     .replace(/\*([^*]+)\*/g, '$1')       // strip italic *text*
     .replace(/(\*\*|~~|`|\$)/g, '');     // strip dangling delimiters
+}
+
+/**
+ * Wraps or updates text color on the current selection using an inline span style.
+ * Dispatches an atomic transaction with selection preservation.
+ * 
+ * @param {import('@codemirror/view').EditorView} view
+ * @param {string} hexColor
+ * @returns {boolean}
+ */
+export function applyTextColor(view, hexColor) {
+  if (!view || !view.state || !hexColor) return false;
+  const { from, to } = view.state.selection.main;
+  if (from === to) return false;
+
+  const doc = view.state.doc;
+  const selected = doc.sliceString(from, to);
+
+  // Case 1: Active selection itself is wrapped in <span style="color: ...">...</span>
+  const spanRegex = /^<span\s+style="color:\s*([^";]+);?"[^>]*>([\s\S]*)<\/span>$/i;
+  const match = selected.match(spanRegex);
+
+  if (match) {
+    const existingColor = match[1].trim().toLowerCase();
+    if (existingColor === hexColor.trim().toLowerCase()) {
+      // Toggle off / remove color
+      const uncolored = match[2];
+      view.dispatch({
+        changes: { from, to, insert: uncolored },
+        selection: { anchor: from, head: from + uncolored.length },
+        scrollIntoView: true,
+        userEvent: 'format.color',
+      });
+    } else {
+      // Replace with new color
+      const replacement = `<span style="color: ${hexColor};">${match[2]}</span>`;
+      view.dispatch({
+        changes: { from, to, insert: replacement },
+        selection: { anchor: from, head: from + replacement.length },
+        scrollIntoView: true,
+        userEvent: 'format.color',
+      });
+    }
+    view.focus();
+    return true;
+  }
+
+  // Case 2: Document text immediately surrounding selection is <span style="color: ...">[selected]</span>
+  const line = doc.lineAt(from);
+  const textBefore = doc.sliceString(line.from, from);
+  const textAfter = doc.sliceString(to, line.to);
+
+  const beforeSpanMatch = textBefore.match(/<span\s+style="color:\s*([^";]+);?"[^>]*>$/i);
+  const afterSpanMatch = textAfter.match(/^<\/span>/i);
+
+  if (beforeSpanMatch && afterSpanMatch) {
+    const spanStart = from - beforeSpanMatch[0].length;
+    const spanEnd = to + afterSpanMatch[0].length;
+    const existingColor = beforeSpanMatch[1].trim().toLowerCase();
+
+    if (existingColor === hexColor.trim().toLowerCase()) {
+      // Toggle off / remove color
+      view.dispatch({
+        changes: { from: spanStart, to: spanEnd, insert: selected },
+        selection: { anchor: spanStart, head: spanStart + selected.length },
+        scrollIntoView: true,
+        userEvent: 'format.color',
+      });
+    } else {
+      // Replace with new color
+      const replacement = `<span style="color: ${hexColor};">${selected}</span>`;
+      view.dispatch({
+        changes: { from: spanStart, to: spanEnd, insert: replacement },
+        selection: { anchor: spanStart, head: spanStart + replacement.length },
+        scrollIntoView: true,
+        userEvent: 'format.color',
+      });
+    }
+    view.focus();
+    return true;
+  }
+
+  // Case 3: Standard wrap of selected text
+  const replacement = `<span style="color: ${hexColor};">${selected}</span>`;
+  view.dispatch({
+    changes: { from, to, insert: replacement },
+    selection: { anchor: from, head: from + replacement.length },
+    scrollIntoView: true,
+    userEvent: 'format.color',
+  });
+  view.focus();
+  return true;
 }
 
 /**

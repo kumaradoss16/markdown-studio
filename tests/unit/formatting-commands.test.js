@@ -6,6 +6,7 @@ import {
   toggleInlineFormat,
   clearFormatting,
   applyBlockFormat,
+  applyTextColor,
   formattingKeymap,
   INLINE_FORMATS
 } from '../../src/features/editor/commands/formatting.js';
@@ -168,6 +169,48 @@ describe('Formatting Commands Engine', () => {
       const vEq = createView('x^2 + y^2 = r^2', 0, 15);
       applyBlockFormat(vEq, 'equation-block');
       expect(vEq.state.doc.toString()).toContain('$$\nx^2 + y^2 = r^2\n$$');
+    });
+
+    it('transforms to Heading 4', () => {
+      const v = createView('Sub header', 0, 10);
+      applyBlockFormat(v, 'h4');
+      expect(v.state.doc.toString()).toBe('#### Sub header');
+    });
+  });
+
+  describe('applyTextColor', () => {
+    it('wraps selected text with an inline span color style', () => {
+      const v = createView('Highlight this word', 10, 14); // "this"
+      const handled = applyTextColor(v, '#EF4444');
+      expect(handled).toBe(true);
+      expect(v.state.doc.toString()).toBe('Highlight <span style="color: #EF4444;">this</span> word');
+    });
+
+    it('updates existing span color when a different color is applied', () => {
+      const initial = 'Highlight <span style="color: #EF4444;">this</span> word';
+      const from = initial.indexOf('<span');
+      const to = initial.indexOf('</span>') + 7;
+      const v = createView(initial, from, to);
+      applyTextColor(v, '#38BDF8');
+      expect(v.state.doc.toString()).toBe('Highlight <span style="color: #38BDF8;">this</span> word');
+    });
+
+    it('unwraps span color when identical color is applied again', () => {
+      const initial = 'Highlight <span style="color: #EF4444;">this</span> word';
+      const from = initial.indexOf('<span');
+      const to = initial.indexOf('</span>') + 7;
+      const v = createView(initial, from, to);
+      applyTextColor(v, '#EF4444');
+      expect(v.state.doc.toString()).toBe('Highlight this word');
+    });
+
+    it('updates color when only inner text inside span is selected', () => {
+      const initial = 'Highlight <span style="color: #EF4444;">this</span> word';
+      const from = initial.indexOf('this');
+      const to = from + 4;
+      const v = createView(initial, from, to);
+      applyTextColor(v, '#10B981');
+      expect(v.state.doc.toString()).toBe('Highlight <span style="color: #10B981;">this</span> word');
     });
   });
 
