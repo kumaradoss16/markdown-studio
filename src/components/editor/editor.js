@@ -8,6 +8,7 @@ import { documentStateManager } from '../../core/document-state-manager.js';
 import { saveCoordinator } from '../../core/save-coordinator.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { EditorCommandMenuController } from './slash-menu.js';
+import { formattingKeymap, toggleInlineFormat, applyBlockFormat } from '../../features/editor/commands/formatting.js';
 
 export class EditorComponent {
   constructor(container) {
@@ -172,6 +173,7 @@ export class EditorComponent {
       search({ top: true }),
       oneDark,
       keymap.of([
+        ...formattingKeymap,
         ...defaultKeymap,
         ...historyKeymap,
         ...searchKeymap,
@@ -257,12 +259,30 @@ export class EditorComponent {
   }
 
   attachToolbarEvents() {
-    this.container.querySelector('#toolH1')?.addEventListener('click', () => this.insertText('# '));
-    this.container.querySelector('#toolH2')?.addEventListener('click', () => this.insertText('## '));
-    this.container.querySelector('#toolBold')?.addEventListener('click', () => this.insertText('**', '**'));
-    this.container.querySelector('#toolItalic')?.addEventListener('click', () => this.insertText('*', '*'));
-    this.container.querySelector('#toolStrike')?.addEventListener('click', () => this.insertText('~~', '~~'));
-    this.container.querySelector('#toolCode')?.addEventListener('click', () => this.insertText('`', '`'));
+    this.container.querySelector('#toolH1')?.addEventListener('click', () => {
+      if (this.view) applyBlockFormat(this.view, 'h1');
+      else this.insertText('# ');
+    });
+    this.container.querySelector('#toolH2')?.addEventListener('click', () => {
+      if (this.view) applyBlockFormat(this.view, 'h2');
+      else this.insertText('## ');
+    });
+    this.container.querySelector('#toolBold')?.addEventListener('click', () => {
+      if (this.view) toggleInlineFormat(this.view, 'bold');
+      else this.insertText('**', '**');
+    });
+    this.container.querySelector('#toolItalic')?.addEventListener('click', () => {
+      if (this.view) toggleInlineFormat(this.view, 'italic');
+      else this.insertText('*', '*');
+    });
+    this.container.querySelector('#toolStrike')?.addEventListener('click', () => {
+      if (this.view) toggleInlineFormat(this.view, 'strike');
+      else this.insertText('~~', '~~');
+    });
+    this.container.querySelector('#toolCode')?.addEventListener('click', () => {
+      if (this.view) toggleInlineFormat(this.view, 'code');
+      else this.insertText('`', '`');
+    });
     this.container.querySelector('#toolWiki')?.addEventListener('click', () => this.insertText('[[', ']]'));
     this.container.querySelector('#toolAttach')?.addEventListener('click', () => this.insertText('![[', ']]'));
 

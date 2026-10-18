@@ -1,8 +1,22 @@
+import { SelectionToolbar } from '../../features/editor/ui/selection-toolbar.js';
+import { applyBlockFormat } from '../../features/editor/commands/formatting.js';
+
 /**
- * Block & Slash Command definitions and floating formatting toolbar controller for CodeMirror 6.
+ * Block & Slash Command definitions and controller for CodeMirror 6.
  */
 
 export const SLASH_COMMANDS = [
+  // Basic Blocks
+  {
+    category: 'Basic Blocks',
+    id: 'text',
+    title: 'Text / Body',
+    desc: 'Plain paragraph text without heading or quote prefixes',
+    icon: '¶',
+    snippet: '',
+    shortcut: 'Ctrl+0'
+  },
+
   // Headings
   {
     category: 'Headings',
@@ -10,7 +24,8 @@ export const SLASH_COMMANDS = [
     title: 'Heading 1',
     desc: 'Large primary document title or section',
     icon: 'H1',
-    snippet: '# '
+    snippet: '# ',
+    shortcut: '#'
   },
   {
     category: 'Headings',
@@ -18,7 +33,8 @@ export const SLASH_COMMANDS = [
     title: 'Heading 2',
     desc: 'Medium subsection header',
     icon: 'H2',
-    snippet: '## '
+    snippet: '## ',
+    shortcut: '##'
   },
   {
     category: 'Headings',
@@ -26,7 +42,8 @@ export const SLASH_COMMANDS = [
     title: 'Heading 3',
     desc: 'Small subsection header',
     icon: 'H3',
-    snippet: '### '
+    snippet: '### ',
+    shortcut: '###'
   },
   {
     category: 'Headings',
@@ -34,7 +51,8 @@ export const SLASH_COMMANDS = [
     title: 'Heading 4',
     desc: 'Compact sub-header or paragraph title',
     icon: 'H4',
-    snippet: '#### '
+    snippet: '#### ',
+    shortcut: '####'
   },
 
   // Lists & Tasks
@@ -44,7 +62,8 @@ export const SLASH_COMMANDS = [
     title: 'Bulleted List',
     desc: 'Create an unordered bulleted list',
     icon: '•',
-    snippet: '- '
+    snippet: '- ',
+    shortcut: '-'
   },
   {
     category: 'Lists & Tasks',
@@ -52,7 +71,8 @@ export const SLASH_COMMANDS = [
     title: 'Numbered List',
     desc: 'Create an ordered sequential list',
     icon: '1.',
-    snippet: '1. '
+    snippet: '1. ',
+    shortcut: '1.'
   },
   {
     category: 'Lists & Tasks',
@@ -60,7 +80,8 @@ export const SLASH_COMMANDS = [
     title: 'To-do Task List',
     desc: 'Interactive markdown checklist task item',
     icon: '☑',
-    snippet: '- [ ] '
+    snippet: '- [ ] ',
+    shortcut: '[]'
   },
   {
     category: 'Lists & Tasks',
@@ -74,19 +95,21 @@ export const SLASH_COMMANDS = [
   // Blocks & Callouts
   {
     category: 'Blocks & Callouts',
+    id: 'blockquote',
+    title: 'Quote / Blockquote',
+    desc: 'Capture a quote or reference excerpt',
+    icon: '❝',
+    snippet: '> ',
+    shortcut: '>'
+  },
+  {
+    category: 'Blocks & Callouts',
     id: 'code-block',
     title: 'Fenced Code Block',
     desc: 'Syntax highlighted code container',
     icon: '</>',
-    snippet: '```javascript\n// Write code here\nconsole.log("DevspireHub");\n```\n'
-  },
-  {
-    category: 'Blocks & Callouts',
-    id: 'blockquote',
-    title: 'Blockquote',
-    desc: 'Capture a quote or reference excerpt',
-    icon: '❝',
-    snippet: '> '
+    snippet: '```javascript\n// Write code here\nconsole.log("DevspireHub");\n```\n',
+    shortcut: '```'
   },
   {
     category: 'Blocks & Callouts',
@@ -102,7 +125,8 @@ export const SLASH_COMMANDS = [
     title: 'Block Equation (LaTeX)',
     desc: 'Display centered mathematical formula',
     icon: '∑',
-    snippet: '$$\n\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)\n$$\n'
+    snippet: '$$\n\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)\n$$\n',
+    shortcut: '$$'
   },
   {
     category: 'Blocks & Callouts',
@@ -128,8 +152,8 @@ export const SLASH_COMMANDS = [
 export class EditorCommandMenuController {
   constructor(editorComponent) {
     this.editor = editorComponent;
+    this.selectionToolbar = new SelectionToolbar(editorComponent);
     this.menuEl = null;
-    this.toolbarEl = null;
     this.slashQuery = '';
     this.slashPos = -1;
     this.selectedIndex = 0;
@@ -141,6 +165,7 @@ export class EditorCommandMenuController {
    */
   attach(cmHost) {
     this.cmHost = cmHost;
+    this.selectionToolbar.attach(cmHost);
 
     // Listen for keydown for slash navigation
     cmHost.addEventListener('keydown', (e) => {
@@ -173,14 +198,11 @@ export class EditorCommandMenuController {
       if (this.menuEl && !this.menuEl.contains(e.target)) {
         this.closeMenu();
       }
-      if (this.toolbarEl && !this.toolbarEl.contains(e.target)) {
-        this.closeToolbar();
-      }
     });
   }
 
   isMenuOpen() {
-    return Boolean(this.menuEl && this.menuEl.parentElement);
+    return Boolean(this.menuEl && this.menuEl.style.display !== 'none');
   }
 
   /**
@@ -192,13 +214,14 @@ export class EditorCommandMenuController {
     const line = view.state.doc.lineAt(head);
     const textBeforeCursor = line.text.slice(0, head - line.from);
 
-    // Look for slash trigger preceded by start-of-line or space
+    // Look for slash trigger preceded by start-of-line or whitespace
     const slashMatch = textBeforeCursor.match(/(^|\s)\/([a-zA-Z0-9-]*)$/);
 
     if (slashMatch) {
       const matchPrefix = slashMatch[1];
       this.slashQuery = slashMatch[2].toLowerCase();
       this.slashPos = line.from + textBeforeCursor.length - slashMatch[0].length + matchPrefix.length;
+      this.selectionToolbar.hide();
       this.showMenu(view);
     } else if (this.isMenuOpen()) {
       this.closeMenu();
@@ -213,92 +236,10 @@ export class EditorCommandMenuController {
     const { from, to } = view.state.selection.main;
 
     if (from !== to && !this.isMenuOpen()) {
-      this.showFloatingToolbar(view, from, to);
+      this.selectionToolbar.show(view, from, to);
     } else {
-      this.closeToolbar();
+      this.selectionToolbar.hide();
     }
-  }
-
-  /**
-   * Displays the floating format toolbar above selected text.
-   */
-  showFloatingToolbar(view, from, to) {
-    if (!this.toolbarEl) {
-      this.toolbarEl = document.createElement('div');
-      this.toolbarEl.className = 'floating-format-toolbar';
-      this.toolbarEl.innerHTML = `
-        <button class="floating-format-btn" data-act="bold" title="Bold (⌘B)"><strong>B</strong></button>
-        <button class="floating-format-btn" data-act="italic" title="Italic (⌘I)"><em>I</em></button>
-        <button class="floating-format-btn" data-act="underline" title="Underline"><u>U</u></button>
-        <button class="floating-format-btn" data-act="strike" title="Strikethrough"><s>S</s></button>
-        <div class="floating-format-separator"></div>
-        <button class="floating-format-btn" data-act="code" title="Inline Code">&lt;&gt;</button>
-        <button class="floating-format-btn" data-act="math" title="Inline LaTeX Math">$</button>
-        <button class="floating-format-btn" data-act="link" title="Insert Link">🔗</button>
-      `;
-
-      this.toolbarEl.querySelectorAll('.floating-format-btn').forEach(btn => {
-        btn.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          const act = btn.getAttribute('data-act');
-          this.applyFormat(act);
-        });
-      });
-
-      this.cmHost.appendChild(this.toolbarEl);
-    }
-
-    const coords = view.coordsAtPos(from);
-    if (!coords) return;
-
-    const hostRect = this.cmHost.getBoundingClientRect();
-    const left = Math.max(10, Math.min(hostRect.width - 240, coords.left - hostRect.left));
-    const top = Math.max(10, coords.top - hostRect.top - 40);
-
-    this.toolbarEl.style.left = `${left}px`;
-    this.toolbarEl.style.top = `${top}px`;
-    this.toolbarEl.style.display = 'flex';
-  }
-
-  closeToolbar() {
-    if (this.toolbarEl) {
-      this.toolbarEl.style.display = 'none';
-    }
-  }
-
-  applyFormat(action) {
-    const view = this.editor.view;
-    if (!view) return;
-
-    const { from, to } = view.state.selection.main;
-    const selected = view.state.sliceDoc(from, to);
-
-    let prefix = '';
-    let suffix = '';
-
-    switch (action) {
-      case 'bold':
-        prefix = '**'; suffix = '**'; break;
-      case 'italic':
-        prefix = '*'; suffix = '*'; break;
-      case 'underline':
-        prefix = '<u>'; suffix = '</u>'; break;
-      case 'strike':
-        prefix = '~~'; suffix = '~~'; break;
-      case 'code':
-        prefix = '`'; suffix = '`'; break;
-      case 'math':
-        prefix = '$'; suffix = '$'; break;
-      case 'link':
-        prefix = '['; suffix = '](url)'; break;
-    }
-
-    view.dispatch({
-      changes: { from, to, insert: `${prefix}${selected}${suffix}` },
-      selection: { anchor: from + prefix.length, head: to + prefix.length }
-    });
-    view.focus();
-    this.closeToolbar();
   }
 
   /**
@@ -319,7 +260,7 @@ export class EditorCommandMenuController {
     if (!coords) return;
 
     const hostRect = this.cmHost.getBoundingClientRect();
-    const left = Math.max(10, Math.min(hostRect.width - 340, coords.left - hostRect.left));
+    const left = Math.max(10, Math.min(hostRect.width - 330, coords.left - hostRect.left));
     const top = Math.min(hostRect.height - 350, coords.bottom - hostRect.top + 6);
 
     this.menuEl.style.left = `${left}px`;
@@ -355,7 +296,7 @@ export class EditorCommandMenuController {
     let html = `
       <div class="slash-search-container">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span style="font-size: 11px; color: var(--color-accent-cyan); font-family: var(--font-editor);">/${this.slashQuery}</span>
+        <span class="slash-search-badge">/${this.slashQuery}</span>
       </div>
       <div class="slash-menu-list">
     `;
@@ -372,7 +313,10 @@ export class EditorCommandMenuController {
         <div class="slash-menu-item ${isSelected ? 'active' : ''}" data-index="${idx}">
           <div class="slash-item-icon">${cmd.icon}</div>
           <div class="slash-item-info">
-            <div class="slash-item-title">${cmd.title}</div>
+            <div class="slash-item-title">
+              <span>${cmd.title}</span>
+              ${cmd.shortcut ? `<span class="slash-item-shortcut">${cmd.shortcut}</span>` : ''}
+            </div>
             <div class="slash-item-desc">${cmd.desc}</div>
           </div>
         </div>
@@ -412,12 +356,23 @@ export class EditorCommandMenuController {
     const from = this.slashPos;
     const to = head;
 
-    view.dispatch({
-      changes: { from, to, insert: cmd.snippet },
-      selection: { anchor: from + cmd.snippet.length }
-    });
+    // Block-level transformation commands
+    if (cmd.id === 'text' || cmd.id === 'h1' || cmd.id === 'h2' || cmd.id === 'h3' || cmd.id === 'h4' || cmd.id === 'blockquote') {
+      // Remove slash query
+      view.dispatch({
+        changes: { from, to, insert: '' },
+        selection: { anchor: from },
+      });
+      const blockType = cmd.id === 'blockquote' ? 'quote' : cmd.id;
+      applyBlockFormat(view, blockType);
+    } else {
+      view.dispatch({
+        changes: { from, to, insert: cmd.snippet },
+        selection: { anchor: from + cmd.snippet.length }
+      });
+      view.focus();
+    }
 
-    view.focus();
     this.closeMenu();
   }
 

@@ -1,0 +1,259 @@
+/* DevspireHub Markdown Studio - Selection Bubble & Slash Popover Styling */
+
+/* Floating Selection Toolbar (Bubble Menu) */
+.floating-format-toolbar {
+  position: absolute;
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  background: #131B24;
+  border: 1px solid #25313C;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 4px 6px;
+  gap: 3px;
+  transform: translateY(-8px);
+  animation: bubblePopIn 0.12s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--font-toolbar-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+@keyframes bubblePopIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-8px) scale(1);
+  }
+}
+
+.floating-format-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9CA3AF;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.floating-format-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #F3F4F6;
+}
+
+.floating-format-btn.active {
+  background: #0E2A38;
+  border-color: #1E4E63;
+  color: #38BDF8;
+}
+
+.floating-format-btn svg {
+  stroke: currentColor;
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.floating-format-separator {
+  width: 1px;
+  height: 16px;
+  background-color: #26323E;
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+/* Block style selector dropdown / pills in bubble */
+.floating-block-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.floating-block-trigger {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #25313C;
+  color: #E5E7EB;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  transition: all 0.15s ease;
+}
+
+.floating-block-trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #38BDF8;
+}
+
+.floating-block-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #131B24;
+  border: 1px solid #25313C;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  min-width: 130px;
+  padding: 4px 0;
+  z-index: 2600;
+  animation: bubblePopIn 0.1s ease-out;
+}
+
+.floating-block-option {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #D1D5DB;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.1s ease;
+}
+
+.floating-block-option:hover {
+  background: #1E2A38;
+  color: #38BDF8;
+}
+
+/* Slash Command Menu Popover */
+.slash-command-menu {
+  position: absolute;
+  z-index: 2500;
+  background: #131B24;
+  border: 1px solid #25313C;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  width: 320px;
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: bubblePopIn 0.12s ease-out;
+  font-family: var(--font-toolbar-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.slash-search-container {
+  padding: 8px 12px;
+  border-bottom: 1px solid #1E2630;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0E141B;
+}
+
+.slash-search-container svg {
+  color: #64748B;
+  flex-shrink: 0;
+}
+
+.slash-search-badge {
+  font-size: 11.5px;
+  color: #38BDF8;
+  font-family: var(--font-toolbar-mono, monospace);
+  font-weight: 600;
+}
+
+.slash-menu-list {
+  overflow-y: auto;
+  padding: 4px 0;
+  max-height: 320px;
+}
+
+.slash-menu-category {
+  padding: 8px 12px 3px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6B7280;
+  text-transform: uppercase;
+  font-family: var(--font-toolbar-mono, monospace);
+}
+
+.slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.slash-menu-item.active,
+.slash-menu-item:hover {
+  background: #1E2A38;
+}
+
+.slash-item-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: #0E141B;
+  border: 1px solid #232D3F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-toolbar-ui);
+  font-size: 11px;
+  font-weight: 700;
+  color: #38BDF8;
+  flex-shrink: 0;
+}
+
+.slash-item-icon svg {
+  stroke: currentColor;
+  stroke-width: 1.5px;
+}
+
+.slash-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.slash-item-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slash-item-desc {
+  font-size: 11px;
+  color: #9CA3AF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slash-item-shortcut {
+  font-family: var(--font-toolbar-mono, monospace);
+  font-size: 9.5px;
+  color: #64748B;
+  background: #16202B;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid #233140;
+}

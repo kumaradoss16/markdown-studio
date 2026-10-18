@@ -2,6 +2,7 @@ import './styles/tokens.css';
 import './styles/layout.css';
 import './styles/components.css';
 import './styles/editor.css';
+import './styles/toolbar.css';
 import './styles/preview.css';
 
 import { bootstrapApp } from './app/bootstrap.js';
