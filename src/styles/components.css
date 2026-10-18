@@ -509,6 +509,22 @@
   transform: translateY(-1px);
 }
 
+.diag-card:hover {
+  border-color: var(--color-accent-cyan) !important;
+  background-color: var(--color-surface-hover) !important;
+}
+
+.filter-btn.active {
+  background-color: var(--color-accent-cyan) !important;
+  color: #0b0e14 !important;
+  font-weight: 700 !important;
+}
+
+.template-item-card:hover {
+  border-color: var(--color-accent-purple) !important;
+  transform: translateY(-1px);
+}
+
 /* Toast Notifications */
 .toast-container {
   position: fixed;

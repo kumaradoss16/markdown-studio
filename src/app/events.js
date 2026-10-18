@@ -60,6 +60,8 @@ export const AppEvents = {
   WORKSPACE_CHANGED: 'workspace:changed',
   VIEW_MODE_CHANGED: 'view:mode_changed',
   CURSOR_CHANGED: 'editor:cursor_changed',
+  EDITOR_JUMP_TO_LINE: 'editor:jump_to_line',
+  DIAGNOSTICS_UPDATED: 'diagnostics:updated',
   NOTIFICATION: 'ui:notification',
   DIALOG_OPEN: 'ui:dialog_open',
   DIALOG_CLOSE: 'ui:dialog_close',

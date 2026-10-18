@@ -26,6 +26,22 @@ export class EditorComponent {
       const active = documentStateManager.getActiveDocument();
       this.loadDocument(active);
     });
+    eventBus.on(AppEvents.EDITOR_JUMP_TO_LINE, ({ line, col }) => {
+      this.jumpToLine(line, col);
+    });
+  }
+
+  jumpToLine(lineNumber, colNumber = 1) {
+    if (!this.view) return;
+    const doc = this.view.state.doc;
+    const validLine = Math.min(Math.max(1, lineNumber), doc.lines);
+    const line = doc.line(validLine);
+    const targetPos = Math.min(line.from + Math.max(0, colNumber - 1), line.to);
+    this.view.dispatch({
+      selection: { anchor: targetPos, head: targetPos },
+      scrollIntoView: true
+    });
+    this.view.focus();
   }
 
   render() {
@@ -41,6 +57,9 @@ export class EditorComponent {
           <button class="tool-btn" id="toolCode" title="Code">&lt;&gt;</button>
           <button class="tool-btn" id="toolWiki" title="Wiki Link">[[ ]]</button>
           <button class="tool-btn" id="toolAttach" title="Attachment">📎</button>
+          <div class="tool-separator"></div>
+          <button class="tool-btn" id="toolTOC" title="Insert / Manage Table of Contents" style="color: var(--color-accent-cyan); font-weight: 600;">📑 TOC</button>
+          <button class="tool-btn" id="toolTemplates" title="Technical Documentation Templates" style="color: var(--color-accent-purple); font-weight: 600;">📋 Templates</button>
         </div>
         <div class="editor-tools-group">
           <button class="tool-btn" id="toolSource" title="Source Mode">Source</button>
@@ -157,6 +176,14 @@ export class EditorComponent {
     this.container.querySelector('#toolCode')?.addEventListener('click', () => this.insertText('`', '`'));
     this.container.querySelector('#toolWiki')?.addEventListener('click', () => this.insertText('[[', ']]'));
     this.container.querySelector('#toolAttach')?.addEventListener('click', () => this.insertText('![[', ']]'));
+
+    this.container.querySelector('#toolTOC')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'toc' });
+    });
+
+    this.container.querySelector('#toolTemplates')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'templates' });
+    });
 
     this.container.querySelector('#toolFind')?.addEventListener('click', () => {
       if (this.view) openSearchPanel(this.view);

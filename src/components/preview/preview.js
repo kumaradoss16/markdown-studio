@@ -1,4 +1,4 @@
-import { markdownService } from '../../services/markdown-service.js';
+import { markdownPipeline } from '../../services/markdown-pipeline.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 
@@ -60,7 +60,7 @@ export class PreviewComponent {
       return;
     }
 
-    const { html, frontmatter } = markdownService.render(doc.content);
+    const { html, frontmatter } = markdownPipeline.process(doc, { withHeadingIds: true });
 
     // If document is Habitat Design or has Neo-Kyoto / TOP SECRET metadata, enrich with the visual components from reference
     const isHabitatDoc = doc.name.includes('Habitat Design') || doc.content.includes('Neo-Kyoto');
@@ -197,6 +197,21 @@ export class PreviewComponent {
         const target = decodeURIComponent(link.getAttribute('data-wiki-target') || '');
         const targetFile = `ExampleVault/${target}.md`;
         documentStateManager.openDocument(targetFile, `# ${target}\n\nLinked document for ${target}.`, targetFile);
+      });
+    });
+
+    // Attach internal anchor link scrolling (e.g. from TOC)
+    scrollArea.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        const href = anchor.getAttribute('href');
+        if (href && href.length > 1) {
+          const targetId = href.slice(1);
+          const targetEl = scrollArea.querySelector(`#${targetId}`);
+          if (targetEl) {
+            e.preventDefault();
+            targetEl.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
       });
     });
   }

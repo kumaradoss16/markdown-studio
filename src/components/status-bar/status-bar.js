@@ -1,5 +1,6 @@
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { markdownService } from '../../services/markdown-service.js';
+import { qualityChecker } from '../../services/quality-checker.js';
 import { workspaceManager } from '../../core/workspace-manager.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 
@@ -37,6 +38,9 @@ export class StatusBarComponent {
     const docName = activeDoc ? activeDoc.name.replace('.md', '') : 'Habitat Design';
     const vaultName = workspaceManager.getVaultName();
     const stats = markdownService.computeStats(activeDoc ? activeDoc.content : '');
+    const diags = activeDoc ? qualityChecker.check(activeDoc) : [];
+    const diagSummary = qualityChecker.summarize(diags);
+    const diagColor = diagSummary.errors > 0 ? 'var(--color-accent-rose)' : (diagSummary.warnings > 0 ? '#fbbf24' : 'var(--color-accent-emerald)');
 
     this.container.innerHTML = `
       <div style="display: flex; align-items: center; gap: 14px;">
@@ -49,6 +53,11 @@ export class StatusBarComponent {
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
           <span>${vaultName} &gt; <strong style="color: var(--color-text-primary);">${docName}</strong></span>
+        </span>
+        <span style="color: var(--color-border-default);">|</span>
+        <span id="statusDiagnosticsBtn" title="Documentation Quality Diagnostics (Click to inspect)" style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: ${diagColor};">
+          <span>🛡️</span>
+          <strong>${diagSummary.errors} Err</strong> • <span>${diagSummary.warnings} Warn</span>
         </span>
         <span style="color: var(--color-border-default);">|</span>
         <span style="color: var(--color-accent-teal);">MODE: ${this.viewMode}</span>
@@ -70,6 +79,10 @@ export class StatusBarComponent {
         <span id="statusCursor" style="color: var(--color-accent-cyan);">Ln ${this.cursor.line}, Col ${this.cursor.col}</span>
       </div>
     `;
+
+    this.container.querySelector('#statusDiagnosticsBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'diagnostics' });
+    });
 
     // Click events
     this.container.querySelector('#statusSidebarToggle')?.addEventListener('click', () => {
