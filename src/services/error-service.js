@@ -27,6 +27,10 @@ export const ErrorCode = {
   UNAUTHORIZED_WRITE: 'UNAUTHORIZED_WRITE',
   PREFLIGHT_FAILED: 'PREFLIGHT_FAILED',
   UNREVIEWED_CHANGE: 'UNREVIEWED_CHANGE',
+  STALE_RESTORE: 'STALE_RESTORE',
+  CORRUPT_HISTORY: 'CORRUPT_HISTORY',
+  RESTORE_CONFLICT: 'RESTORE_CONFLICT',
+  HISTORY_STORAGE_ERROR: 'HISTORY_STORAGE_ERROR',
   UNKNOWN: 'UNKNOWN',
 };
 
@@ -39,8 +43,8 @@ export function redactSensitiveData(text) {
   if (typeof text !== 'string') return text;
   return text
     .replace(/(bearer\s+)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED]')
-    .replace(/(ghp_[a-zA-Z0-9]{36})/g, '[REDACTED_TOKEN]')
-    .replace(/(github_pat_[a-zA-Z0-9_]{50,})/g, '[REDACTED_PAT]')
+    .replace(/((?:ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9_]{16,})/gi, '[REDACTED_TOKEN]')
+    .replace(/(github_pat_[a-zA-Z0-9_]{20,})/gi, '[REDACTED_PAT]')
     .replace(/(token\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
     .replace(/(code_verifier\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
     .replace(/(client_secret\s*=\s*)[^\s&]+/gi, '$1[REDACTED]');

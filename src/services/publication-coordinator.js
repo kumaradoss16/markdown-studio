@@ -4,6 +4,7 @@ import { publicationPreflightService } from './publication-preflight-service.js'
 import { gitHubWriteClient, validateBranchName, isValidCommitSha } from './github-write-client.js';
 import { publicationOutcomeVerifier } from './publication-outcome-verifier.js';
 import { publicationRecordService } from './publication-record-service.js';
+import { auditLogService } from './audit-log-service.js';
 import { documentStateManager } from '../core/document-state-manager.js';
 import { AppEvents, eventBus } from '../app/events.js';
 
@@ -23,6 +24,7 @@ export class PublicationCoordinator {
     this.verifier = deps.verifier || publicationOutcomeVerifier;
     this.recordService = deps.recordService || publicationRecordService;
     this.stateManager = deps.stateManager || documentStateManager;
+    this.auditLog = deps.auditLog || auditLogService;
     
     this.stateMachine = new PublicationStateMachine(PublicationState.DRAFT, [
       (newState, oldState, ctx) => this.onStateChange(newState, oldState, ctx),
@@ -266,6 +268,22 @@ export class PublicationCoordinator {
       const finalState = this.stateMachine.getState();
       this.activeSession = null;
 
+      this.auditLog.recordEvent({
+        documentKey: snapshot.destination.path,
+        action: 'PUBLISH_ATTEMPT',
+        outcome: 'SUCCESS',
+        contentHash: snapshot.destination.baseBlobSha || '',
+        summary: `Published to ${snapshot.destination.owner}/${snapshot.destination.repo}:${targetBranch} (${verifiedResult.commitSha.slice(0, 7)})`,
+        details: {
+          attemptId,
+          owner: snapshot.destination.owner,
+          repo: snapshot.destination.repo,
+          branch: targetBranch,
+          commitSha: verifiedResult.commitSha,
+          pullRequest: prResult ? prResult.html_url : null,
+        },
+      });
+
       eventBus.emit(AppEvents.NOTIFICATION, {
         type: 'info',
         message: `Successfully published ${snapshot.destination.path} to GitHub (${verifiedResult.commitSha.slice(0, 7)}).`,
@@ -284,6 +302,13 @@ export class PublicationCoordinator {
           outcomeState: OutcomeState.REJECTED,
           error: err.message,
         });
+        this.auditLog.recordEvent({
+          documentKey: snapshot?.destination?.path || 'unknown',
+          action: 'PUBLISH_ATTEMPT',
+          outcome: 'FAILURE',
+          summary: `Publication rejected (conflict): ${err.message}`,
+          details: { attemptId, error: err.message },
+        });
         this.stateMachine.transition(PublicationState.CONFLICT_REVIEW_REQUIRED, { error: err.message });
         return {
           success: false,
@@ -301,6 +326,13 @@ export class PublicationCoordinator {
           if (reconcileResult.verified) {
             this.stateMachine.transition(PublicationState.VERIFYING, reconcileResult);
             this.stateMachine.transition(PublicationState.PUBLISHED, reconcileResult);
+            this.auditLog.recordEvent({
+              documentKey: snapshot?.destination?.path || 'unknown',
+              action: 'PUBLISH_ATTEMPT',
+              outcome: 'SUCCESS',
+              summary: `Reconciled after uncertain outcome: published to ${targetBranch}`,
+              details: { attemptId, reconciled: true },
+            });
             this.activeSession = null;
             return {
               success: true,
@@ -310,6 +342,13 @@ export class PublicationCoordinator {
             };
           } else {
             this.stateMachine.transition(PublicationState.FAILED_RETRYABLE, reconcileResult);
+            this.auditLog.recordEvent({
+              documentKey: snapshot?.destination?.path || 'unknown',
+              action: 'PUBLISH_ATTEMPT',
+              outcome: 'FAILURE',
+              summary: `Reconciliation failed: ${reconcileResult.message}`,
+              details: { attemptId, reconciled: true },
+            });
             return {
               success: false,
               state: PublicationState.FAILED_RETRYABLE,
@@ -319,6 +358,13 @@ export class PublicationCoordinator {
           }
         } catch (recErr) {
           // If reconciliation query also errors, remain OUTCOME_UNCERTAIN
+          this.auditLog.recordEvent({
+            documentKey: snapshot?.destination?.path || 'unknown',
+            action: 'PUBLISH_ATTEMPT',
+            outcome: 'UNCERTAIN',
+            summary: `Uncertain publication outcome: ${recErr.message}`,
+            details: { attemptId, error: recErr.message },
+          });
           return {
             success: false,
             state: PublicationState.OUTCOME_UNCERTAIN,
@@ -338,6 +384,14 @@ export class PublicationCoordinator {
         error: err.message,
       });
 
+      this.auditLog.recordEvent({
+        documentKey: snapshot?.destination?.path || 'unknown',
+        action: 'PUBLISH_ATTEMPT',
+        outcome: 'FAILURE',
+        summary: `Publication failed: ${err.message}`,
+        details: { attemptId, error: err.message },
+      });
+
       throw err;
     }
   }
@@ -350,6 +404,13 @@ export class PublicationCoordinator {
     if (this.stateMachine.canTransition(PublicationState.CANCELLED)) {
       this.stateMachine.transition(PublicationState.CANCELLED, { reason: 'USER_CANCELLED' });
       this.stateMachine.transition(PublicationState.DRAFT);
+      this.auditLog.recordEvent({
+        documentKey: this.activeSession?.snapshot?.destination?.path || 'unknown',
+        action: 'PUBLISH_ATTEMPT',
+        outcome: 'CANCELLED',
+        summary: 'Publication cancelled by user',
+        details: { attemptId: this.activeSession?.attempt?.attemptId },
+      });
     }
     this.activeSession = null;
   }

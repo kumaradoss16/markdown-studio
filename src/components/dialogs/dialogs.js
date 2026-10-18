@@ -43,6 +43,8 @@ export class DialogsComponent {
       this.showTocDialog();
     } else if (payload.type === 'templates') {
       this.showTemplatesDialog();
+    } else if (payload.type === 'version-history') {
+      eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: payload.docId });
     }
   }
 
@@ -316,6 +318,7 @@ export class DialogsComponent {
           <div class="sidebar-item" data-action="templates"><strong>Technical Documentation Templates...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Templates</span></div>
           <div class="sidebar-item" data-action="manage-toc"><strong>Insert / Update Table of Contents (TOC)</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">📑 TOC</span></div>
           <div class="sidebar-item" data-action="view-diagnostics"><strong>Quality Diagnostics &amp; Linting</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-emerald);">🛡️ Check</span></div>
+          <div class="sidebar-item" data-action="version-history"><strong>Version History &amp; Revisions...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">⌘H</span></div>
           <div class="sidebar-item" data-action="save-doc"><strong>Save Active Document</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⌘S</span></div>
           <div class="sidebar-item" data-action="save-as"><strong>Save As...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⇧⌘S</span></div>
           <div class="sidebar-item" data-action="toggle-split"><strong>Toggle Dual Split Mode</strong></div>
@@ -361,6 +364,9 @@ export class DialogsComponent {
         break;
       case 'view-diagnostics':
         this.showDiagnosticsDialog();
+        break;
+      case 'version-history':
+        if (active) eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: active.id });
         break;
       case 'save-doc':
         if (active) saveCoordinator.save(active.id);

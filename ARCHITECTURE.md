@@ -83,3 +83,57 @@ The `CrashRecoveryManager` maintains a write-ahead journal in browser/local stor
 - On every edit, an entry with the document's timestamp, path, and content is recorded.
 - When saved or cleanly closed, the entry is pruned.
 - If the application is terminated abruptly, the presence of entries in the journal enables immediate recovery of unsaved drafts upon next launch.
+
+---
+
+## 6. Document Revision History & Restore Engine (Release 0.6)
+
+Release 0.6 introduces content-addressed revision history, side-by-side visual diffs, and safe preview-first restoration:
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│              User Trigger (⌘H or Tabs Action)                   │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                     HistoryPanelComponent                       │
+│    - Browse chronological checkpoints & source badges           │
+│    - Select any 2 revisions for side-by-side diff               │
+│    - Click "Preview Restore" to inspect changes against buffer  │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                      RestoreCoordinator                         │
+│  - Invariant 2: Preview Isolation (0 mutations to buffer/disk)  │
+│  - Invariant 4: Stale Restore Rejection (guards concurrent edit)│
+│  - Invariant 6: Explicit Dirty Conflict Resolution             │
+│  - Invariant 1: History Non-Mutation (appends 'restore' snapshot│
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                    RevisionHistoryStore                         │
+│  - Content-addressed deduplication: blob:<hash>                 │
+│  - Per-document metadata index: index:<key>                     │
+│  - FIFO 50-entry eviction with active preview pinning           │
+│  - FNV-1a Hash Integrity verification on read (Invariant 5)     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Integrity Invariants
+1. **Invariant 1 (History Non-Mutation):** Existing revision history snapshots are immutable and append-only. Restoring a revision appends a new snapshot with `source: 'restore'`.
+2. **Invariant 2 (Preview Isolation):** Generating a restore preview is strictly read-only. It never mutates the active document, CodeMirror editor state, or disk file.
+3. **Invariant 3 (Explicit Restore Only):** No automated or background rollbacks. Restores require explicit user confirmation.
+4. **Invariant 4 (Stale Restore Rejection):** If a user edits the document while a restore preview is open, the restore is rejected with `STALE_RESTORE`.
+5. **Invariant 5 (Hash Integrity Verification):** Content blobs are verified against their content hash on retrieval; mismatched content throws `CORRUPT_HISTORY`.
+6. **Invariant 6 (No Silent Overwrites):** Unsaved working changes generate a `RESTORE_CONFLICT` requiring explicit confirmation.
+7. **Invariant 8 (Zero Secret Leakage):** All summaries, diff lines, and audit events are strictly sanitized against credential leakage and XSS.
+
+---
+
+## 7. Append-Only Durable Audit Logging (Release 0.6)
+
+The `AuditLogService` persists a chronological audit trail (`devspirehub:audit_log:v1`) capped at 500 events across local and remote operations:
+- **Tracked Actions:** `OPEN`, `SAVE`, `RESTORE`, `EXPORT`, `CLOSE`, `REMOTE_REFRESH`, `PUBLISH_ATTEMPT`.
+- **Honest Outcomes:** `SUCCESS`, `FAILURE`, `CANCELLED`, `UNCERTAIN` (Invariant 10).
+- **Zero Leakage:** Recursive redaction of GitHub PATs, OAuth bearer tokens, and secrets across all payload strings and nested metadata objects.
+

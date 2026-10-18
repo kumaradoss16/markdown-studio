@@ -6,6 +6,7 @@ import './styles/toolbar.css';
 import './styles/preview.css';
 import './styles/file-tree.css';
 import './styles/github.css';
+import './styles/history.css';
 
 import { bootstrapApp } from './app/bootstrap.js';
 

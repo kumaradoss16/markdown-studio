@@ -68,6 +68,11 @@ export const AppEvents = {
   GITHUB_AUTH_CHANGED: 'github:auth_changed',
   GITHUB_DRAFT_REFRESHED: 'github:draft_refreshed',
   GITHUB_DIFF_REQUESTED: 'github:diff_requested',
+  HISTORY_OPEN_REQUESTED: 'history:open_requested',
+  HISTORY_SNAPSHOT_RECORDED: 'history:snapshot_recorded',
+  RESTORE_PREVIEW_OPENED: 'restore:preview_opened',
+  RESTORE_APPLIED: 'restore:applied',
+  AUDIT_RECORDED: 'audit:recorded',
 };
 
 export const eventBus = new EventEmitter();

@@ -13,6 +13,8 @@ import { gitHubAuthService } from '../services/github-auth-service.js';
 import { publicationCoordinator } from '../services/publication-coordinator.js';
 import '../components/github/diff-modal.js';
 import '../components/github/publish-modal.js';
+import '../components/history/history-panel.js';
+import '../components/history/history-diff-modal.js';
 import { AppEvents, eventBus } from './events.js';
 
 export async function bootstrapApp(rootElement) {
@@ -108,6 +110,12 @@ export async function bootstrapApp(rootElement) {
       const active = documentStateManager.getActiveDocument();
       if (active) {
         document.querySelector(`.tab-close-btn[data-close-id="${active.id}"]`)?.click();
+      }
+    } else if (isMod && e.key.toLowerCase() === 'h') {
+      e.preventDefault();
+      const active = documentStateManager.getActiveDocument();
+      if (active) {
+        eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: active.id, filePath: active.path });
       }
     }
   });

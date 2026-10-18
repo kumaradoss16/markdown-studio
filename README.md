@@ -8,6 +8,10 @@ DevspireHub Markdown Studio combines a sleek studio layout, file and workspace e
 
 ## Key Features
 
+- **Document Revision History & Restore Previews (Release 0.6):** Content-addressed revision tracking, chronological checkpoints, side-by-side dual-pane line diffs, preview-first restoration with dirty conflict protection (`⌘H`).
+- **Durable Audit Trail (Release 0.6):** Append-only audit logging of all document actions (`OPEN`, `SAVE`, `RESTORE`, `EXPORT`, `PUBLISH_ATTEMPT`) with strict secret and token redaction.
+- **Safe GitHub Publishing (Release 0.5):** Two-phase review modal, working-branch isolation, base SHA freshness verification, conflict review, and atomic ticket boundaries.
+- **GitHub Integration (Release 0.4):** Personal Access Token authentication, repository/branch browsing, remote draft editing, and offline change tracking.
 - **Professional Studio Workspace:** Dual-split editor and preview layout with custom cyberpunk aesthetic matching workstation reference designs.
 - **Multi-Theme Switcher (Release 0.2):** Instant runtime switching between Cyberpunk Dark, Paper Clean Light, Monokai Pro Charcoal, and Matrix Emerald themes with persistent storage.
 - **Export Engine (Release 0.2):** Export documents as standalone styled HTML (with embedded CSS), raw Markdown (`.md`), or clean print-formatted PDF (`@media print`).

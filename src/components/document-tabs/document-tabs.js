@@ -51,6 +51,12 @@ export class DocumentTabsComponent {
 
         <!-- Tab actions -->
         <div class="tabs-actions" style="display: flex; align-items: center; gap: 4px; margin-left: 6px; padding-right: 4px; flex-shrink: 0;">
+          <button class="header-btn" id="tabHistoryBtn" title="Document Revision History & Audit Trail (⌘H)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </button>
           <button class="header-btn" id="tabSplitToggleBtn" title="Toggle Split View Mode (Horizontal / Vertical)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>
@@ -204,6 +210,14 @@ export class DocumentTabsComponent {
           eventBus.emit(AppEvents.VIEW_MODE_CHANGED, 'SPLIT VERTICAL');
           eventBus.emit(AppEvents.NOTIFICATION, { type: 'info', message: 'Switched to Vertical Split' });
         }
+      }
+    });
+
+    // Tab Revision History button
+    this.container.querySelector('#tabHistoryBtn')?.addEventListener('click', () => {
+      const active = documentStateManager.getActiveDocument();
+      if (active) {
+        eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: active.id, filePath: active.path });
       }
     });
 

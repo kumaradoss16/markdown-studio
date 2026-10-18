@@ -1,0 +1,227 @@
+/* History Modal & Version Control Styling */
+
+.history-modal-backdrop {
+  z-index: 9999;
+}
+
+.history-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+.history-tabs-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px;
+  background-color: #0e141d;
+  border-bottom: 1px solid #1a2432;
+}
+
+.history-tab-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.history-tab-btn:hover {
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.history-tab-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.history-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 520px;
+  padding: 12px 18px;
+}
+
+.history-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-item-card {
+  background: #111822;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.history-item-card:hover {
+  border-color: #334155;
+  background-color: #141e2b;
+}
+
+.history-item-card.selected {
+  border-color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.06);
+}
+
+.history-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-select-chk {
+  cursor: pointer;
+  accent-color: #38bdf8;
+}
+
+.history-rev-number {
+  font-weight: 700;
+  font-size: 12px;
+  color: #f1f5f9;
+}
+
+.history-source-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+}
+
+.history-source-badge.local_save {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.history-source-badge.autosnapshot {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.history-source-badge.restore {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.history-source-badge.publish {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.history-source-badge.remote_refresh {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.history-timestamp {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.history-item-summary {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.history-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.history-audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-audit-item {
+  background: #111822;
+  border: 1px solid #1e293b;
+  border-radius: 5px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-audit-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.audit-action-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+.audit-outcome-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.audit-outcome-badge.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.audit-outcome-badge.failure {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+}
+
+.audit-outcome-badge.uncertain {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.audit-outcome-badge.cancelled {
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+}
+
+.history-audit-summary {
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
