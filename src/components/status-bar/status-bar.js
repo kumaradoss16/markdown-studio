@@ -36,7 +36,6 @@ export class StatusBarComponent {
   render() {
     const activeDoc = documentStateManager.getActiveDocument();
     const docName = activeDoc ? activeDoc.name.replace('.md', '') : 'Habitat Design';
-    const vaultName = workspaceManager.getVaultName();
     const stats = markdownService.computeStats(activeDoc ? activeDoc.content : '');
     const diags = activeDoc ? qualityChecker.check(activeDoc) : [];
     const diagSummary = qualityChecker.summarize(diags);
@@ -52,7 +51,7 @@ export class StatusBarComponent {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
-          <span>${vaultName} &gt; <strong style="color: var(--color-text-primary);">${docName}</strong></span>
+          <strong style="color: var(--color-text-primary);">${docName}</strong>
         </span>
         <span style="color: var(--color-border-default);">|</span>
         <span id="statusDiagnosticsBtn" title="Documentation Quality Diagnostics (Click to inspect)" style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: ${diagColor};">

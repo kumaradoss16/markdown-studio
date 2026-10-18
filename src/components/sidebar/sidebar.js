@@ -43,10 +43,6 @@ export class SidebarComponent {
       <div class="sidebar-header">
         <div class="sidebar-title-area">
           <img src="/markforge-icon.png" alt="MarkForge" width="16" height="16" class="sidebar-brand-icon" style="border-radius: 3px;" />
-          <span>${workspaceManager.getVaultName()}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
         </div>
         <div class="sidebar-actions">
           <button class="header-btn" id="sidebarNewDocBtn" title="New Document (⌘N)">
@@ -150,7 +146,7 @@ export class SidebarComponent {
       </div>
 
       <div class="sidebar-footer">
-        <span>${workspaceManager.getVaultName()} / <strong style="color: var(--color-text-primary);">${activeDoc ? activeDoc.name.replace('.md', '') : 'Habitat Design'}</strong></span>
+        <span><strong style="color: var(--color-text-primary);">${activeDoc ? activeDoc.name.replace('.md', '') : 'Habitat Design'}</strong></span>
       </div>
     `;
 
@@ -349,7 +345,7 @@ export class SidebarComponent {
 
     const footer = this.container.querySelector('.sidebar-footer');
     if (footer) {
-      footer.innerHTML = `<span>${workspaceManager.getVaultName()} / <strong style="color: var(--color-text-primary);">${doc.name.replace('.md', '')}</strong></span>`;
+      footer.innerHTML = `<span><strong style="color: var(--color-text-primary);">${doc.name.replace('.md', '')}</strong></span>`;
     }
   }
 }

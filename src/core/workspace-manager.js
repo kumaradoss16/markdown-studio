@@ -7,7 +7,7 @@ import { documentStateManager } from './document-state-manager.js';
  */
 export class WorkspaceManager {
   constructor() {
-    this.vaultName = 'ExampleVault';
+    this.vaultName = '';
     this.vaultRoot = 'ExampleVault';
     this.recents = [
       { name: 'Sprint Review 2026-03-25.md', path: 'ExampleVault/Sprint Review 2026-03-25.md' }
