@@ -1,4 +1,5 @@
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
+import { validateBranchName } from '../../services/github-write-client.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { diffModalComponent } from './diff-modal.js';
 import { revisionComparisonService } from '../../services/revision-comparison-service.js';
@@ -99,11 +100,15 @@ export class PublishModalComponent {
               <input type="checkbox" id="pubUseWorkingBranch" />
               <span>Publish to a new working branch instead of directly to <strong>${dest.branch}</strong></span>
             </label>
+            <div class="publish-hint-text">
+              Requires a GitHub token with <strong>Contents: Read and write</strong> (fine-grained) or <strong>repo</strong> (classic) permissions.
+            </div>
           </div>
 
           <div class="publish-form-group" id="pubBranchInputGroup" style="display: none; padding-left: 20px;">
             <label class="publish-label" for="pubBranchName">Working Branch Name</label>
             <input type="text" id="pubBranchName" class="publish-input" placeholder="e.g. patch-${Date.now().toString(36)}" />
+            <div id="pubBranchValidationMsg" class="publish-validation-msg" style="display: none;"></div>
             <label class="publish-checkbox-label" style="margin-top: 6px;">
               <input type="checkbox" id="pubOpenPR" checked />
               <span>Open a Pull Request automatically after publishing</span>
@@ -125,11 +130,56 @@ export class PublishModalComponent {
     document.body.appendChild(modal);
     this.modalEl = modal;
 
-    // Toggle working branch group
+    // Toggle working branch group and live validation
     const workingBranchCheckbox = modal.querySelector('#pubUseWorkingBranch');
     const branchInputGroup = modal.querySelector('#pubBranchInputGroup');
     const branchNameInput = modal.querySelector('#pubBranchName');
+    const branchValidationMsg = modal.querySelector('#pubBranchValidationMsg');
     const openPrCheckbox = modal.querySelector('#pubOpenPR');
+    const confirmBtn = modal.querySelector('#pubConfirmBtn');
+    const commitInput = modal.querySelector('#pubCommitMessage');
+    const statusBox = modal.querySelector('#pubStatusBox');
+
+    const validateBranchField = () => {
+      if (!workingBranchCheckbox?.checked) {
+        if (branchValidationMsg) branchValidationMsg.style.display = 'none';
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.style.opacity = '1';
+        }
+        return true;
+      }
+      const val = branchNameInput ? branchNameInput.value.trim() : '';
+      if (!val) {
+        if (branchValidationMsg) {
+          branchValidationMsg.style.display = 'block';
+          branchValidationMsg.textContent = 'Working branch name is required.';
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.style.opacity = '0.5';
+        }
+        return false;
+      }
+      const res = validateBranchName(val);
+      if (!res.valid) {
+        if (branchValidationMsg) {
+          branchValidationMsg.style.display = 'block';
+          branchValidationMsg.textContent = res.error;
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.style.opacity = '0.5';
+        }
+        return false;
+      }
+      if (branchValidationMsg) branchValidationMsg.style.display = 'none';
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+      }
+      return true;
+    };
 
     workingBranchCheckbox?.addEventListener('change', (e) => {
       const isChecked = e.target.checked;
@@ -137,18 +187,21 @@ export class PublishModalComponent {
       if (isChecked && !branchNameInput.value) {
         branchNameInput.value = `patch-${Date.now().toString(36)}`;
       }
+      validateBranchField();
     });
+
+    branchNameInput?.addEventListener('input', validateBranchField);
 
     // Close & Cancel
     modal.querySelector('#pubModalCloseX')?.addEventListener('click', () => this.cancel());
     modal.querySelector('#pubCancelBtn')?.addEventListener('click', () => this.cancel());
 
     // Confirm & Publish
-    const confirmBtn = modal.querySelector('#pubConfirmBtn');
-    const commitInput = modal.querySelector('#pubCommitMessage');
-    const statusBox = modal.querySelector('#pubStatusBox');
-
     confirmBtn?.addEventListener('click', async () => {
+      if (workingBranchCheckbox.checked && !validateBranchField()) {
+        return;
+      }
+
       confirmBtn.disabled = true;
       confirmBtn.style.opacity = '0.6';
       modal.querySelector('#pubCancelBtn').disabled = true;
@@ -215,7 +268,19 @@ export class PublishModalComponent {
         }
       } catch (pubErr) {
         statusBox.className = 'publish-status-box error';
-        statusBox.innerHTML = `<span>Publication error: ${this.escapeHtml(pubErr.message)}</span>`;
+        statusBox.innerHTML = `
+          <div class="publish-error-box">
+            <div class="publish-error-msg"><strong>Publication Error:</strong> ${this.escapeHtml(pubErr.message)}</div>
+            <div class="publish-error-actions">
+              <span>Suggested next steps:</span>
+              <ul>
+                <li>Verify your GitHub token has <strong>Contents: Read and write</strong> (fine-grained) or <strong>repo</strong> (classic) permissions.</li>
+                <li>Confirm the repository <code>${this.escapeHtml(dest.owner)}/${this.escapeHtml(dest.repo)}</code> exists and is accessible.</li>
+                <li>Or uncheck <em>"Publish to a new working branch"</em> to commit directly to <strong>${this.escapeHtml(dest.branch)}</strong>.</li>
+              </ul>
+            </div>
+          </div>
+        `;
         confirmBtn.disabled = false;
         confirmBtn.style.opacity = '1';
         modal.querySelector('#pubCancelBtn').disabled = false;

@@ -180,7 +180,7 @@ describe('Integration: Safe GitHub Publishing Workflow (Release 0.5)', () => {
       return { permissions: { push: true } };
     });
 
-    writeClient.setTransport(async (url) => {
+    const transportSpy = vi.fn().mockImplementation(async (url) => {
       if (url.includes('/git/refs')) {
         return { ok: true, status: 201, json: async () => ({ ref: 'refs/heads/feature-branch' }) };
       }
@@ -196,6 +196,7 @@ describe('Integration: Safe GitHub Publishing Workflow (Release 0.5)', () => {
         }),
       };
     });
+    writeClient.setTransport(transportSpy);
 
     const review = await coordinator.startPublication(doc.id);
     expect(review.success).toBe(true);
@@ -210,5 +211,106 @@ describe('Integration: Safe GitHub Publishing Workflow (Release 0.5)', () => {
     expect(publishResult.success).toBe(true);
     expect(publishResult.prResult).toBeDefined();
     expect(publishResult.prResult.number).toBe(1);
+
+    // Verify /git/refs WAS called with refs/heads/feature-branch
+    expect(transportSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/git/refs'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          ref: 'refs/heads/feature-branch',
+          sha: 'commit_base_sha',
+        }),
+      })
+    );
+  });
+
+  it('direct publish (no working branch) never calls /git/refs endpoint', async () => {
+    const doc = {
+      id: 'doc_direct_only',
+      revision: 1,
+      content: '# Direct Publish Only',
+      state: 'MODIFIED',
+      remoteMetadata: {
+        owner: 'devspirehub',
+        repo: 'specs',
+        branch: 'main',
+        path: 'specs/direct.md',
+        baseCommitSha: 'commit_base_sha',
+        baseBlobSha: 'blob_base_sha',
+        baseContent: '# Initial',
+      },
+    };
+    mockStateManager.documents.set(doc.id, doc);
+
+    mockClient.get.mockImplementation(async (url) => {
+      if (url.includes('ref=commit_direct_sha')) return { sha: 'blob_direct_sha', type: 'file' };
+      if (url.includes('/contents/')) return { sha: 'blob_base_sha', type: 'file' };
+      if (url.includes('/commits/')) return { sha: 'commit_direct_sha', html_url: 'https://github.com/devspirehub/specs/commit/commit_direct_sha' };
+      return { permissions: { push: true } };
+    });
+
+    const transportSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        commit: { sha: 'commit_direct_sha' },
+        content: { sha: 'blob_direct_sha' },
+      }),
+    });
+    writeClient.setTransport(transportSpy);
+
+    const review = await coordinator.startPublication(doc.id);
+    expect(review.success).toBe(true);
+
+    // Confirm without workingBranch
+    const res = await coordinator.confirmPublication({
+      attemptId: review.attemptId,
+      commitMessage: 'docs: update directly on main branch',
+      workingBranch: null, // No working branch
+    });
+
+    expect(res.success).toBe(true);
+
+    // Ensure /git/refs was NEVER called
+    const gitRefsCalls = transportSpy.mock.calls.filter(([url]) => url.includes('/git/refs'));
+    expect(gitRefsCalls).toHaveLength(0);
+  });
+
+  it('rejects confirmation before calling /git/refs if working branch name is invalid', async () => {
+    const doc = {
+      id: 'doc_invalid_branch',
+      revision: 1,
+      content: '# Invalid Branch Draft',
+      state: 'MODIFIED',
+      remoteMetadata: {
+        owner: 'devspirehub',
+        repo: 'specs',
+        branch: 'main',
+        path: 'specs/doc.md',
+        baseCommitSha: 'commit_base_sha',
+        baseBlobSha: 'blob_base_sha',
+        baseContent: '# Old',
+      },
+    };
+    mockStateManager.documents.set(doc.id, doc);
+
+    mockClient.get.mockImplementation(async () => ({ permissions: { push: true } }));
+    const transportSpy = vi.fn();
+    writeClient.setTransport(transportSpy);
+
+    const review = await coordinator.startPublication(doc.id);
+    expect(review.success).toBe(true);
+
+    // Invalid branch name with spaces and refs/heads prefix
+    await expect(
+      coordinator.confirmPublication({
+        attemptId: review.attemptId,
+        commitMessage: 'docs: test invalid branch',
+        workingBranch: 'refs/heads/invalid branch name',
+      })
+    ).rejects.toThrowError(/Invalid working branch name/);
+
+    expect(transportSpy).not.toHaveBeenCalled();
   });
 });

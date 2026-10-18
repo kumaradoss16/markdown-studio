@@ -1,7 +1,7 @@
 import { ErrorCode, StudioError, redactSensitiveData } from './error-service.js';
 import { PublicationState, PublicationStateMachine, OutcomeState } from './publication-state.js';
 import { publicationPreflightService } from './publication-preflight-service.js';
-import { gitHubWriteClient } from './github-write-client.js';
+import { gitHubWriteClient, validateBranchName, isValidCommitSha } from './github-write-client.js';
 import { publicationOutcomeVerifier } from './publication-outcome-verifier.js';
 import { publicationRecordService } from './publication-record-service.js';
 import { documentStateManager } from '../core/document-state-manager.js';
@@ -195,6 +195,20 @@ export class PublicationCoordinator {
     try {
       // Milestone G: Working branch workflow
       if (workingBranch && workingBranch.trim()) {
+        const cleanBranch = workingBranch.trim();
+        const branchValidation = validateBranchName(cleanBranch);
+        if (!branchValidation.valid) {
+          throw new StudioError(ErrorCode.INVALID_INPUT, `Invalid working branch name: ${branchValidation.error}`);
+        }
+
+        const targetBaseSha = snapshot.destination.currentBranchSha || snapshot.destination.baseCommitSha;
+        if (!targetBaseSha || !isValidCommitSha(targetBaseSha)) {
+          throw new StudioError(
+            ErrorCode.PREFLIGHT_FAILED,
+            `Cannot create working branch "${cleanBranch}": Base commit SHA is missing or invalid from remote preflight. Please refresh remote state and retry.`
+          );
+        }
+
         const branchTicket = {
           attemptId,
           issuedAt: new Date().toISOString(),
@@ -204,10 +218,10 @@ export class PublicationCoordinator {
           ticket: branchTicket,
           owner: snapshot.destination.owner,
           repo: snapshot.destination.repo,
-          branchName: workingBranch.trim(),
-          baseCommitSha: snapshot.destination.currentBranchSha || snapshot.destination.baseCommitSha,
+          branchName: cleanBranch,
+          baseCommitSha: targetBaseSha,
         });
-        targetBranch = workingBranch.trim();
+        targetBranch = cleanBranch;
       }
 
       // Publish file via GitHub Contents API
