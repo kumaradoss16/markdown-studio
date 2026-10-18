@@ -103,6 +103,10 @@ Calculations for 2.4 RPM rotational gravity and centrifugal station keeping.
     this.virtualStorage.set('ExampleVault/Flashcard Demo.md', '# Flashcard Demo\nSpaced repetition documentation.');
     this.virtualStorage.set('ExampleVault/Mission Briefing.md', '# Mission Briefing\nPrimary orbital deployment objectives.');
     this.virtualStorage.set('ExampleVault/Mission Log.md', '# Mission Log\nTimestamped expedition logs.');
+    this.virtualStorage.set('ExampleVault/embeds/telemetry-card.html', '<div class="metric-card"><span>Active Telemetry</span></div>');
+    this.virtualStorage.set('ExampleVault/embeds/Embed Showcase.md', '# Embed Showcase\nDemonstrating embedded HTML cards and telemetry widgets.');
+    this.virtualStorage.set('ExampleVault/images/habitat-render.png', 'PNG_BINARY_MOCK');
+    this.virtualStorage.set('ExampleVault/audio/mission-log.mp3', 'MP3_AUDIO_MOCK');
 
     for (const [path, content] of this.virtualStorage.entries()) {
       this.fileMetadata.set(path, {

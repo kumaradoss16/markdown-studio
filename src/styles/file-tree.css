@@ -1,0 +1,157 @@
+/* ==========================================================================
+   File Tree Explorer Component Styles (VS Code / Dark IDE Aesthetic)
+   ========================================================================== */
+
+.file-tree-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  outline: none;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-size: 12px;
+  line-height: 1.4;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.file-tree-container:focus-visible {
+  outline: 1px solid rgba(56, 189, 248, 0.3);
+  outline-offset: -1px;
+}
+
+.file-tree-loading,
+.file-tree-empty,
+.file-tree-error {
+  padding: 12px 14px;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748B);
+  font-style: italic;
+}
+
+.file-tree-error {
+  color: var(--color-accent-rose, #F43F5E);
+}
+
+/* Tree Item Row */
+.tree-item {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  min-height: 26px;
+  padding-right: 8px;
+  gap: 5px;
+  color: var(--color-text-secondary, #94A3B8);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background-color 0.1s ease, color 0.1s ease;
+  position: relative;
+}
+
+.tree-item:hover {
+  background-color: var(--color-surface-hover, #1C2433);
+  color: var(--color-text-primary, #F1F5F9);
+}
+
+/* Active File Selection */
+.tree-item.active {
+  background-color: #0E2A38;
+  color: #38BDF8;
+  border-left-color: #38BDF8;
+  font-weight: 500;
+}
+
+/* Keyboard Focused Item */
+.tree-item.focused {
+  outline: 1px dotted #38BDF8;
+  outline-offset: -1px;
+  background-color: rgba(56, 189, 248, 0.08);
+}
+
+.tree-item.active.focused {
+  outline: 1px solid #38BDF8;
+}
+
+/* Chevron */
+.tree-chevron-container {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted, #64748B);
+}
+
+.tree-chevron {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+}
+
+.tree-chevron.rotated {
+  transform: rotate(90deg);
+}
+
+.tree-chevron-placeholder {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Icon Container */
+.tree-icon-container {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tree-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Label */
+.tree-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 2px;
+}
+
+/* More Options Button (···) */
+.tree-item-more-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted, #64748B);
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--radius-xs, 2px);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.1s ease, color 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-item:hover .tree-item-more-btn,
+.tree-item.focused .tree-item-more-btn {
+  opacity: 0.8;
+}
+
+.tree-item-more-btn:hover {
+  opacity: 1 !important;
+  background-color: var(--color-surface-active, #222D40);
+  color: var(--color-text-primary, #F1F5F9);
+}
+
+/* Child node container for expand/collapse */
+.tree-children {
+  display: flex;
+  flex-direction: column;
+}

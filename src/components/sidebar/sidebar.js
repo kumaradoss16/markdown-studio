@@ -2,6 +2,7 @@ import { workspaceManager } from '../../core/workspace-manager.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { fileSystemService } from '../../services/filesystem-service.js';
 import { GraphViewComponent } from './graph-view.js';
+import { FileTreeComponent } from '../file-tree/file-tree.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 
 export class SidebarComponent {
@@ -101,35 +102,12 @@ export class SidebarComponent {
           </div>
         </div>
 
-        <!-- Folders -->
-        <div class="sidebar-section">
-          <div class="folder-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span>audio</span>
+        <!-- File Tree Explorer -->
+        <div class="sidebar-section file-tree-section">
+          <div class="sidebar-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Filesystem</span>
           </div>
-          <div class="folder-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span>embeds</span>
-          </div>
-          <div class="folder-content">
-            <div class="sidebar-item" data-path="ExampleVault/embeds/telemetry-card.html" data-name="telemetry-card.html">
-              <span style="font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-teal);">&lt;&gt;</span>
-              <span>telemetry-card.html</span>
-              <button class="item-more-btn" title="More options" data-path="ExampleVault/embeds/telemetry-card.html" data-name="telemetry-card.html">···</button>
-            </div>
-            <div class="sidebar-item" data-path="ExampleVault/embeds/Embed Showcase.md" data-name="Embed Showcase.md">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-              <span>Embed Showcase.md</span>
-              <button class="item-more-btn" title="More options" data-path="ExampleVault/embeds/Embed Showcase.md" data-name="Embed Showcase.md">···</button>
-            </div>
-          </div>
-          <div class="folder-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span>images</span>
-          </div>
+          <div id="sidebarFileTreeMount"></div>
         </div>
 
         <!-- Knowledge Base -->
@@ -169,6 +147,13 @@ export class SidebarComponent {
         <span>${workspaceManager.getVaultName()} / <strong style="color: var(--color-text-primary);">${activeDoc ? activeDoc.name.replace('.md', '') : 'Habitat Design'}</strong></span>
       </div>
     `;
+
+    // Render File Tree Explorer
+    const fileTreeMount = this.container.querySelector('#sidebarFileTreeMount');
+    if (fileTreeMount) {
+      this.fileTree = new FileTreeComponent(fileTreeMount);
+      this.fileTree.render();
+    }
 
     // Render Graph View
     const graphContainer = this.container.querySelector('#sidebarGraphViewContainer');
