@@ -97,6 +97,23 @@ export class PublicationPreflightService {
       return true;
     } catch (err) {
       if (err instanceof StudioError) throw err;
+      if (err.status === 401 || err.code === ErrorCode.AUTH_REQUIRED || err.code === ErrorCode.AUTH_EXPIRED) {
+        throw new StudioError(ErrorCode.AUTH_REQUIRED, 'GitHub authorization expired or invalid. Please reconnect your account.', err);
+      }
+      if (err.status === 403 || err.code === ErrorCode.PERMISSION_DENIED) {
+        throw new StudioError(
+          ErrorCode.UNAUTHORIZED_WRITE,
+          `Access to repository "${owner}/${repo}" was denied (403). Ensure your token has access to this repository and write permissions.`,
+          err
+        );
+      }
+      if (err.status === 404 || err.code === ErrorCode.NOT_FOUND || String(err.message).includes('404')) {
+        throw new StudioError(
+          ErrorCode.NOT_FOUND,
+          `Repository "${owner}/${repo}" not found (404). Verify the repository exists and ensure your token has been granted repository access.`,
+          err
+        );
+      }
       throw new StudioError(ErrorCode.AUTH_REQUIRED, `Failed to verify authorization for ${owner}/${repo}: ${err.message}`, err);
     }
   }

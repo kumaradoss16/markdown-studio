@@ -110,6 +110,129 @@ describe('GitHubWriteClient (Release 0.5)', () => {
     }
   });
 
+  describe('publishFile & Contents API Error Mapping', () => {
+    it('maps HTTP 403 with PAT scope error to UNAUTHORIZED_WRITE without dumping raw JSON', async () => {
+      const ticket = { attemptId: 'att_403_pat', consumed: false };
+      const rawGitHubError = JSON.stringify({
+        message: 'Resource not accessible by personal access token',
+        documentation_url: 'https://docs.github.com/rest/repos/contents#create-or-update-file-contents',
+        status: '403',
+      });
+
+      mockTransport.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => rawGitHubError,
+      });
+
+      try {
+        await writeClient.publishFile({
+          ticket,
+          owner: 'kumaradoss16',
+          repo: 'linux',
+          path: 'README.md',
+          branch: 'main',
+          content: '# Linux',
+          sha: 'blob_current_sha',
+          isNewFile: false,
+        });
+        expect.fail('Should have thrown UNAUTHORIZED_WRITE StudioError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(StudioError);
+        expect(err.code).toBe(ErrorCode.UNAUTHORIZED_WRITE);
+        expect(err.message).toContain('Personal Access Token lacks write permission');
+        expect(err.message).toContain('Contents: Read and write');
+        expect(err.message).toContain('kumaradoss16/linux');
+        // Invariant 16: Zero raw JSON leakage in primary user-facing message
+        expect(err.message).not.toContain('documentation_url');
+        expect(err.message).not.toContain('{"message":');
+        expect(err.details?.hint).toBe('PAT_CONTENTS_WRITE_REQUIRED');
+        expect(err.details?.status).toBe(403);
+      }
+    });
+
+    it('maps HTTP 401 to AUTH_REQUIRED with reconnect instruction', async () => {
+      const ticket = { attemptId: 'att_401_pub', consumed: false };
+      mockTransport.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ message: 'Bad credentials' }),
+      });
+
+      try {
+        await writeClient.publishFile({
+          ticket,
+          owner: 'kumaradoss16',
+          repo: 'linux',
+          path: 'README.md',
+          branch: 'main',
+          content: '# Linux',
+          sha: 'blob_current_sha',
+          isNewFile: false,
+        });
+        expect.fail('Should have thrown AUTH_REQUIRED StudioError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(StudioError);
+        expect(err.code).toBe(ErrorCode.AUTH_REQUIRED);
+        expect(err.message).toContain('reconnect');
+      }
+    });
+
+    it('maps HTTP 404 to NOT_FOUND with permission guidance', async () => {
+      const ticket = { attemptId: 'att_404_pub', consumed: false };
+      mockTransport.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () => JSON.stringify({ message: 'Not Found' }),
+      });
+
+      try {
+        await writeClient.publishFile({
+          ticket,
+          owner: 'kumaradoss16',
+          repo: 'linux',
+          path: 'README.md',
+          branch: 'main',
+          content: '# Linux',
+          sha: 'blob_current_sha',
+          isNewFile: false,
+        });
+        expect.fail('Should have thrown NOT_FOUND StudioError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(StudioError);
+        expect(err.code).toBe(ErrorCode.NOT_FOUND);
+        expect(err.message).toContain('not found (404)');
+      }
+    });
+  });
+
+  describe('createPullRequest Error Mapping', () => {
+    it('maps HTTP 403 on pull request creation to UNAUTHORIZED_WRITE with PR scope hint', async () => {
+      mockTransport.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => JSON.stringify({ message: 'Resource not accessible by personal access token' }),
+      });
+
+      try {
+        await writeClient.createPullRequest({
+          owner: 'kumaradoss16',
+          repo: 'linux',
+          title: 'Update README',
+          body: 'PR body',
+          head: 'patch-1',
+          base: 'main',
+        });
+        expect.fail('Should have thrown UNAUTHORIZED_WRITE StudioError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(StudioError);
+        expect(err.code).toBe(ErrorCode.UNAUTHORIZED_WRITE);
+        expect(err.message).toContain('Pull requests: Read and write');
+        expect(err.details?.hint).toBe('PAT_PR_WRITE_REQUIRED');
+      }
+    });
+  });
+
   describe('createBranch & Working Branch Hardening', () => {
     const validSha = 'a1b2c3d4e5f678901234567890abcdef12345678';
 

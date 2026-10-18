@@ -62,6 +62,24 @@ describe('PublicationPreflightService (Release 0.5)', () => {
     await expect(preflightService.verifyAuthorization('owner', 'repo')).rejects.toThrow(
       StudioError
     );
+
+    // HTTP 404
+    mockClient.get.mockRejectedValueOnce({ status: 404, message: 'Not Found' });
+    await expect(preflightService.verifyAuthorization('owner', 'repo')).rejects.toMatchObject({
+      code: ErrorCode.NOT_FOUND,
+    });
+
+    // HTTP 401
+    mockClient.get.mockRejectedValueOnce({ status: 401, message: 'Bad credentials' });
+    await expect(preflightService.verifyAuthorization('owner', 'repo')).rejects.toMatchObject({
+      code: ErrorCode.AUTH_REQUIRED,
+    });
+
+    // HTTP 403
+    mockClient.get.mockRejectedValueOnce({ status: 403, message: 'Must have push access' });
+    await expect(preflightService.verifyAuthorization('owner', 'repo')).rejects.toMatchObject({
+      code: ErrorCode.UNAUTHORIZED_WRITE,
+    });
   });
 
   it('detects STALE_BASE when remote branch has advanced', async () => {

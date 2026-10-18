@@ -1,5 +1,7 @@
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
 import { validateBranchName } from '../../services/github-write-client.js';
+import { gitHubAuthService } from '../../services/github-auth-service.js';
+import { ErrorCode } from '../../services/error-service.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { diffModalComponent } from './diff-modal.js';
 import { revisionComparisonService } from '../../services/revision-comparison-service.js';
@@ -101,7 +103,7 @@ export class PublishModalComponent {
               <span>Publish to a new working branch instead of directly to <strong>${dest.branch}</strong></span>
             </label>
             <div class="publish-hint-text">
-              Requires a GitHub token with <strong>Contents: Read and write</strong> (fine-grained) or <strong>repo</strong> (classic) permissions.
+              Direct publishing and working-branch creation both require a GitHub token with <strong>Contents: Read and write</strong> (fine-grained) or <strong>repo</strong> (classic) permissions.
             </div>
           </div>
 
@@ -268,19 +270,112 @@ export class PublishModalComponent {
         }
       } catch (pubErr) {
         statusBox.className = 'publish-status-box error';
+
+        const isAuthError = pubErr.code === ErrorCode.AUTH_REQUIRED || pubErr.code === ErrorCode.AUTH_EXPIRED || pubErr.details?.status === 401;
+        const isPatScopeError = pubErr.details?.hint === 'PAT_CONTENTS_WRITE_REQUIRED' || 
+          pubErr.message?.includes('Resource not accessible by personal access token') ||
+          pubErr.message?.includes('lacks write permission');
+        const isPermissionDenied = pubErr.code === ErrorCode.UNAUTHORIZED_WRITE || pubErr.details?.status === 403;
+        const isNotFound = pubErr.code === ErrorCode.NOT_FOUND || pubErr.details?.status === 404;
+
+        let errorTitle = 'Publication Error';
+        if (isAuthError) {
+          errorTitle = 'Authentication Required (401)';
+        } else if (isPatScopeError || isPermissionDenied) {
+          errorTitle = 'Permission Denied — Cannot Write to GitHub (403)';
+        } else if (isNotFound) {
+          errorTitle = 'Repository or Branch Not Found (404)';
+        }
+
+        const isWorkingBranchActive = Boolean(workingBranchCheckbox?.checked);
+        const isBranchRefFailure = pubErr.details?.branch !== undefined || pubErr.message?.includes('creating branch') || pubErr.message?.includes('create branch');
+
         statusBox.innerHTML = `
           <div class="publish-error-box">
-            <div class="publish-error-msg"><strong>Publication Error:</strong> ${this.escapeHtml(pubErr.message)}</div>
+            <div class="publish-error-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <strong>${this.escapeHtml(errorTitle)}</strong>
+            </div>
+            <div class="publish-error-context">
+              <span>Target: <code>${this.escapeHtml(dest.owner)}/${this.escapeHtml(dest.repo)}</code></span>
+              <span>Branch: <code>${this.escapeHtml(dest.branch)}</code></span>
+              <span>Path: <code>${this.escapeHtml(dest.path)}</code></span>
+            </div>
+            <div class="publish-error-msg">${this.escapeHtml(pubErr.message)}</div>
             <div class="publish-error-actions">
-              <span>Suggested next steps:</span>
-              <ul>
-                <li>Verify your GitHub token has <strong>Contents: Read and write</strong> (fine-grained) or <strong>repo</strong> (classic) permissions.</li>
-                <li>Confirm the repository <code>${this.escapeHtml(dest.owner)}/${this.escapeHtml(dest.repo)}</code> exists and is accessible.</li>
-                <li>Or uncheck <em>"Publish to a new working branch"</em> to commit directly to <strong>${this.escapeHtml(dest.branch)}</strong>.</li>
-              </ul>
+              <div style="font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">Resolution Steps:</div>
+              <ol style="margin: 0 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 4px;">
+                ${isPatScopeError || isPermissionDenied ? `
+                  <li>Update your GitHub Personal Access Token in <strong>GitHub Settings → Developer settings → Personal access tokens</strong>:
+                    <ul>
+                      <li><strong>Fine-grained PAT:</strong> Set <em>Resource owner</em> to <code>${this.escapeHtml(dest.owner)}</code>, ensure <em>Repository access</em> includes <code>${this.escapeHtml(dest.repo)}</code>, and grant <strong>Contents: Read and write</strong> (plus <strong>Pull requests: Read and write</strong> if opening PRs).</li>
+                      <li><strong>Classic PAT:</strong> Ensure the <strong>repo</strong> scope is checked.</li>
+                    </ul>
+                  </li>
+                  <li>Click <strong>Reconnect GitHub</strong> below to enter your updated token (your local draft is preserved).</li>
+                  <li>Click <strong>Publish Changes</strong> to complete publication.</li>
+                ` : isAuthError ? `
+                  <li>Your GitHub authorization token has expired or is invalid.</li>
+                  <li>Click <strong>Reconnect GitHub</strong> below to enter a valid token.</li>
+                  <li>Click <strong>Publish Changes</strong> to retry.</li>
+                ` : isNotFound ? `
+                  <li>Verify that repository <code>${this.escapeHtml(dest.owner)}/${this.escapeHtml(dest.repo)}</code> exists and that your account has access to it.</li>
+                  <li>If using a Fine-grained PAT with <em>"Only select repositories"</em>, ensure this repository is explicitly selected.</li>
+                ` : `
+                  <li>Review the error message above and verify network connectivity and repository state.</li>
+                `}
+                ${isWorkingBranchActive && isBranchRefFailure ? `
+                  <li>Or uncheck <em>"Publish to a new working branch"</em> if you have direct commit access to <strong>${this.escapeHtml(dest.branch)}</strong>.</li>
+                ` : ''}
+              </ol>
+            </div>
+            <div class="publish-error-cta" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+              <button type="button" class="diff-btn secondary" id="pubInlineReconnectBtn" style="padding: 5px 12px; font-size: 11px;">
+                🔑 Reconnect GitHub
+              </button>
+              <span id="pubReconnectStatus" style="font-size: 11px; color: #38bdf8; display: none;"></span>
             </div>
           </div>
         `;
+
+        const reconnectBtn = statusBox.querySelector('#pubInlineReconnectBtn');
+        const reconnectStatus = statusBox.querySelector('#pubReconnectStatus');
+
+        reconnectBtn?.addEventListener('click', async () => {
+          const defaultPrompt =
+            'Enter your updated GitHub Personal Access Token:\n\n' +
+            '• Fine-grained PAT: Ensure Repository Access includes ' + dest.owner + '/' + dest.repo + ', and Permissions include "Contents: Read and write" (and "Pull requests: Read and write" for PRs).\n' +
+            '• Classic PAT: Select the "repo" scope.\n\n' +
+            'Paste your token:';
+          const token = prompt(defaultPrompt);
+          if (token && token.trim()) {
+            reconnectBtn.disabled = true;
+            if (reconnectStatus) {
+              reconnectStatus.style.display = 'inline';
+              reconnectStatus.textContent = 'Authenticating token...';
+            }
+            try {
+              const user = await gitHubAuthService.authenticateWithToken(token.trim());
+              if (reconnectStatus) {
+                reconnectStatus.style.color = '#34d399';
+                reconnectStatus.textContent = `✓ Authenticated as @${user.login}. Click "Publish Changes" to retry.`;
+              }
+              confirmBtn.disabled = false;
+              confirmBtn.style.opacity = '1';
+            } catch (authErr) {
+              if (reconnectStatus) {
+                reconnectStatus.style.color = '#f43f5e';
+                reconnectStatus.textContent = `Authentication failed: ${authErr.message}`;
+              }
+              reconnectBtn.disabled = false;
+            }
+          }
+        });
+
         confirmBtn.disabled = false;
         confirmBtn.style.opacity = '1';
         modal.querySelector('#pubCancelBtn').disabled = false;

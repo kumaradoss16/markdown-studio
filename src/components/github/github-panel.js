@@ -46,11 +46,14 @@ export class GitHubPanelComponent {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
             </svg>
-            <span>GitHub Read & Draft</span>
+            <span>GitHub Integration</span>
           </div>
           <button class="github-connect-btn" id="githubConnectBtn">
             <span>Connect GitHub Identity</span>
           </button>
+          <div class="github-auth-hint">
+            Requires a PAT with <strong>Contents: Read and write</strong> (fine-grained) or <strong>repo</strong> (classic) for publishing changes.
+          </div>
         </div>
       `;
 
@@ -68,9 +71,10 @@ export class GitHubPanelComponent {
             <span class="github-dot connected"></span>
             <span class="github-username">@${user.login}</span>
           </div>
-          <button class="github-disconnect-btn" id="githubDisconnectBtn" title="Disconnect GitHub identity">
-            Disconnect
-          </button>
+          <div class="github-account-actions">
+            <button class="github-action-btn" id="githubUpdateTokenBtn" title="Update or renew token permissions">Update Token</button>
+            <button class="github-disconnect-btn" id="githubDisconnectBtn" title="Disconnect GitHub identity">Disconnect</button>
+          </div>
         </div>
 
         <div class="github-selectors">
@@ -124,6 +128,10 @@ export class GitHubPanelComponent {
   }
 
   attachEvents() {
+    this.container.querySelector('#githubUpdateTokenBtn')?.addEventListener('click', async () => {
+      await this.promptTokenAuth('Update your GitHub Personal Access Token:\n\n• Fine-grained PAT: Ensure Repository Access includes target repos, and Permissions include "Contents: Read and write" (and "Pull requests: Read and write" if opening PRs).\n• Classic PAT: Select the "repo" scope.\n\nEnter updated token:');
+    });
+
     this.container.querySelector('#githubDisconnectBtn')?.addEventListener('click', async () => {
       if (confirm('Disconnect GitHub identity? Local drafts will remain preserved.')) {
         await gitHubAuthService.disconnect();
@@ -168,11 +176,17 @@ export class GitHubPanelComponent {
     });
   }
 
-  async promptTokenAuth() {
-    const token = prompt('Enter your GitHub Personal Access Token (read-only scopes: repo or contents:read):');
-    if (token) {
+  async promptTokenAuth(customMessage = null) {
+    const defaultPrompt =
+      'Enter your GitHub Personal Access Token:\n\n' +
+      '• Fine-grained PAT: Ensure Repository Access includes target repos, and Permissions include "Contents: Read and write" (and "Pull requests: Read and write" if opening PRs).\n' +
+      '• Classic PAT: Select the "repo" scope.\n\n' +
+      'Paste your token below:';
+    const message = customMessage || defaultPrompt;
+    const token = prompt(message);
+    if (token && token.trim()) {
       try {
-        await gitHubAuthService.authenticateWithToken(token);
+        await gitHubAuthService.authenticateWithToken(token.trim());
       } catch (err) {
         alert(`Authentication failed: ${err.message}`);
       }

@@ -99,4 +99,32 @@ describe('GitHub Authentication & Credential Storage (Release 0.4)', () => {
       expect(await store.hasCredential()).toBe(false);
     });
   });
+
+  describe('GitHub Panel Auth UX (Publish Permissions Guidance)', () => {
+    it('prompts user with write token guidance and does not claim read-only is sufficient', async () => {
+      const { GitHubPanelComponent } = await import('../../src/components/github/github-panel.js');
+      const container = document.createElement('div');
+      const panel = new GitHubPanelComponent(container);
+
+      await panel.render();
+      const html = container.innerHTML;
+
+      // Ensure read-only wording is NOT in signed out UI
+      expect(html).not.toContain('read-only');
+      expect(html).toContain('Contents: Read and write');
+      expect(html).toContain('repo');
+
+      // Verify promptTokenAuth uses write-capable guidance
+      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
+      await panel.promptTokenAuth();
+
+      expect(promptSpy).toHaveBeenCalled();
+      const promptArg = promptSpy.mock.calls[0][0];
+      expect(promptArg).not.toContain('read-only');
+      expect(promptArg).toContain('Contents: Read and write');
+      expect(promptArg).toContain('repo');
+
+      promptSpy.mockRestore();
+    });
+  });
 });

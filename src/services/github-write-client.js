@@ -219,26 +219,57 @@ export class GitHubWriteClient {
         );
       }
 
-      if (response.status === 401 || response.status === 403) {
-        const errText = await response.text();
+      if (response.status === 401) {
+        let errText = '';
+        try { errText = await response.text(); } catch (_) {}
+        throw new StudioError(
+          ErrorCode.AUTH_REQUIRED,
+          'GitHub authentication failed (401). Your token is invalid, expired, or revoked. Please reconnect your GitHub identity.',
+          { status: 401, detail: redactSensitiveData(errText) }
+        );
+      }
+
+      if (response.status === 403) {
+        let errText = '';
+        try { errText = await response.text(); } catch (_) {}
+        const isPatMissingScope = errText.includes('Resource not accessible by personal access token');
+        const userMsg = isPatMissingScope
+          ? `GitHub write permission denied (403): Personal Access Token lacks write permission for "${owner}/${repo}". Please reconnect with a token granted "Contents: Read and write" for this repository (or "repo" scope for Classic PAT).`
+          : `GitHub permission denied (403) while publishing to "${owner}/${repo}". Ensure your account has push access and your token has "Contents: Read and write" (or "repo") permissions.`;
+        
         throw new StudioError(
           ErrorCode.UNAUTHORIZED_WRITE,
-          `GitHub permission denied (${response.status}): ${redactSensitiveData(errText)}`
+          userMsg,
+          {
+            status: 403,
+            hint: isPatMissingScope ? 'PAT_CONTENTS_WRITE_REQUIRED' : 'PERMISSION_DENIED',
+            githubMessage: isPatMissingScope ? 'Resource not accessible by personal access token' : 'Permission denied',
+            owner,
+            repo,
+            path,
+            branch,
+            rawDetail: redactSensitiveData(errText),
+          }
         );
       }
 
       if (response.status === 404) {
+        let errText = '';
+        try { errText = await response.text(); } catch (_) {}
         throw new StudioError(
           ErrorCode.NOT_FOUND,
-          `Target repository or branch "${owner}/${repo}:${branch}" not found.`
+          `Target repository, branch, or file "${owner}/${repo}:${branch}" not found (404). Note that GitHub also returns 404 if your token lacks repository access permissions.`,
+          { status: 404, detail: redactSensitiveData(errText) }
         );
       }
 
       if (!response.ok) {
-        const errText = await response.text();
+        let errText = '';
+        try { errText = await response.text(); } catch (_) {}
         throw new StudioError(
           ErrorCode.WRITE_FAILED,
-          `GitHub publish failed with status ${response.status}: ${redactSensitiveData(errText)}`
+          `GitHub publish failed with HTTP status ${response.status} on "${owner}/${repo}".`,
+          { status: response.status, detail: redactSensitiveData(errText) }
         );
       }
 
@@ -374,10 +405,22 @@ export class GitHubWriteClient {
         try {
           errDetail = await response.text();
         } catch (_) {}
+        const isPatMissingScope = errDetail.includes('Resource not accessible by personal access token');
+        const userMsg = isPatMissingScope
+          ? `Permission denied (403) when creating branch on "${cleanOwner}/${cleanRepo}". Personal Access Token lacks write permission. Please ensure your token has "Contents: Read and write" (or "repo" scope).`
+          : `Permission denied (403) when creating branch on "${cleanOwner}/${cleanRepo}". Ensure your account has push access and your token has "Contents: Read and write" (or "repo") permissions.`;
         throw new StudioError(
           ErrorCode.UNAUTHORIZED_WRITE,
-          `Permission denied (403) when creating branch on "${cleanOwner}/${cleanRepo}". Ensure your personal access token has "Contents: Read and write" (or "repo") permissions.`,
-          redactSensitiveData(errDetail)
+          userMsg,
+          {
+            status: 403,
+            hint: isPatMissingScope ? 'PAT_CONTENTS_WRITE_REQUIRED' : 'PERMISSION_DENIED',
+            githubMessage: isPatMissingScope ? 'Resource not accessible by personal access token' : 'Permission denied',
+            owner: cleanOwner,
+            repo: cleanRepo,
+            branch: cleanBranch,
+            rawDetail: redactSensitiveData(errDetail),
+          }
         );
       }
 
@@ -477,9 +520,41 @@ export class GitHubWriteClient {
 
       clearTimeout(timeoutId);
 
+      if (response.status === 401) {
+        throw new StudioError(
+          ErrorCode.AUTH_REQUIRED,
+          'GitHub authentication failed (401). Your token is invalid or expired. Re-authenticate and try again.'
+        );
+      }
+
+      if (response.status === 403) {
+        let errText = '';
+        try { errText = await response.text(); } catch (_) {}
+        const isPatMissingScope = errText.includes('Resource not accessible by personal access token');
+        const userMsg = isPatMissingScope
+          ? `Permission denied (403) when creating pull request on "${owner}/${repo}". Personal Access Token lacks PR permissions. Please ensure your token has "Pull requests: Read and write" (or "repo" scope) permissions.`
+          : `Permission denied (403) when creating pull request on "${owner}/${repo}". Ensure your token has "Pull requests: Read and write" (or "repo") permissions.`;
+        throw new StudioError(
+          ErrorCode.UNAUTHORIZED_WRITE,
+          userMsg,
+          {
+            status: 403,
+            hint: isPatMissingScope ? 'PAT_PR_WRITE_REQUIRED' : 'PERMISSION_DENIED',
+            owner,
+            repo,
+            rawDetail: redactSensitiveData(errText),
+          }
+        );
+      }
+
       if (!response.ok) {
-        const errText = await response.text();
-        throw new StudioError(ErrorCode.WRITE_FAILED, `Pull request creation failed (${response.status}): ${redactSensitiveData(errText)}`);
+        let errText = '';
+        try { errText = await response.text(); } catch (_) {}
+        throw new StudioError(
+          ErrorCode.WRITE_FAILED,
+          `Pull request creation failed (${response.status}) on "${owner}/${repo}".`,
+          { status: response.status, detail: redactSensitiveData(errText) }
+        );
       }
 
       return await response.json();
