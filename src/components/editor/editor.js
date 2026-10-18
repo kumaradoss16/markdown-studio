@@ -9,6 +9,11 @@ import { saveCoordinator } from '../../core/save-coordinator.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { EditorCommandMenuController } from './slash-menu.js';
 import { formattingKeymap, toggleInlineFormat, applyBlockFormat } from '../../features/editor/commands/formatting.js';
+import { remoteDraftService } from '../../services/remote-draft-service.js';
+import { revisionComparisonService } from '../../services/revision-comparison-service.js';
+import { publicationCoordinator } from '../../services/publication-coordinator.js';
+import { diffModalComponent } from '../github/diff-modal.js';
+import '../github/publish-modal.js';
 
 export class EditorComponent {
   constructor(container) {
@@ -31,6 +36,10 @@ export class EditorComponent {
     });
     eventBus.on(AppEvents.EDITOR_JUMP_TO_LINE, ({ line, col }) => {
       this.jumpToLine(line, col);
+    });
+    eventBus.on(AppEvents.GITHUB_DRAFT_REFRESHED, () => {
+      const active = documentStateManager.getActiveDocument();
+      this.updateRemoteBanner(active);
     });
   }
 
@@ -152,6 +161,7 @@ export class EditorComponent {
           </button>
         </div>
       </div>
+      <div id="editorRemoteDraftBanner" class="remote-draft-banner" style="display: none;"></div>
       <div class="cm-host" id="cmHost"></div>
     `;
 
@@ -244,6 +254,115 @@ export class EditorComponent {
         parent: cmHost,
       });
     }
+
+    this.updateRemoteBanner(doc);
+  }
+
+  updateRemoteBanner(doc) {
+    const banner = this.container.querySelector('#editorRemoteDraftBanner');
+    if (!banner) return;
+
+    if (!doc || !remoteDraftService.isRemoteDraft(doc)) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    const meta = doc.remoteMetadata;
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div class="remote-draft-provenance">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+        </svg>
+        <span class="remote-badge-repo">${meta.owner}/${meta.repo}</span>
+        <span class="remote-badge-branch">${meta.branch}</span>
+        <span class="remote-badge-commit">base: ${meta.baseCommitSha.slice(0, 7)}</span>
+      </div>
+      <div class="remote-draft-actions">
+        <span class="remote-status-badge ${meta.relationshipState.toLowerCase()}">
+          ${meta.relationshipState.replace(/_/g, ' ')}
+        </span>
+        <button class="remote-banner-btn" id="remoteRefreshBtn" title="Fetch latest remote revision and compare">
+          ↻ Refresh
+        </button>
+        <button class="remote-banner-btn" id="remoteDiffBtn" title="Inspect 3-way differences and stale base status">
+          ⇄ Diff
+        </button>
+        <button class="remote-banner-btn publish" id="remotePublishBtn" title="Publish reviewed changes to GitHub">
+          ⬆ Publish
+        </button>
+      </div>
+    `;
+
+    banner.querySelector('#remoteRefreshBtn')?.addEventListener('click', async () => {
+      try {
+        const comp = await revisionComparisonService.refreshDraft(doc.id);
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'info',
+          message: `Refreshed remote status: ${comp.classification}`,
+        });
+      } catch (err) {
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'error',
+          message: `Refresh failed: ${err.message}`,
+        });
+      }
+    });
+
+    banner.querySelector('#remoteDiffBtn')?.addEventListener('click', async () => {
+      try {
+        const comp = await revisionComparisonService.refreshDraft(doc.id);
+        eventBus.emit(AppEvents.GITHUB_DIFF_REQUESTED, { doc, comparison: comp });
+      } catch (err) {
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'error',
+          message: `Could not compare revisions: ${err.message}`,
+        });
+      }
+    });
+
+    banner.querySelector('#remotePublishBtn')?.addEventListener('click', async () => {
+      try {
+        const pubBtn = banner.querySelector('#remotePublishBtn');
+        if (pubBtn) {
+          pubBtn.disabled = true;
+          pubBtn.textContent = '...';
+        }
+        const result = await publicationCoordinator.startPublication(doc.id);
+        if (pubBtn) {
+          pubBtn.disabled = false;
+          pubBtn.textContent = '⬆ Publish';
+        }
+
+        if (result.isStaleBase) {
+          eventBus.emit(AppEvents.NOTIFICATION, {
+            type: 'warning',
+            message: `Stale base detected: ${result.details?.staleReason || 'Remote branch moved'}. Open Diff to resolve.`,
+          });
+          const comp = await revisionComparisonService.refreshDraft(doc.id);
+          diffModalComponent.show(doc, comp);
+          return;
+        }
+
+        if (result.success && result.snapshot) {
+          eventBus.emit('publication:open_review', {
+            doc,
+            snapshot: result.snapshot,
+            attemptId: result.attemptId,
+          });
+        }
+      } catch (err) {
+        const pubBtn = banner.querySelector('#remotePublishBtn');
+        if (pubBtn) {
+          pubBtn.disabled = false;
+          pubBtn.textContent = '⬆ Publish';
+        }
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'error',
+          message: `Publication preflight failed: ${err.message}`,
+        });
+      }
+    });
   }
 
   insertText(prefix, suffix = '') {

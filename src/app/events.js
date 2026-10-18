@@ -65,6 +65,9 @@ export const AppEvents = {
   NOTIFICATION: 'ui:notification',
   DIALOG_OPEN: 'ui:dialog_open',
   DIALOG_CLOSE: 'ui:dialog_close',
+  GITHUB_AUTH_CHANGED: 'github:auth_changed',
+  GITHUB_DRAFT_REFRESHED: 'github:draft_refreshed',
+  GITHUB_DIFF_REQUESTED: 'github:diff_requested',
 };
 
 export const eventBus = new EventEmitter();

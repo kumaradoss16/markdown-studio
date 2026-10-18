@@ -9,9 +9,17 @@ import { DialogsComponent } from '../components/dialogs/dialogs.js';
 import { fileSystemService } from '../services/filesystem-service.js';
 import { documentStateManager } from '../core/document-state-manager.js';
 import { saveCoordinator } from '../core/save-coordinator.js';
+import { gitHubAuthService } from '../services/github-auth-service.js';
+import { publicationCoordinator } from '../services/publication-coordinator.js';
+import '../components/github/diff-modal.js';
+import '../components/github/publish-modal.js';
 import { AppEvents, eventBus } from './events.js';
 
 export async function bootstrapApp(rootElement) {
+  // Restore GitHub session if stored
+  gitHubAuthService.restoreSession().catch((e) => console.warn('Could not restore GitHub session:', e));
+  // Reconcile any in-flight/uncertain publication attempts from previous crashes (Invariant 17)
+  publicationCoordinator.recoverPendingAttempts().catch((e) => console.warn('Publication recovery error:', e));
   // 0. Restore saved theme and font preferences
   try {
     const savedTheme = localStorage.getItem('devspirehub:theme');

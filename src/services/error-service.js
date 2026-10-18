@@ -11,8 +11,40 @@ export const ErrorCode = {
   WRITE_FAILED: 'WRITE_FAILED',
   INVALID_ENCODING: 'INVALID_ENCODING',
   SAVE_ABORTED: 'SAVE_ABORTED',
+  AUTH_REQUIRED: 'AUTH_REQUIRED',
+  AUTH_EXPIRED: 'AUTH_EXPIRED',
+  RATE_LIMITED: 'RATE_LIMITED',
+  NETWORK_UNAVAILABLE: 'NETWORK_UNAVAILABLE',
+  TIMEOUT: 'TIMEOUT',
+  STALE_BASE: 'STALE_BASE',
+  PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
+  SECURE_STORE_UNAVAILABLE: 'SECURE_STORE_UNAVAILABLE',
+  PUBLISHING_DISABLED: 'PUBLISHING_DISABLED',
+  CONFLICT_DETECTED: 'CONFLICT_DETECTED',
+  OUTCOME_UNCERTAIN: 'OUTCOME_UNCERTAIN',
+  VERIFICATION_FAILED: 'VERIFICATION_FAILED',
+  INVALID_DESTINATION: 'INVALID_DESTINATION',
+  UNAUTHORIZED_WRITE: 'UNAUTHORIZED_WRITE',
+  PREFLIGHT_FAILED: 'PREFLIGHT_FAILED',
+  UNREVIEWED_CHANGE: 'UNREVIEWED_CHANGE',
   UNKNOWN: 'UNKNOWN',
 };
+
+/**
+ * Redacts tokens, keys, and authorization secrets from strings.
+ * @param {string} text
+ * @returns {string}
+ */
+export function redactSensitiveData(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/(bearer\s+)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED]')
+    .replace(/(ghp_[a-zA-Z0-9]{36})/g, '[REDACTED_TOKEN]')
+    .replace(/(github_pat_[a-zA-Z0-9_]{50,})/g, '[REDACTED_PAT]')
+    .replace(/(token\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
+    .replace(/(code_verifier\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
+    .replace(/(client_secret\s*=\s*)[^\s&]+/gi, '$1[REDACTED]');
+}
 
 export class StudioError extends Error {
   /**

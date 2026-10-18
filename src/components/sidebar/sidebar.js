@@ -3,6 +3,7 @@ import { documentStateManager } from '../../core/document-state-manager.js';
 import { fileSystemService } from '../../services/filesystem-service.js';
 import { GraphViewComponent } from './graph-view.js';
 import { FileTreeComponent } from '../file-tree/file-tree.js';
+import { GitHubPanelComponent } from '../github/github-panel.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 
 export class SidebarComponent {
@@ -139,6 +140,14 @@ export class SidebarComponent {
           </div>
         </div>
 
+        <!-- GitHub Explorer Section (Release 0.4) -->
+        <div class="sidebar-section github-panel-section">
+          <div class="sidebar-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>GitHub Workspace</span>
+          </div>
+          <div id="sidebarGitHubMount"></div>
+        </div>
+
         <!-- Graph View Container -->
         <div id="sidebarGraphViewContainer"></div>
       </div>
@@ -153,6 +162,13 @@ export class SidebarComponent {
     if (fileTreeMount) {
       this.fileTree = new FileTreeComponent(fileTreeMount);
       this.fileTree.render();
+    }
+
+    // Render GitHub Explorer Panel
+    const gitHubMount = this.container.querySelector('#sidebarGitHubMount');
+    if (gitHubMount) {
+      this.gitHubPanel = new GitHubPanelComponent(gitHubMount);
+      this.gitHubPanel.render();
     }
 
     // Render Graph View

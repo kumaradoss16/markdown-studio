@@ -56,6 +56,7 @@ export class CrashRecoveryManager {
       content: doc.content,
       revision: doc.revision,
       timestamp: Date.now(),
+      remoteMetadata: doc.remoteMetadata || null,
     };
     this.saveJournal(journal);
   }
@@ -81,6 +82,9 @@ export class CrashRecoveryManager {
     const recoveries = this.getPendingRecoveries();
     for (const item of recoveries) {
       const doc = documentStateManager.createDocument(item.name, item.content, item.path);
+      if (item.remoteMetadata) {
+        doc.remoteMetadata = item.remoteMetadata;
+      }
       // Mark as restored dirty draft
       documentStateManager.updateContent(doc.id, item.content);
     }
