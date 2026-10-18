@@ -26,13 +26,15 @@ export class PreviewComponent {
       <div class="preview-header">
         <div class="preview-status-indicator">
           <span class="indicator-dot"></span>
-          <span>LIVE RENDERED DOCUMENT</span>
+          <span class="status-mono-text">LIVE RENDERED DOCUMENT</span>
         </div>
         <div class="preview-tools-group">
           <span class="parser-badge">PARSER: GFM + LATEX</span>
-          <button class="header-btn" id="previewExportBtn" title="Export HTML / Markdown">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          <button class="preview-export-btn" id="previewExportBtn" title="Export HTML / Markdown">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
           </button>
         </div>

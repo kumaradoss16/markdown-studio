@@ -45,9 +45,24 @@
   --color-status-error: #f43f5e;
 
   /* Fonts & Typography Stack */
-  --font-ui: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif;
   --font-editor: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', Consolas, monospace;
   --font-preview: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-toolbar-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif;
+  --font-toolbar-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+
+  /* Ribbon Sub-Header Toolbar Tokens */
+  --toolbar-height: 38px;
+  --color-toolbar-bg: #11161B;
+  --color-toolbar-border: #1E2630;
+  --color-toolbar-divider: #26323E;
+  --color-toolbar-text-resting: #9CA3AF;
+  --color-toolbar-text-hover: #E5E7EB;
+  --color-toolbar-btn-hover-bg: rgba(255, 255, 255, 0.05);
+  --color-toolbar-active-color: #38BDF8;
+  --color-toolbar-active-bg: #0E2A38;
+  --color-toolbar-active-border: #1E4E63;
+  --color-live-indicator: #10B981;
 
   /* Typography Scale */
   --font-size-label: 12px;

@@ -1,56 +1,131 @@
 /* Editor & CodeMirror Styling */
 
 .editor-header-toolbar {
-  height: 36px;
-  background-color: var(--color-surface-base);
-  border-bottom: 1px solid var(--color-border-subtle);
+  height: var(--toolbar-height, 38px);
+  background-color: var(--color-toolbar-bg, #11161B);
+  border-bottom: 1px solid var(--color-toolbar-border, #1E2630);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
+  padding: 0 12px;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--font-toolbar-ui);
 }
 
 .editor-tools-group {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
 }
 
 .tool-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--color-text-secondary);
-  font-family: var(--font-editor);
-  font-size: 11px;
-  font-weight: 600;
+  color: var(--color-toolbar-text-resting, #9CA3AF);
+  font-family: var(--font-toolbar-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   padding: 3px 6px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-xs, 4px);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 24px;
+  gap: 5px;
+  min-width: 26px;
+  height: 26px;
+  line-height: 1;
+  transition: all 0.15s ease;
 }
 
 .tool-btn:hover {
-  background-color: var(--color-surface-hover);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-default);
+  background-color: var(--color-toolbar-btn-hover-bg, rgba(255, 255, 255, 0.05));
+  color: var(--color-toolbar-text-hover, #E5E7EB);
+  border-color: transparent;
 }
 
 .tool-btn.active {
-  background-color: rgba(0, 229, 255, 0.12);
-  border-color: var(--color-accent-cyan);
-  color: var(--color-accent-cyan);
+  background-color: var(--color-toolbar-active-bg, #0E2A38);
+  border: 1px solid var(--color-toolbar-active-border, #1E4E63);
+  color: var(--color-toolbar-active-color, #38BDF8);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.12);
+}
+
+.tool-btn svg {
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool-glyph {
+  font-family: var(--font-toolbar-ui);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  letter-spacing: -0.02em;
+}
+
+.tool-sub {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 1px;
+  color: var(--color-accent-sky, #38BDF8);
+}
+
+.tool-btn.tool-pill {
+  padding: 3px 9px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tool-btn.tool-pill.toc {
+  color: #38BDF8;
+  background-color: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.tool-btn.tool-pill.toc:hover {
+  color: #7DD3FC;
+  background-color: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.tool-btn.tool-pill.templates {
+  color: #C084FC;
+  background-color: rgba(192, 132, 252, 0.08);
+  border-color: rgba(192, 132, 252, 0.25);
+}
+
+.tool-btn.tool-pill.templates:hover {
+  color: #E9D5FF;
+  background-color: rgba(192, 132, 252, 0.16);
+  border-color: rgba(192, 132, 252, 0.45);
+}
+
+.tool-badge-text {
+  font-family: var(--font-toolbar-mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .tool-separator {
   width: 1px;
   height: 16px;
-  background-color: var(--color-border-subtle);
+  background-color: var(--color-toolbar-divider, #26323E);
   margin: 0 4px;
+  flex-shrink: 0;
 }
 
 /* CodeMirror Host Container */
