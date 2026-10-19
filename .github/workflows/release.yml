@@ -1,0 +1,71 @@
+name: Release Packaging & Distribution
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  preflight-verification:
+    name: Mandatory Pre-flight Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Static Analysis Lint Gate
+        run: npm run lint
+
+      - name: Run Test Suite
+        run: npm test
+
+      - name: Run Documentation QA Check
+        run: npm run qa:ci
+
+      - name: Build Web Application Bundle
+        run: npm run build
+
+      - name: Generate Checksums
+        run: node scripts/generate-checksums.js dist dist/checksums.txt
+
+      - name: Upload Checksums Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-checksums
+          path: dist/checksums.txt
+
+  draft-release:
+    name: Draft GitHub Release
+    needs: [preflight-verification]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Checksums Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-checksums
+          path: ./dist
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: false
+          files: |
+            dist/checksums.txt
+          generate_release_notes: true

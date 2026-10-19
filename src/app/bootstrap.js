@@ -14,6 +14,8 @@ import { publicationCoordinator } from '../services/publication-coordinator.js';
 import { accentService } from '../services/accent-service.js';
 import { workspaceStore } from '../services/workspace-store.js';
 import { graphIndexService } from '../services/graph-index-service.js';
+import { crashRecoveryManager } from '../core/recovery-manager.js';
+import { redactSensitiveData } from '../services/error-service.js';
 import '../components/github/diff-modal.js';
 import '../components/github/publish-modal.js';
 import '../components/history/history-panel.js';
@@ -21,9 +23,19 @@ import '../components/history/history-diff-modal.js';
 import { AppEvents, eventBus } from './events.js';
 
 export async function bootstrapApp(rootElement) {
-  // Initialize Knowledge Graph auto-sync & indexing
-  graphIndexService.initAutoSync();
-  graphIndexService.buildGraph().catch(e => console.warn('Initial graph indexing error:', e));
+  // Global error boundary & sanitized diagnostic capture
+  window.addEventListener('error', (event) => {
+    const sanitizedMsg = redactSensitiveData(event.message || 'An unexpected error occurred.');
+    console.error('[STUDIO ERROR BOUNDARY]', sanitizedMsg);
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    const sanitizedMsg = redactSensitiveData(event.reason?.message || String(event.reason || 'Unhandled promise rejection'));
+    console.error('[STUDIO REJECTION BOUNDARY]', sanitizedMsg);
+  });
+
+  // Start continuous crash recovery snapshot journaling
+  crashRecoveryManager.startPeriodicJournaling(3000);
+
   // Restore GitHub session if stored
   gitHubAuthService.restoreSession().catch((e) => console.warn('Could not restore GitHub session:', e));
   // Reconcile any in-flight/uncertain publication attempts from previous crashes (Invariant 17)
@@ -93,6 +105,19 @@ export async function bootstrapApp(rootElement) {
     }
   }
 
+  // Check for any ungraceful shutdown crash recoveries
+  if (crashRecoveryManager.hasPendingRecoveries()) {
+    const recoveredCount = crashRecoveryManager.restorePendingEntries();
+    if (recoveredCount > 0) {
+      setTimeout(() => {
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'info',
+          message: `Restored ${recoveredCount} unsaved draft(s) from crash recovery journal.`
+        });
+      }, 500);
+    }
+  }
+
   // 4. Mount subcomponents
   new SidebarComponent(sidebarContainer).render();
   new DocumentTabsComponent(tabsContainer).render();
@@ -100,6 +125,12 @@ export async function bootstrapApp(rootElement) {
   new PreviewComponent(previewContainer).render();
   new StatusBarComponent(statusBarContainer).render();
   new DialogsComponent(document.body);
+
+  // Defer non-essential knowledge graph indexing until after initial paint & UI mount
+  setTimeout(() => {
+    graphIndexService.initAutoSync();
+    graphIndexService.buildGraph().catch((e) => console.warn('Initial graph indexing error:', e));
+  }, 100);
 
   // 5. Global Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {

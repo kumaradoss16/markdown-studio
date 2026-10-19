@@ -1,12 +1,13 @@
 {
   "name": "devspirehub-markdown-studio",
   "private": true,
-  "version": "0.7.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "lint": "node scripts/lint-check.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "qa": "node scripts/run-docs-qa.js",
@@ -35,5 +36,9 @@
     "puppeteer-core": "^25.14.0",
     "vite": "^6.2.0",
     "vitest": "^3.0.7"
+  },
+  "overrides": {
+    "tinypool": "^2.2.0",
+    "@vitest/mocker": "^4.1.12"
   }
 }

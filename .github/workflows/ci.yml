@@ -1,0 +1,64 @@
+name: Release Quality Gate & CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-audit:
+    name: Lint, Security & Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint Quality Gate & Static Analysis
+        run: npm run lint
+
+      - name: Production Dependency Audit
+        run: npm audit --omit=dev
+
+  test-and-qa:
+    name: Test Suite & Documentation QA
+    runs-on: ${{ matrix.os }}
+    needs: [lint-and-audit]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Full Vitest Test Suite
+        run: npm test
+
+      - name: Run CI Blocking Documentation QA
+        run: npm run qa:ci
+
+      - name: Verify Production Vite Build
+        run: npm run build

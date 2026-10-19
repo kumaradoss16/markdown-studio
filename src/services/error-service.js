@@ -35,19 +35,58 @@ export const ErrorCode = {
 };
 
 /**
- * Redacts tokens, keys, and authorization secrets from strings.
+ * Redacts tokens, keys, authorization secrets, and local user filesystem structures.
  * @param {string} text
  * @returns {string}
  */
 export function redactSensitiveData(text) {
   if (typeof text !== 'string') return text;
   return text
+    // Redact tokens and credentials
     .replace(/(bearer\s+)[a-zA-Z0-9_\-\.]{8,}/gi, '$1[REDACTED]')
     .replace(/((?:ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9_]{16,})/gi, '[REDACTED_TOKEN]')
     .replace(/(github_pat_[a-zA-Z0-9_]{20,})/gi, '[REDACTED_PAT]')
     .replace(/(token\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
     .replace(/(code_verifier\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
-    .replace(/(client_secret\s*=\s*)[^\s&]+/gi, '$1[REDACTED]');
+    .replace(/(client_secret\s*=\s*)[^\s&]+/gi, '$1[REDACTED]')
+    .replace(/(authorization\s*:\s*)[^\r\n,]+/gi, '$1[REDACTED]')
+    .replace(/(https?:\/\/)[^:]+:[^@]+@/gi, '$1[REDACTED_AUTH]@')
+    // Redact system user home directory structures
+    .replace(/([a-zA-Z]:[/\\]Users[/\\])[^/\\\s"']+/gi, '$1[REDACTED_USER]')
+    .replace(/(\/Users\/)[^/\s"']+/gi, '$1[REDACTED_USER]')
+    .replace(/(\/home\/)[^/\s"']+/gi, '$1[REDACTED_USER]');
+}
+
+/**
+ * Sanitizes an object or string before logging, removing content bodies and secrets.
+ * @param {any} data
+ * @returns {any}
+ */
+export function sanitizeLogData(data) {
+  if (data === null || data === undefined) return data;
+  if (typeof data === 'string') return redactSensitiveData(data);
+  if (typeof data === 'number' || typeof data === 'boolean') return data;
+  if (Array.isArray(data)) return data.map(sanitizeLogData);
+  if (typeof data === 'object') {
+    const sanitized = {};
+    for (const [k, v] of Object.entries(data)) {
+      const lowerKey = k.toLowerCase();
+      if (
+        lowerKey.includes('token') ||
+        lowerKey.includes('secret') ||
+        lowerKey.includes('password') ||
+        lowerKey.includes('authorization')
+      ) {
+        sanitized[k] = '[REDACTED]';
+      } else if (lowerKey === 'content' || lowerKey === 'body') {
+        sanitized[k] = typeof v === 'string' ? `[REDACTED_BODY: ${v.length} chars]` : '[REDACTED_BODY]';
+      } else {
+        sanitized[k] = sanitizeLogData(v);
+      }
+    }
+    return sanitized;
+  }
+  return data;
 }
 
 export class StudioError extends Error {

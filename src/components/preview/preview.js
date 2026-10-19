@@ -1,10 +1,12 @@
 import { markdownPipeline } from '../../services/markdown-pipeline.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { AppEvents, eventBus } from '../../app/events.js';
+import { resolveWorkspacePath } from '../../services/project-link-checker.js';
 
 export class PreviewComponent {
   constructor(container) {
     this.container = container;
+    this.renderTimer = null;
     this.setupListeners();
   }
 
@@ -12,11 +14,15 @@ export class PreviewComponent {
     eventBus.on(AppEvents.DOCUMENT_CHANGED, (doc) => {
       const active = documentStateManager.getActiveDocument();
       if (active && active.id === doc.id) {
-        this.renderPreview(doc);
+        if (this.renderTimer) clearTimeout(this.renderTimer);
+        this.renderTimer = setTimeout(() => {
+          this.renderPreview(doc);
+        }, 80);
       }
     });
 
     eventBus.on(AppEvents.DOCUMENT_ACTIVATED, (doc) => {
+      if (this.renderTimer) clearTimeout(this.renderTimer);
       this.renderPreview(doc);
     });
   }
@@ -192,27 +198,63 @@ export class PreviewComponent {
       `;
     }
 
-    // Attach wiki-link clicks
-    scrollArea.querySelectorAll('.wiki-link').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const target = decodeURIComponent(link.getAttribute('data-wiki-target') || '');
-        const targetFile = `ExampleVault/${target}.md`;
-        documentStateManager.openDocument(targetFile, `# ${target}\n\nLinked document for ${target}.`, targetFile);
-      });
-    });
-
-    // Attach internal anchor link scrolling (e.g. from TOC)
-    scrollArea.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    // Intercept all links to enforce protocol lockdown and prevent unauthorized webview navigation
+    scrollArea.querySelectorAll('a').forEach(anchor => {
       anchor.addEventListener('click', (e) => {
-        const href = anchor.getAttribute('href');
-        if (href && href.length > 1) {
+        const href = anchor.getAttribute('href') || '';
+        const wikiTarget = anchor.getAttribute('data-wiki-target');
+
+        // 1. Wiki-links
+        if (anchor.classList.contains('wiki-link') || wikiTarget) {
+          e.preventDefault();
+          const target = decodeURIComponent(wikiTarget || href || '').trim();
+          const targetFile = target.endsWith('.md') ? target : `${target}.md`;
+          documentStateManager.openDocument(targetFile, `# ${target}\n\nLinked document for ${target}.`, targetFile);
+          return;
+        }
+
+        // 2. Internal fragment anchor (#heading)
+        if (href.startsWith('#')) {
+          e.preventDefault();
           const targetId = href.slice(1);
           const targetEl = scrollArea.querySelector(`#${targetId}`);
           if (targetEl) {
-            e.preventDefault();
             targetEl.scrollIntoView({ behavior: 'smooth' });
           }
+          return;
+        }
+
+        const lowerHref = href.trim().toLowerCase();
+
+        // 3. Disallow dangerous or arbitrary execution schemes
+        if (
+          lowerHref.startsWith('javascript:') ||
+          lowerHref.startsWith('data:') ||
+          lowerHref.startsWith('vbscript:') ||
+          lowerHref.startsWith('file:')
+        ) {
+          e.preventDefault();
+          eventBus.emit(AppEvents.NOTIFICATION, {
+            type: 'error',
+            message: `Blocked unsafe link protocol: "${href.split(':')[0]}:"`
+          });
+          return;
+        }
+
+        // 4. Remote web links (http / https) -> open in system browser safely
+        if (lowerHref.startsWith('http://') || lowerHref.startsWith('https://')) {
+          e.preventDefault();
+          window.open(href, '_blank', 'noopener,noreferrer');
+          return;
+        }
+
+        // 5. Relative markdown links (.md or local doc)
+        if (lowerHref.endsWith('.md') || !lowerHref.includes(':')) {
+          e.preventDefault();
+          const activeDoc = documentStateManager.getActiveDocument();
+          const sourcePath = activeDoc ? activeDoc.path : '';
+          const { resolved } = resolveWorkspacePath(sourcePath, href);
+          documentStateManager.openDocument(resolved, `# ${href.replace(/\.md$/i, '')}\n`, resolved);
         }
       });
     });

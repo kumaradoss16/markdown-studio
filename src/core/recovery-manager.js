@@ -2,6 +2,7 @@ import { AppEvents, eventBus } from '../app/events.js';
 import { documentStateManager, DocumentState } from './document-state-manager.js';
 
 const JOURNAL_STORAGE_KEY = 'devspirehub:recovery:journal';
+const JOURNAL_BACKUP_KEY = 'devspirehub:recovery:last_backup';
 
 /**
  * CrashRecoveryManager provides write-ahead snapshot journaling in local storage
@@ -10,6 +11,7 @@ const JOURNAL_STORAGE_KEY = 'devspirehub:recovery:journal';
 export class CrashRecoveryManager {
   constructor(storage = (typeof localStorage !== 'undefined' ? localStorage : null)) {
     this.storage = storage;
+    this.timer = null;
     this.setupListeners();
   }
 
@@ -25,6 +27,33 @@ export class CrashRecoveryManager {
     eventBus.on(AppEvents.DOCUMENT_CLOSED, ({ id }) => {
       this.clearJournalEntry(id);
     });
+  }
+
+  startPeriodicJournaling(intervalMs = 3000) {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = setInterval(() => {
+      this.snapshotAllDirtyDocuments();
+    }, intervalMs);
+  }
+
+  stopPeriodicJournaling() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  snapshotAllDirtyDocuments() {
+    try {
+      const openDocs = documentStateManager.getOpenDocuments();
+      for (const doc of openDocs) {
+        if (doc && doc.state === DocumentState.DIRTY) {
+          this.recordJournalEntry(doc);
+        }
+      }
+    } catch (e) {
+      console.warn('Error during periodic document snapshotting:', e);
+    }
   }
 
   getJournal() {
@@ -78,18 +107,49 @@ export class CrashRecoveryManager {
     return Object.values(this.getJournal());
   }
 
+  /**
+   * Restores pending crash journal entries safely into document state manager.
+   * Creates a non-destructive backup in local storage before clearing the journal.
+   * @returns {number} Count of successfully restored documents
+   */
   restorePendingEntries() {
     const recoveries = this.getPendingRecoveries();
-    for (const item of recoveries) {
-      const doc = documentStateManager.createDocument(item.name, item.content, item.path);
-      if (item.remoteMetadata) {
-        doc.remoteMetadata = item.remoteMetadata;
+    if (recoveries.length === 0) return 0;
+
+    // Preserve non-destructive copy of journal
+    if (this.storage) {
+      try {
+        const raw = this.storage.getItem(JOURNAL_STORAGE_KEY);
+        if (raw) this.storage.setItem(JOURNAL_BACKUP_KEY, raw);
+      } catch (err) {
+        console.warn('Failed to preserve recovery backup:', err);
       }
-      // Mark as restored dirty draft
-      documentStateManager.updateContent(doc.id, item.content);
     }
+
+    let restoredCount = 0;
+    for (const item of recoveries) {
+      try {
+        if (!item || !item.name) continue;
+        const existing = documentStateManager.getOpenDocuments().find(d => d.path === item.path);
+        if (existing) {
+          if (existing.content !== item.content) {
+            documentStateManager.updateContent(existing.id, item.content);
+          }
+        } else {
+          const doc = documentStateManager.createDocument(item.name, item.content || '', item.path || '');
+          if (item.remoteMetadata) {
+            doc.remoteMetadata = item.remoteMetadata;
+          }
+          documentStateManager.updateContent(doc.id, item.content || '');
+        }
+        restoredCount++;
+      } catch (err) {
+        console.warn('Failed restoring specific journal entry:', item, err);
+      }
+    }
+
     this.clearAll();
-    return recoveries.length;
+    return restoredCount;
   }
 
   clearAll() {
