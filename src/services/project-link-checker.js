@@ -171,13 +171,41 @@ export class ProjectLinkChecker {
             continue;
           }
 
-          // Check remote availability
+          // Check remote availability with SSRF redirect protection
           try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), remoteTimeoutMs);
-            const res = await fetch(link.href, { method: 'HEAD', signal: controller.signal });
+            const res = await fetch(link.href, {
+              method: 'HEAD',
+              redirect: 'manual',
+              signal: controller.signal
+            });
             clearTimeout(timer);
-            if (!res.ok && res.status >= 400) {
+
+            // Guard against SSRF redirect bypass (HTTP 301/302/307/308)
+            if (res.status >= 300 && res.status < 400) {
+              const locationHeader = res.headers.get('Location');
+              if (locationHeader) {
+                try {
+                  const redirectUrl = new URL(locationHeader, link.href);
+                  if (isPrivateNetworkHost(redirectUrl.hostname)) {
+                    diagnostics.push({
+                      id: `diag-RULE_SSRF_BLOCKED-${docPath}-${link.line}`,
+                      ruleId: RuleId.PATH_TRAVERSAL,
+                      severity: DiagnosticSeverity.ERROR,
+                      file: docPath,
+                      line: link.line,
+                      column: 1,
+                      message: `Remote URL "${link.href}" redirects to restricted private host "${redirectUrl.hostname}" (SSRF Protection).`,
+                      target: link.raw
+                    });
+                    continue;
+                  }
+                } catch {
+                  // Fall through
+                }
+              }
+            } else if (!res.ok && res.status >= 400) {
               diagnostics.push({
                 id: `diag-RULE_BROKEN_REMOTE_LINK-${docPath}-${link.line}`,
                 ruleId: 'RULE_BROKEN_REMOTE_LINK',

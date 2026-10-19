@@ -30,13 +30,48 @@ impl SafeWriter {
         format!("{:x}", hasher.finalize())
     }
 
-    /// Validates that a path does not contain traversal attempts.
+    /// Validates that a path does not contain traversal attempts and avoids sensitive OS paths.
     pub fn validate_path(path_str: &str) -> Result<PathBuf, String> {
-        let path = PathBuf::from(path_str);
-        if path_str.contains("..") {
+        if path_str.trim().is_empty() {
+            return Err("Path cannot be empty.".to_string());
+        }
+
+        // Prohibit null bytes and traversal tokens
+        if path_str.contains('\0') || path_str.contains("..") {
             return Err("Path traversal attempt detected.".to_string());
         }
-        Ok(path)
+
+        // Prohibit Windows UNC paths (e.g. \\server\share) to avoid SMB/NTLM credential leak
+        if path_str.starts_with(r"\\") || path_str.starts_with("//") {
+            return Err("UNC network paths are prohibited.".to_string());
+        }
+
+        let normalized = path_str.replace('\\', "/").to_lowercase();
+
+        // Prohibit access to sensitive OS system directories
+        let prohibited_prefixes = [
+            "/etc", "/proc", "/sys", "/dev", "/boot", "/root",
+            "c:/windows", "c:/winnt", "c:/program files", "c:/program files (x86)",
+            "c:/programdata",
+        ];
+
+        for prefix in &prohibited_prefixes {
+            if normalized.starts_with(prefix) {
+                return Err(format!("Access to system directory is prohibited: {}", path_str));
+            }
+        }
+
+        // Prohibit accessing sensitive user credential directories
+        let sensitive_segments = [
+            "/.ssh", "/.gnupg", "/.aws", "/.azure", "/.kube", "/.docker", "/.git/config"
+        ];
+        for seg in &sensitive_segments {
+            if normalized.contains(seg) || normalized.ends_with(&seg[1..]) {
+                return Err("Access to sensitive security directory is prohibited.".to_string());
+            }
+        }
+
+        Ok(PathBuf::from(path_str))
     }
 
     /// Reads a file and returns its content, metadata, and hash.
@@ -161,6 +196,10 @@ mod tests {
         assert!(SafeWriter::validate_path("../secret.txt").is_err());
         assert!(SafeWriter::validate_path("vault/../../passwords").is_err());
         assert!(SafeWriter::validate_path("vault/safe_doc.md").is_ok());
+        assert!(SafeWriter::validate_path("/etc/passwd").is_err());
+        assert!(SafeWriter::validate_path(r"C:\Windows\System32\cmd.exe").is_err());
+        assert!(SafeWriter::validate_path(r"\\evil.corp\share").is_err());
+        assert!(SafeWriter::validate_path("user/.ssh/id_rsa").is_err());
     }
 
     #[test]

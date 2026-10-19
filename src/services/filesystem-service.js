@@ -118,13 +118,18 @@ Calculations for 2.4 RPM rotational gravity and centrifugal station keeping.
   }
 
   computeSimpleHash(str) {
-    let hash = 0;
+    if (!str || typeof str !== 'string') return 'fnv0';
+    // 64-bit FNV-1a hash implementation for high collision resistance
+    let h1 = 0x811c9dc5;
+    let h2 = 0xcbf29ce4;
     for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash |= 0;
+      const c = str.charCodeAt(i);
+      h1 ^= c;
+      h1 = Math.imul(h1, 0x01000193);
+      h2 ^= (c << 1) | (c >>> 7);
+      h2 = Math.imul(h2, 0x5bd1e995);
     }
-    return 'h' + Math.abs(hash).toString(16);
+    return 'fnv-' + (h1 >>> 0).toString(16) + (h2 >>> 0).toString(16);
   }
 
   /**

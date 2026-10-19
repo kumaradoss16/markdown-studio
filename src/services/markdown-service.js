@@ -146,8 +146,8 @@ export class MarkdownService {
         'type', 'checked', 'disabled', 'data-wiki-target',
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-      FORBID_TAGS: ['script', 'style', 'iframe', 'frame', 'object', 'embed', 'form'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
+      FORBID_TAGS: ['script', 'style', 'iframe', 'frame', 'object', 'embed', 'form', 'base', 'meta', 'link', 'applet', 'xml', 'template'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'formaction', 'autofocus', 'xlink:href'],
     });
 
     return { html: sanitizedHtml, frontmatter };

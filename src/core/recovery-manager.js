@@ -12,19 +12,25 @@ export class CrashRecoveryManager {
   constructor(storage = (typeof localStorage !== 'undefined' ? localStorage : null)) {
     this.storage = storage;
     this.timer = null;
+    this.changeDebounceTimer = null;
     this.setupListeners();
   }
 
   setupListeners() {
     eventBus.on(AppEvents.DOCUMENT_CHANGED, (doc) => {
-      this.recordJournalEntry(doc);
+      if (this.changeDebounceTimer) clearTimeout(this.changeDebounceTimer);
+      this.changeDebounceTimer = setTimeout(() => {
+        this.recordJournalEntry(doc);
+      }, 1000);
     });
 
     eventBus.on(AppEvents.DOCUMENT_SAVED, (doc) => {
+      if (this.changeDebounceTimer) clearTimeout(this.changeDebounceTimer);
       this.clearJournalEntry(doc.id);
     });
 
     eventBus.on(AppEvents.DOCUMENT_CLOSED, ({ id }) => {
+      if (this.changeDebounceTimer) clearTimeout(this.changeDebounceTimer);
       this.clearJournalEntry(id);
     });
   }

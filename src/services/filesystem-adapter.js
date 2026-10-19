@@ -211,6 +211,22 @@ export class FileSystemAdapter {
   }
 
   /**
+   * Sanitizes item name to prevent path traversal or separator injections.
+   * @param {string} name
+   * @returns {string}
+   */
+  sanitizeItemName(name) {
+    if (!name || typeof name !== 'string') {
+      throw new StudioError(ErrorCode.INVALID_INPUT, 'Name parameter must be a non-empty string.');
+    }
+    const clean = name.trim();
+    if (clean.includes('/') || clean.includes('\\') || clean.includes('..') || clean === '.' || clean.includes('\0')) {
+      throw new StudioError(ErrorCode.PATH_NOT_ALLOWED, 'Item name cannot contain directory separators or traversal sequences.');
+    }
+    return clean;
+  }
+
+  /**
    * Creates a new file under a parent directory.
    * @param {string} parentPath
    * @param {string} fileName
@@ -218,7 +234,8 @@ export class FileSystemAdapter {
    * @returns {Promise<FileNode>}
    */
   async createFile(parentPath, fileName, initialContent = '') {
-    const cleanName = fileName.includes('.') ? fileName : `${fileName}.md`;
+    const safeName = this.sanitizeItemName(fileName);
+    const cleanName = safeName.includes('.') ? safeName : `${safeName}.md`;
     const fullPath = `${parentPath}/${cleanName}`;
     await this.writeFile(fullPath, initialContent || `# ${cleanName.replace(/\.md$/, '')}\n\n`);
 
@@ -238,7 +255,8 @@ export class FileSystemAdapter {
    * @returns {Promise<FileNode>}
    */
   async createDirectory(parentPath, folderName) {
-    const fullPath = `${parentPath}/${folderName.trim()}`;
+    const safeName = this.sanitizeItemName(folderName);
+    const fullPath = `${parentPath}/${safeName}`;
     if (this.runtime === 'tauri') {
       try {
         const { mkdir } = await import('@tauri-apps/plugin-fs');
@@ -253,7 +271,7 @@ export class FileSystemAdapter {
 
     return {
       id: fullPath,
-      name: folderName.trim(),
+      name: safeName,
       path: fullPath,
       type: 'directory',
       isOpen: true,
@@ -267,9 +285,10 @@ export class FileSystemAdapter {
    * @param {string} newName
    */
   async rename(oldPath, newName) {
+    const safeName = this.sanitizeItemName(newName);
     const parts = oldPath.split('/');
     parts.pop();
-    const newPath = `${parts.join('/')}/${newName}`;
+    const newPath = `${parts.join('/')}/${safeName}`;
 
     if (this.runtime === 'tauri') {
       try {
@@ -297,7 +316,7 @@ export class FileSystemAdapter {
       }
     }
 
-    return { oldPath, newPath, name: newName };
+    return { oldPath, newPath, name: safeName };
   }
 
   /**
@@ -305,6 +324,10 @@ export class FileSystemAdapter {
    * @param {string} path
    */
   async delete(path) {
+    if (!path || typeof path !== 'string' || path.includes('..') || path.includes('\0')) {
+      throw new StudioError(ErrorCode.PATH_NOT_ALLOWED, 'Unsafe path specified for deletion.');
+    }
+
     if (this.runtime === 'tauri') {
       try {
         const { remove } = await import('@tauri-apps/plugin-fs');

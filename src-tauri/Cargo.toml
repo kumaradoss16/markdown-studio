@@ -1,6 +1,6 @@
 [package]
 name = "devspirehub-markdown-studio"
-version = "0.5.0"
+version = "1.0.0"
 description = "DevspireHub Markdown Studio - A lightweight, local-first Markdown documentation workspace for desktop"
 authors = ["DevspireHub Team"]
 edition = "2021"

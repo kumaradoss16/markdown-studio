@@ -16,17 +16,54 @@ export class CredentialStore {
   }
 
   /**
-   * Initializes encryption keys for the in-memory vault.
+   * Initializes encryption keys for the vault.
+   * Derives a deterministic origin-bound AES-GCM key using PBKDF2 with an isolated device salt,
+   * ensuring encrypted credentials survive page reloads and process restarts without exposing plaintext.
    */
   async init() {
-    if (this.isInitialized) return;
+    if (this.isInitialized && this.cryptoKey) return;
     try {
       if (typeof crypto !== 'undefined' && crypto.subtle) {
-        this.cryptoKey = await crypto.subtle.generateKey(
-          { name: 'AES-GCM', length: 256 },
-          false, // extractable: false prevents leaking the key
-          ['encrypt', 'decrypt']
-        );
+        let salt = null;
+        if (typeof localStorage !== 'undefined') {
+          salt = localStorage.getItem(`${this.keyName}:salt`);
+          if (!salt) {
+            const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+            salt = btoa(String.fromCharCode(...saltBytes));
+            localStorage.setItem(`${this.keyName}:salt`, salt);
+          }
+        }
+
+        if (salt) {
+          const saltBytes = Uint8Array.from(atob(salt), c => c.charCodeAt(0));
+          const originMaterial = (typeof location !== 'undefined' && location.origin ? location.origin : 'devspirehub-app') + ':credential-vault-v1';
+          const baseKey = await crypto.subtle.importKey(
+            'raw',
+            new TextEncoder().encode(originMaterial),
+            'PBKDF2',
+            false,
+            ['deriveKey']
+          );
+
+          this.cryptoKey = await crypto.subtle.deriveKey(
+            {
+              name: 'PBKDF2',
+              salt: saltBytes,
+              iterations: 100000,
+              hash: 'SHA-256',
+            },
+            baseKey,
+            { name: 'AES-GCM', length: 256 },
+            false, // non-extractable prevents leaking raw key material
+            ['encrypt', 'decrypt']
+          );
+        } else {
+          this.cryptoKey = await crypto.subtle.generateKey(
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+          );
+        }
       }
       this.isInitialized = true;
     } catch (err) {
@@ -170,6 +207,7 @@ export class CredentialStore {
         localStorage.removeItem(`${this.keyName}:iv`);
         localStorage.removeItem(`${this.keyName}:cipher`);
         localStorage.removeItem(`${this.keyName}:user`);
+        localStorage.removeItem(`${this.keyName}:salt`);
       }
     } catch {
       // Ignore

@@ -473,17 +473,29 @@ export class ExportEngine {
       iframe.style.opacity = '0';
       iframe.style.pointerEvents = 'none';
       iframe.setAttribute('aria-hidden', 'true');
+      iframe.setAttribute('sandbox', 'allow-modals allow-same-origin');
       iframe.title = `PDF Print Worker - ${title}`;
 
       document.body.appendChild(iframe);
 
+      let isCleanedUp = false;
+      let safetyTimeout = null;
+
       const cleanup = () => {
+        if (isCleanedUp) return;
+        isCleanedUp = true;
+        if (safetyTimeout) clearTimeout(safetyTimeout);
         setTimeout(() => {
           if (iframe.parentNode) {
             iframe.parentNode.removeChild(iframe);
           }
         }, 1200);
       };
+
+      safetyTimeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('PDF Print operation timed out after 15000ms.'));
+      }, 15000);
 
       iframe.onload = async () => {
         try {
@@ -499,13 +511,14 @@ export class ExportEngine {
             await doc.fonts.ready.catch(() => {});
           }
 
-          // 2. Wait for all images to decode/load
+          // 2. Wait for all images to decode/load with bounded asset timeout
           const images = Array.from(doc.images || []);
           await Promise.all(images.map(img => {
             if (img.complete) return Promise.resolve();
             return new Promise(r => {
-              img.onload = r;
-              img.onerror = r;
+              const timer = setTimeout(r, 3000);
+              img.onload = () => { clearTimeout(timer); r(); };
+              img.onerror = () => { clearTimeout(timer); r(); };
             });
           }));
 
