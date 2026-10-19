@@ -85,4 +85,27 @@ describe('ExportEngine Integration', () => {
     expect(doc.content).toBe(originalContent);
     expect(doc.revision).toBe(5);
   });
+
+  it('syncs selected accent color with export output and enforces 15mm print margins', async () => {
+    const doc = {
+      id: 'doc-accent-test',
+      name: 'accent-report.md',
+      content: '# Accent Test\n\n> Important quote callout\n',
+      revision: 1
+    };
+
+    const res = await engine.exportDocument(doc, {
+      format: ExportFormat.HTML,
+      accent: 'orange'
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.output).toContain('--accent: #f59e0b;');
+    expect(res.output).toContain('@page {');
+    expect(res.output).toContain('margin: 15mm;');
+    expect(res.output).toContain('font-size: 11pt !important;');
+    expect(res.output).toContain('.export-footer');
+    expect(res.output).toContain('display: none !important;');
+  });
 });
+

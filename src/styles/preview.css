@@ -385,15 +385,28 @@
   cursor: pointer;
 }
 
-/* Print & PDF Export Styling */
+/* Print & PDF Export Styling (Standardized to filesystem-lab specifications) */
+@page {
+  margin: 15mm;
+  size: auto;
+}
+
 @media print {
-  body, html {
+  /* Suppress browser/HTML headers, footers, and margins */
+  html, body {
     background: #ffffff !important;
-    color: #1e293b !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
     height: auto !important;
     overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
+  /* Hide application shell chrome, overlays, toolbar ribbon, modals, and decorations */
   .app-header,
   .workspace-sidebar,
   .editor-pane,
@@ -401,10 +414,21 @@
   .app-status-bar,
   .preview-header,
   .modal-overlay,
-  .toast-container {
+  .toast-container,
+  .export-footer,
+  .floating-format-toolbar,
+  .slash-menu-popup,
+  .tag-pill,
+  .pane-splitter,
+  .diff-overlay,
+  .history-panel-drawer,
+  .qa-floating-badge {
     display: none !important;
+    visibility: hidden !important;
   }
 
+  /* Reset layout containers to flow naturally on print page */
+  .app-root,
   .workspace-container,
   .main-workspace,
   .dual-split-pane,
@@ -418,36 +442,81 @@
     background: transparent !important;
     padding: 0 !important;
     margin: 0 !important;
+    box-shadow: none !important;
   }
 
   .preview-content {
-    color: #0f172a !important;
+    color: #000000 !important;
     max-width: 100% !important;
-    padding: 20px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
   }
 
+  /* Clean headings without unwanted breaks */
   .preview-content h1,
   .preview-content h2,
-  .preview-content h3 {
-    color: #0f172a !important;
+  .preview-content h3,
+  .preview-content h4,
+  .preview-content h5,
+  .preview-content h6 {
+    color: #000000 !important;
     border-bottom: 1px solid #cbd5e1 !important;
+    page-break-after: avoid;
+    break-after: avoid;
   }
 
-  .preview-content code {
+  .preview-content a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+
+  .preview-content :not(pre) > code {
     background: #f1f5f9 !important;
-    color: #0f172a !important;
+    color: #000000 !important;
+    border: none !important;
+    font-size: 9.5pt !important;
   }
 
   .preview-content pre {
     background: #f8fafc !important;
-    color: #0f172a !important;
+    color: #000000 !important;
     border: 1px solid #e2e8f0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .preview-content blockquote {
+    border-left: 3px solid #cbd5e1 !important;
+    background: #f8fafc !important;
+    color: #334155 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .preview-content table,
   .preview-content th,
   .preview-content td {
     border-color: #cbd5e1 !important;
-    color: #0f172a !important;
+    color: #000000 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .preview-content img,
+  .preview-content figure {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 100% !important;
+  }
+
+  /* Strip decorative pseudo-elements & corner badges during print */
+  *::before,
+  *::after {
+    text-shadow: none !important;
+    box-shadow: none !important;
   }
 }
+

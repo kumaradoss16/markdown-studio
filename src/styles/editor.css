@@ -48,10 +48,10 @@
 }
 
 .tool-btn.active {
-  background-color: var(--color-toolbar-active-bg, #0E2A38);
-  border: 1px solid var(--color-toolbar-active-border, #1E4E63);
-  color: var(--color-toolbar-active-color, #38BDF8);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.12);
+  background-color: var(--color-toolbar-active-bg, rgba(56, 189, 248, 0.15));
+  border: 1px solid var(--color-toolbar-active-border, rgba(56, 189, 248, 0.4));
+  color: var(--color-toolbar-active-color, var(--color-accent));
+  box-shadow: var(--shadow-accent-glow);
 }
 
 .tool-btn svg {
@@ -76,7 +76,7 @@
   font-size: 10px;
   font-weight: 700;
   margin-left: 1px;
-  color: var(--color-accent-sky, #38BDF8);
+  color: var(--color-accent);
 }
 
 .tool-btn.tool-pill {
@@ -89,15 +89,15 @@
 }
 
 .tool-btn.tool-pill.toc {
-  color: #38BDF8;
-  background-color: rgba(56, 189, 248, 0.08);
-  border-color: rgba(56, 189, 248, 0.25);
+  color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+  border-color: var(--color-focus-ring);
 }
 
 .tool-btn.tool-pill.toc:hover {
-  color: #7DD3FC;
-  background-color: rgba(56, 189, 248, 0.16);
-  border-color: rgba(56, 189, 248, 0.45);
+  color: #ffffff;
+  background-color: var(--color-accent-soft);
+  border-color: var(--color-accent);
 }
 
 .tool-btn.tool-pill.templates {

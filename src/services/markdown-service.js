@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import createDOMPurify from 'dompurify';
+import { accentService, DEFAULT_ACCENT } from './accent-service.js';
 
 /**
  * Service for secure, deterministic parsing and sanitization of Markdown documents.
@@ -172,11 +173,22 @@ export class MarkdownService {
    * @param {{ name?: string, content?: string }} doc
    * @returns {string}
    */
-  generateStandaloneHtml(doc) {
+  generateStandaloneHtml(doc, options = {}) {
     if (!doc) return '';
     const { html } = this.render(doc.content || '');
     const title = doc.name ? doc.name.replace('.md', '') : 'DevspireHub Document';
     const cleanTitle = this.getPurify().sanitize(title);
+
+    let accentHex = '#00e5ff';
+    if (typeof options.accent === 'string' && options.accent.trim()) {
+      const maybePreset = accentService.getPreset(options.accent.trim());
+      accentHex = maybePreset ? maybePreset.hex : options.accent.trim();
+    } else {
+      const activeId = accentService.getAccent();
+      const preset = accentService.getPreset(activeId);
+      accentHex = preset ? preset.hex : '#00e5ff';
+    }
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -197,15 +209,55 @@ export class MarkdownService {
     code { font-family: 'JetBrains Mono', Consolas, monospace; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 0.9em; }
     pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; }
     pre code { background: none; color: inherit; padding: 0; }
-    blockquote { border-left: 4px solid #00e5ff; margin: 16px 0; padding-left: 14px; color: #475569; }
+    blockquote { border-left: 4px solid ${accentHex}; margin: 16px 0; padding-left: 14px; color: #475569; }
     table { border-collapse: collapse; width: 100%; margin: 18px 0; }
     th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
     th { background: #f8fafc; font-weight: 600; }
     img { max-width: 100%; height: auto; border-radius: 6px; }
     .metric-card { display: inline-block; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-right: 8px; }
-    .metric-card .val { font-size: 1.25rem; font-weight: bold; color: #0284c7; }
+    .metric-card .val { font-size: 1.25rem; font-weight: bold; color: ${accentHex}; }
+
+    @page {
+      margin: 15mm;
+      size: auto;
+    }
+
     @media print {
-      body { margin: 0; padding: 0; max-width: 100%; }
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        color: #000000 !important;
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+      pre, blockquote, table, img, figure {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      a {
+        color: #000000 !important;
+        text-decoration: underline !important;
+      }
+      code {
+        background: #f1f5f9 !important;
+        color: #000000 !important;
+      }
+      pre {
+        background: #f8fafc !important;
+        color: #000000 !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+      blockquote {
+        border-left: 3px solid #cbd5e1 !important;
+        color: #334155 !important;
+      }
     }
   </style>
 </head>

@@ -37,8 +37,8 @@
 }
 
 .history-tab-btn.active {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .history-modal-body {
@@ -80,8 +80,8 @@
 }
 
 .history-item-card.selected {
-  border-color: #38bdf8;
-  background-color: rgba(56, 189, 248, 0.06);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-soft);
 }
 
 .history-item-top {
@@ -94,7 +94,7 @@
 
 .history-select-chk {
   cursor: pointer;
-  accent-color: #38bdf8;
+  accent-color: var(--color-accent);
 }
 
 .history-rev-number {

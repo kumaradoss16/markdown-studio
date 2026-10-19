@@ -54,21 +54,21 @@
 
 /* Active File Selection */
 .tree-item.active {
-  background-color: #0E2A38;
-  color: #38BDF8;
-  border-left-color: #38BDF8;
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
   font-weight: 500;
 }
 
 /* Keyboard Focused Item */
 .tree-item.focused {
-  outline: 1px dotted #38BDF8;
+  outline: 1px dotted var(--color-accent);
   outline-offset: -1px;
-  background-color: rgba(56, 189, 248, 0.08);
+  background-color: var(--color-accent-soft);
 }
 
 .tree-item.active.focused {
-  outline: 1px solid #38BDF8;
+  outline: 1px solid var(--color-accent);
 }
 
 /* Chevron */

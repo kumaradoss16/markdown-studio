@@ -1,5 +1,6 @@
 import { markdownPipeline } from './markdown-pipeline.js';
 import { qualityChecker, DiagnosticSeverity } from './quality-checker.js';
+import { accentService } from './accent-service.js';
 
 export const ExportFormat = {
   HTML: 'html',
@@ -78,18 +79,24 @@ export class ExportEngine {
     const border = isDark ? '#30363d' : '#d0d7de';
     const headingColor = isDark ? '#f0f6fc' : '#1f2328';
     const codeBg = isDark ? '#161b22' : '#f6f8fa';
-    const accent = (typeof options.accent === 'string' && options.accent.trim())
-      ? options.accent.trim()
-      : ((typeof document !== 'undefined' && document.documentElement)
-          ? getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim()
-          : '') || '#00e5ff';
+    let accent = '#00e5ff';
+    if (typeof options.accent === 'string' && options.accent.trim()) {
+      const maybePreset = accentService.getPreset(options.accent.trim());
+      accent = maybePreset ? maybePreset.hex : options.accent.trim();
+    } else {
+      const activeId = accentService.getAccent();
+      const preset = accentService.getPreset(activeId);
+      accent = preset ? preset.hex : ((typeof document !== 'undefined' && document.documentElement)
+        ? getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim()
+        : '') || '#00e5ff';
+    }
 
     return `<!DOCTYPE html>
 <html lang="en" data-theme="${theme}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="generator" content="DevspireHub Markdown Studio v0.3.0">
+  <meta name="generator" content="DevspireHub Markdown Studio v0.7.0">
   <title>${cleanTitle}</title>
   <style>
     :root {
@@ -145,7 +152,7 @@ export class ExportEngine {
       margin: 16px 0;
       padding: 4px 16px;
       color: ${isDark ? '#8b949e' : '#57606a'};
-      background: ${isDark ? 'rgba(0, 229, 255, 0.04)' : 'rgba(0, 229, 255, 0.08)'};
+      background: var(--border);
       border-radius: 0 4px 4px 0;
     }
     table {
@@ -189,20 +196,53 @@ export class ExportEngine {
       justify-content: space-between;
     }
 
+    @page {
+      margin: 15mm;
+      size: auto;
+    }
+
     @media print {
       body {
-        max-width: 100%;
-        margin: 0;
-        padding: 16mm 20mm;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
         color: #000000 !important;
         background: #ffffff !important;
-        font-size: 11pt;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
       }
-      h1, h2, h3 { color: #000000 !important; page-break-after: avoid; }
-      pre, blockquote, table, img { page-break-inside: avoid; }
-      a { color: #000000 !important; text-decoration: underline; }
-      .export-footer { display: none; }
-      @page { margin: 15mm; }
+      h1, h2, h3, h4, h5, h6 {
+        color: #000000 !important;
+        border-color: #cbd5e1 !important;
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+      pre, blockquote, table, img, figure {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      a {
+        color: #000000 !important;
+        text-decoration: underline !important;
+      }
+      code {
+        background: #f1f5f9 !important;
+        color: #000000 !important;
+        border: none !important;
+      }
+      pre {
+        background: #f8fafc !important;
+        color: #000000 !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+      blockquote {
+        border-left: 3px solid #cbd5e1 !important;
+        background: #f8fafc !important;
+        color: #334155 !important;
+      }
+      .export-footer {
+        display: none !important;
+      }
     }
   </style>
 </head>
