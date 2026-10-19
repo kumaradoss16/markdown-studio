@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * Headless CLI verification runner for MarkForge Documentation QA.
  * Suitable for CI/CD workflows, pull-request gates, and local repository audits.
@@ -48,7 +46,7 @@ function parseArgs(args) {
 
 function printHelp() {
   console.log(`
-DevspireHub Documentation QA CLI
+MarkForge Documentation QA CLI
 Usage: node scripts/run-docs-qa.js [options]
 
 Options:
