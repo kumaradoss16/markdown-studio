@@ -2,7 +2,7 @@
 
 > A professional, lightweight, local-first Markdown documentation workspace for desktop.
 
-DevspireHub Markdown Studio combines a sleek studio layout, file and workspace explorer, tabbed document editor, CodeMirror 6 editing, live GitHub Flavored Markdown (GFM) preview, atomic file persistence, and a secure Tauri 2 / Rust native desktop boundary.
+MarkForge Markdown Studio combines a sleek studio layout, file and workspace explorer, tabbed document editor, CodeMirror 6 editing, live GitHub Flavored Markdown (GFM) preview, atomic file persistence, and a secure Tauri 2 / Rust native desktop boundary.
 
 ---
 
@@ -29,7 +29,7 @@ DevspireHub Markdown Studio combines a sleek studio layout, file and workspace e
 ## Project Structure
 
 ```text
-devspirehub-markdown-studio/
+markforge-markdown-studio/
 ├── src/
 │   ├── app/                    # Application bootstrap, commands, and typed event bus
 │   ├── components/             # Presentation layer
