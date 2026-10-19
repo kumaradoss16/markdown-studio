@@ -90,10 +90,28 @@ Launch the Tauri desktop application:
 npm run tauri dev
 ```
 
-### Production Build
+### Production Build & Desktop Packaging
 ```bash
+# Build production web bundle
 npm run build
+
+# Compile Windows executables (.exe setup installer & standalone portable)
+npm run build:win
+
+# Generate clean, unbloated source code archive (source-code.zip)
+npm run pack:source
 ```
+
+---
+
+## Documentation & Release Architecture
+
+- [Release & Build Automation Guide](docs/RELEASE_WORKFLOW.md)
+- [Installation & Deployment Guide](docs/INSTALLATION.md)
+- [Security & Threat Model Architecture](docs/SECURITY.md)
+- [Backup & Crash Recovery Architecture](docs/BACKUP_AND_RECOVERY.md)
+- [Troubleshooting & Operational Guide](docs/TROUBLESHOOTING.md)
+- [Release Notes — Version 1.0.0](docs/RELEASE_NOTES.md)
 
 ---
 
@@ -102,6 +120,11 @@ npm run build
 Run the complete frontend and security test suite:
 ```bash
 npm run test
+```
+
+Run static analysis lint quality gate:
+```bash
+npm run lint
 ```
 
 Run Documentation QA on workspace (interactive / text report):

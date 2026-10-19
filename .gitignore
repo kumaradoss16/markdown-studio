@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-release/
 target/
 src-tauri/target/
 *.log
