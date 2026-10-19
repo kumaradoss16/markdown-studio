@@ -144,8 +144,8 @@ html, body {
 
 .pane-splitter:hover,
 .pane-splitter.dragging {
-  background-color: var(--color-accent-cyan) !important;
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  background-color: var(--color-accent) !important;
+  box-shadow: 0 0 8px var(--color-focus-ring);
 }
 
 /* Editor & Preview Panes */

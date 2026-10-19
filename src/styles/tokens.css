@@ -13,12 +13,18 @@
   --color-surface-card: #121822;
   --color-surface-modal: #151b27;
 
+  /* Semantic Primary Accent Tokens (Default) */
+  --color-accent: #00e5ff;
+  --color-accent-soft: rgba(0, 229, 255, 0.12);
+  --color-accent-glow: 0 0 12px rgba(0, 229, 255, 0.25);
+  --color-focus-ring: rgba(0, 229, 255, 0.4);
+
   /* Borders & Separators */
   --color-border-subtle: #19212e;
   --color-border-default: #232d3f;
   --color-border-card: #222c3c;
-  --color-border-accent: #00e5ff;
-  --color-border-active: #00e5ff;
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
 
   /* Typography Colors */
   --color-text-primary: #f1f5f9;
@@ -59,9 +65,9 @@
   --color-toolbar-text-resting: #9CA3AF;
   --color-toolbar-text-hover: #E5E7EB;
   --color-toolbar-btn-hover-bg: rgba(255, 255, 255, 0.05);
-  --color-toolbar-active-color: #38BDF8;
-  --color-toolbar-active-bg: #0E2A38;
-  --color-toolbar-active-border: #1E4E63;
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: var(--color-accent-soft);
+  --color-toolbar-active-border: var(--color-focus-ring);
   --color-live-indicator: #10B981;
 
   /* Typography Scale */
@@ -90,7 +96,7 @@
   /* Shadows */
   --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.7);
-  --shadow-accent-glow: 0 0 12px rgba(0, 229, 255, 0.25);
+  --shadow-accent-glow: var(--color-accent-glow);
 }
 
 /* Light Theme */
@@ -196,3 +202,181 @@
   --color-accent-sky: #2dd4bf;
   --color-focus-ring: rgba(16, 185, 129, 0.4);
 }
+
+/* ==========================================================================
+   Accent Color Presets (Swappable via data-accent on <html>)
+   ========================================================================== */
+
+[data-accent="cyan"] {
+  --color-accent: #00e5ff;
+  --color-accent-soft: rgba(0, 229, 255, 0.12);
+  --color-accent-glow: 0 0 12px rgba(0, 229, 255, 0.25);
+  --color-focus-ring: rgba(0, 229, 255, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(0, 229, 255, 0.15);
+  --color-toolbar-active-border: rgba(0, 229, 255, 0.35);
+}
+
+[data-accent="blue"] {
+  --color-accent: #3b82f6;
+  --color-accent-soft: rgba(59, 130, 246, 0.12);
+  --color-accent-glow: 0 0 12px rgba(59, 130, 246, 0.3);
+  --color-focus-ring: rgba(59, 130, 246, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-toolbar-active-border: rgba(59, 130, 246, 0.4);
+}
+
+[data-accent="sky"] {
+  --color-accent: #38bdf8;
+  --color-accent-soft: rgba(56, 189, 248, 0.12);
+  --color-accent-glow: 0 0 12px rgba(56, 189, 248, 0.3);
+  --color-focus-ring: rgba(56, 189, 248, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(56, 189, 248, 0.15);
+  --color-toolbar-active-border: rgba(56, 189, 248, 0.4);
+}
+
+[data-accent="green"] {
+  --color-accent: #10b981;
+  --color-accent-soft: rgba(16, 185, 129, 0.12);
+  --color-accent-glow: 0 0 12px rgba(16, 185, 129, 0.3);
+  --color-focus-ring: rgba(16, 185, 129, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(16, 185, 129, 0.15);
+  --color-toolbar-active-border: rgba(16, 185, 129, 0.4);
+}
+
+[data-accent="teal"] {
+  --color-accent: #14b8a6;
+  --color-accent-soft: rgba(20, 184, 166, 0.12);
+  --color-accent-glow: 0 0 12px rgba(20, 184, 166, 0.3);
+  --color-focus-ring: rgba(20, 184, 166, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(20, 184, 166, 0.15);
+  --color-toolbar-active-border: rgba(20, 184, 166, 0.4);
+}
+
+[data-accent="orange"] {
+  --color-accent: #f59e0b;
+  --color-accent-soft: rgba(245, 158, 11, 0.12);
+  --color-accent-glow: 0 0 12px rgba(245, 158, 11, 0.3);
+  --color-focus-ring: rgba(245, 158, 11, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(245, 158, 11, 0.15);
+  --color-toolbar-active-border: rgba(245, 158, 11, 0.4);
+}
+
+[data-accent="red"] {
+  --color-accent: #f43f5e;
+  --color-accent-soft: rgba(244, 63, 94, 0.12);
+  --color-accent-glow: 0 0 12px rgba(244, 63, 94, 0.3);
+  --color-focus-ring: rgba(244, 63, 94, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(244, 63, 94, 0.15);
+  --color-toolbar-active-border: rgba(244, 63, 94, 0.4);
+}
+
+[data-accent="grey"] {
+  --color-accent: #94a3b8;
+  --color-accent-soft: rgba(148, 163, 184, 0.14);
+  --color-accent-glow: 0 0 12px rgba(148, 163, 184, 0.25);
+  --color-focus-ring: rgba(148, 163, 184, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(148, 163, 184, 0.15);
+  --color-toolbar-active-border: rgba(148, 163, 184, 0.4);
+}
+
+[data-accent="violet"] {
+  --color-accent: #a855f7;
+  --color-accent-soft: rgba(168, 85, 247, 0.12);
+  --color-accent-glow: 0 0 12px rgba(168, 85, 247, 0.3);
+  --color-focus-ring: rgba(168, 85, 247, 0.4);
+  --color-border-accent: var(--color-accent);
+  --color-border-active: var(--color-accent);
+  --shadow-accent-glow: var(--color-accent-glow);
+  --color-toolbar-active-color: var(--color-accent);
+  --color-toolbar-active-bg: rgba(168, 85, 247, 0.15);
+  --color-toolbar-active-border: rgba(168, 85, 247, 0.4);
+}
+
+/* Light Theme Accent Contrast Tuning */
+[data-theme="light"][data-accent="cyan"] {
+  --color-accent: #0284c7;
+  --color-accent-soft: rgba(2, 132, 199, 0.12);
+  --color-focus-ring: rgba(2, 132, 199, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(2, 132, 199, 0.2);
+}
+[data-theme="light"][data-accent="blue"] {
+  --color-accent: #2563eb;
+  --color-accent-soft: rgba(37, 99, 235, 0.12);
+  --color-focus-ring: rgba(37, 99, 235, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(37, 99, 235, 0.2);
+}
+[data-theme="light"][data-accent="sky"] {
+  --color-accent: #0284c7;
+  --color-accent-soft: rgba(2, 132, 199, 0.12);
+  --color-focus-ring: rgba(2, 132, 199, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(2, 132, 199, 0.2);
+}
+[data-theme="light"][data-accent="green"] {
+  --color-accent: #059669;
+  --color-accent-soft: rgba(5, 150, 105, 0.12);
+  --color-focus-ring: rgba(5, 150, 105, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(5, 150, 105, 0.2);
+}
+[data-theme="light"][data-accent="teal"] {
+  --color-accent: #0d9488;
+  --color-accent-soft: rgba(13, 148, 136, 0.12);
+  --color-focus-ring: rgba(13, 148, 136, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(13, 148, 136, 0.2);
+}
+[data-theme="light"][data-accent="orange"] {
+  --color-accent: #d97706;
+  --color-accent-soft: rgba(217, 119, 6, 0.12);
+  --color-focus-ring: rgba(217, 119, 6, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(217, 119, 6, 0.2);
+}
+[data-theme="light"][data-accent="red"] {
+  --color-accent: #e11d48;
+  --color-accent-soft: rgba(225, 29, 72, 0.12);
+  --color-focus-ring: rgba(225, 29, 72, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(225, 29, 72, 0.2);
+}
+[data-theme="light"][data-accent="grey"] {
+  --color-accent: #475569;
+  --color-accent-soft: rgba(71, 85, 105, 0.14);
+  --color-focus-ring: rgba(71, 85, 105, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(71, 85, 105, 0.2);
+}
+[data-theme="light"][data-accent="violet"] {
+  --color-accent: #7c3aed;
+  --color-accent-soft: rgba(124, 58, 237, 0.12);
+  --color-focus-ring: rgba(124, 58, 237, 0.3);
+  --shadow-accent-glow: 0 0 8px rgba(124, 58, 237, 0.2);
+}
+

@@ -106,9 +106,9 @@
 }
 
 .spec-badge.sec {
-  background-color: rgba(0, 229, 255, 0.1);
-  border: 1px solid var(--color-accent-cyan);
-  color: var(--color-accent-cyan);
+  background-color: var(--color-accent-soft);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
 }
 
 .spec-badge.rev {
@@ -352,11 +352,11 @@
   padding: 1px 4px;
   border-radius: 3px;
   font-size: 12px;
-  color: var(--color-accent-cyan);
+  color: var(--color-accent);
 }
 
 .preview-content blockquote {
-  border-left: 3px solid var(--color-accent-cyan);
+  border-left: 3px solid var(--color-accent);
   padding-left: 12px;
   color: var(--color-text-muted);
   margin: 12px 0;
@@ -380,7 +380,7 @@
 }
 
 .preview-content .wiki-link {
-  color: var(--color-accent-cyan);
+  color: var(--color-accent);
   text-decoration: underline;
   cursor: pointer;
 }

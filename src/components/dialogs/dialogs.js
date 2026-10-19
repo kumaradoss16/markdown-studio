@@ -8,6 +8,7 @@ import { exportEngine, ExportFormat } from '../../services/export-engine.js';
 import { TEMPLATES } from '../../data/templates.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { projectQaModalComponent } from '../qa/project-qa-modal.js';
+import { accentService } from '../../services/accent-service.js';
 
 export class DialogsComponent {
   constructor(container) {
@@ -870,6 +871,17 @@ export class DialogsComponent {
 
   showSettingsDialog() {
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'cyberpunk';
+    const currentAccent = accentService.getAccent();
+    const presets = accentService.listPresets();
+
+    const accentOptionsHtml = presets.map(p => `
+      <option value="${p.id}" ${currentAccent === p.id ? 'selected' : ''}>${p.label}</option>
+    `).join('');
+
+    const accentSwatchesHtml = presets.map(p => `
+      <button type="button" class="accent-swatch-btn ${currentAccent === p.id ? 'active' : ''}" data-accent-id="${p.id}" title="${p.label}" style="width: 22px; height: 22px; border-radius: 50%; background: ${p.hex}; border: 2px solid ${currentAccent === p.id ? '#ffffff' : 'transparent'}; box-shadow: ${currentAccent === p.id ? '0 0 8px ' + p.hex : 'none'}; cursor: pointer; padding: 0; outline: none; transition: transform 0.15s, border-color 0.15s;"></button>
+    `).join('');
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -887,6 +899,19 @@ export class DialogsComponent {
           </div>
 
           <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--color-text-primary);">Accent Color</label>
+              <span id="accentLabelBadge" style="font-size: 11px; font-family: var(--font-editor); color: var(--color-accent);">${accentService.getPreset(currentAccent).label}</span>
+            </div>
+            <select id="accentSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none; margin-bottom: 8px;">
+              ${accentOptionsHtml}
+            </select>
+            <div id="accentSwatchesContainer" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 8px; background: rgba(0,0,0,0.15); border-radius: var(--radius-sm);">
+              ${accentSwatchesHtml}
+            </div>
+          </div>
+
+          <div>
             <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Editor Font Size</label>
             <select id="fontSizeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
               <option value="12px">12px — Ultra Compact</option>
@@ -897,7 +922,7 @@ export class DialogsComponent {
           </div>
 
           <div style="padding: 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-muted);">
-            DevspireHub Markdown Studio v0.3.0 • Local-First Architecture
+            DevspireHub Markdown Studio v0.7.0 • Local-First Architecture
           </div>
         </div>
         <div class="modal-actions">
@@ -909,6 +934,36 @@ export class DialogsComponent {
 
     document.body.appendChild(overlay);
 
+    const accentSelect = overlay.querySelector('#accentSelectInput');
+    const badge = overlay.querySelector('#accentLabelBadge');
+    const swatches = overlay.querySelectorAll('.accent-swatch-btn');
+
+    const updateAccentUI = (accentId) => {
+      const preset = accentService.getPreset(accentId);
+      accentSelect.value = preset.id;
+      if (badge) {
+        badge.textContent = preset.label;
+      }
+      swatches.forEach(btn => {
+        const isMatch = btn.getAttribute('data-accent-id') === preset.id;
+        btn.classList.toggle('active', isMatch);
+        btn.style.border = isMatch ? '2px solid #ffffff' : '2px solid transparent';
+        btn.style.boxShadow = isMatch ? `0 0 8px ${preset.hex}` : 'none';
+        btn.style.transform = isMatch ? 'scale(1.15)' : 'scale(1)';
+      });
+    };
+
+    accentSelect.addEventListener('change', (e) => {
+      updateAccentUI(e.target.value);
+    });
+
+    swatches.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const aid = btn.getAttribute('data-accent-id');
+        updateAccentUI(aid);
+      });
+    });
+
     overlay.querySelector('#dialogSettingsCancelBtn')?.addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.remove();
@@ -916,10 +971,13 @@ export class DialogsComponent {
 
     overlay.querySelector('#dialogSettingsApplyBtn')?.addEventListener('click', () => {
       const selectedTheme = overlay.querySelector('#themeSelectInput').value;
+      const selectedAccent = overlay.querySelector('#accentSelectInput').value;
       const selectedFontSize = overlay.querySelector('#fontSizeSelectInput').value;
 
       document.documentElement.setAttribute('data-theme', selectedTheme);
+      accentService.setAccent(selectedAccent);
       document.documentElement.style.setProperty('--font-size-editor', selectedFontSize);
+
       try {
         localStorage.setItem('devspirehub:theme', selectedTheme);
         localStorage.setItem('devspirehub:fontSize', selectedFontSize);
@@ -928,7 +986,10 @@ export class DialogsComponent {
       }
 
       overlay.remove();
-      this.showToast({ type: 'success', message: `Theme switched to "${selectedTheme}".` });
+      this.showToast({
+        type: 'success',
+        message: `Settings applied: Theme "${selectedTheme}", Accent "${accentService.getPreset(selectedAccent).label}".`
+      });
     });
   }
 

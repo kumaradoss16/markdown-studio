@@ -78,7 +78,11 @@ export class ExportEngine {
     const border = isDark ? '#30363d' : '#d0d7de';
     const headingColor = isDark ? '#f0f6fc' : '#1f2328';
     const codeBg = isDark ? '#161b22' : '#f6f8fa';
-    const accent = '#00e5ff';
+    const accent = (typeof options.accent === 'string' && options.accent.trim())
+      ? options.accent.trim()
+      : ((typeof document !== 'undefined' && document.documentElement)
+          ? getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim()
+          : '') || '#00e5ff';
 
     return `<!DOCTYPE html>
 <html lang="en" data-theme="${theme}">

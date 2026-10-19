@@ -162,8 +162,8 @@
 }
 
 .cm-activeLineGutter {
-  background-color: rgba(0, 229, 255, 0.08) !important;
-  color: var(--color-accent-cyan) !important;
+  background-color: var(--color-accent-soft) !important;
+  color: var(--color-accent) !important;
 }
 
 .cm-activeLine {
@@ -171,17 +171,17 @@
 }
 
 .cm-cursor {
-  border-left-color: var(--color-accent-cyan) !important;
+  border-left-color: var(--color-accent) !important;
   border-left-width: 2px !important;
 }
 
 .cm-selectionBackground, ::selection {
-  background: rgba(0, 229, 255, 0.25) !important;
+  background: var(--color-focus-ring) !important;
 }
 
 /* Specific Markdown Tokens */
 .cm-header { color: var(--color-accent-sky); font-weight: 700; }
-.cm-link { color: var(--color-accent-cyan); text-decoration: underline; }
+.cm-link { color: var(--color-accent); text-decoration: underline; }
 .cm-quote { color: var(--color-text-muted); font-style: italic; }
 .cm-comment { color: var(--color-text-dim); }
 .cm-keyword { color: var(--color-accent-violet); }
