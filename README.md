@@ -137,4 +137,4 @@ cargo test --lib
 ---
 
 ## License
-Proprietary — DevspireHub Team.
+Proprietary - DevspireHub Team.
