@@ -1,4 +1,4 @@
-# DevspireHub Markdown Studio
+# MarkForge: Markdown Studio
 
 > A professional, lightweight, local-first Markdown documentation workspace for desktop.
 
