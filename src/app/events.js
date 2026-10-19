@@ -73,6 +73,11 @@ export const AppEvents = {
   RESTORE_PREVIEW_OPENED: 'restore:preview_opened',
   RESTORE_APPLIED: 'restore:applied',
   AUDIT_RECORDED: 'audit:recorded',
+  QA_RUN_STARTED: 'qa:run_started',
+  QA_RUN_PROGRESS: 'qa:run_progress',
+  QA_RUN_COMPLETED: 'qa:run_completed',
+  QA_REPORT_EXPORTED: 'qa:report_exported',
+  QA_MODAL_OPEN: 'qa:modal_open',
 };
 
 export const eventBus = new EventEmitter();

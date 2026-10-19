@@ -137,3 +137,46 @@ The `AuditLogService` persists a chronological audit trail (`devspirehub:audit_l
 - **Honest Outcomes:** `SUCCESS`, `FAILURE`, `CANCELLED`, `UNCERTAIN` (Invariant 10).
 - **Zero Leakage:** Recursive redaction of GitHub PATs, OAuth bearer tokens, and secrets across all payload strings and nested metadata objects.
 
+---
+
+## 8. Advanced Documentation QA & CI Verification (Release 0.7)
+
+Release 0.7 transforms DevspireHub into a workspace-wide Documentation QA and CI verification engine for multi-folder technical repositories, handbooks, and open-source documentation.
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                      ProjectQaCoordinator                       │
+│  - Invariant 1: Source Immutability (Read-only scans)           │
+│  - Invariant 3: Deterministic Reports & Ordering                │
+│  - Invariant 8: Single Parser Authority (MarkdownPipeline)      │
+│  - Invariant 9: Failure Containment (Error resilience)          │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│ProjectLinkChecker│   │NavigationChecker │   │ CoverageReporter │
+│- Local File Links│   │- SUMMARY.md/nav  │   │- Required Files  │
+│- Cross-Doc Anchor│   │- Dangling Entries│   │- Required Heading│
+│- Local Images    │   │- Duplicate Links │   │- Orphan Documents│
+│- SSRF Protection │   │- Unlisted Pages  │   │- Empty Docs/No H1│
+└──────────────────┘   └──────────────────┘   └──────────────────┘
+        │                       │                       │
+        └───────────────────────┼───────────────────────┘
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        QaReportWriter                           │
+│  - Schema: qa-report-v1 (JSON, Markdown, Console, Annotations)  │
+│  - Invariant 6: Honest Exit Codes (0: Pass, 1: Block, 2: Error) │
+│  - Desktop UI: ProjectQaModalComponent with filterable findings │
+│  - Headless CLI: node scripts/run-docs-qa.js (--profile, etc.)  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Validation Profiles & Invariants
+- **Profiles:** `default`, `strict`, `docs-repo`, `ci-blocking`.
+- **Configuration:** Project overrides declared in `.devspirehub/qa.json` (max 64KB, fail-closed on unknown rules or syntax errors).
+- **SSRF Guard:** Remote URL checks are opt-in only and block private/loopback IP subnets (`127.0.0.1`, `10.0.0.0/8`, `169.254.169.254`, `::1`).
+- **Traversal Guard:** Path traversal attempts (`../`) escaping the workspace root immediately emit blocking `RULE_PATH_TRAVERSAL` errors.
+
+

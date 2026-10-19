@@ -59,6 +59,11 @@ export class StatusBarComponent {
           <strong>${diagSummary.errors} Err</strong> • <span>${diagSummary.warnings} Warn</span>
         </span>
         <span style="color: var(--color-border-default);">|</span>
+        <span id="statusProjectQaBtn" title="Project Documentation QA (Click to run workspace scan)" style="cursor: pointer; display: flex; align-items: center; gap: 4px; color: var(--color-accent-teal);">
+          <span>🧪</span>
+          <strong>QA</strong>
+        </span>
+        <span style="color: var(--color-border-default);">|</span>
         <span style="color: var(--color-accent-teal);">MODE: ${this.viewMode}</span>
         <span style="color: var(--color-border-default);">|</span>
         <span id="statusZenToggle" style="cursor: pointer; color: ${this.zenMode ? 'var(--color-accent-violet)' : 'var(--color-text-muted)'};">
@@ -81,6 +86,10 @@ export class StatusBarComponent {
 
     this.container.querySelector('#statusDiagnosticsBtn')?.addEventListener('click', () => {
       eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'diagnostics' });
+    });
+
+    this.container.querySelector('#statusProjectQaBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'project-qa' });
     });
 
     // Click events

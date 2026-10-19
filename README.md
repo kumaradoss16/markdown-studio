@@ -8,6 +8,7 @@ DevspireHub Markdown Studio combines a sleek studio layout, file and workspace e
 
 ## Key Features
 
+- **Advanced Documentation QA & CI Verification (Release 0.7):** Workspace-wide link verification, cross-document anchor checking (`doc.md#heading`), documentation coverage analysis, navigation tree validation (`SUMMARY.md`), reusable `.devspirehub/qa.json` rules, and headless CI runner with GitHub Actions annotations.
 - **Document Revision History & Restore Previews (Release 0.6):** Content-addressed revision tracking, chronological checkpoints, side-by-side dual-pane line diffs, preview-first restoration with dirty conflict protection (`⌘H`).
 - **Durable Audit Trail (Release 0.6):** Append-only audit logging of all document actions (`OPEN`, `SAVE`, `RESTORE`, `EXPORT`, `PUBLISH_ATTEMPT`) with strict secret and token redaction.
 - **Safe GitHub Publishing (Release 0.5):** Two-phase review modal, working-branch isolation, base SHA freshness verification, conflict review, and atomic ticket boundaries.
@@ -96,11 +97,21 @@ npm run build
 
 ---
 
-## Running Automated Tests
+## Running Automated Tests & Documentation QA
 
 Run the complete frontend and security test suite:
 ```bash
 npm run test
+```
+
+Run Documentation QA on workspace (interactive / text report):
+```bash
+npm run qa
+```
+
+Run Documentation QA in CI blocking mode with structured JSON output:
+```bash
+npm run qa:ci
 ```
 
 Run Rust native backend unit tests:

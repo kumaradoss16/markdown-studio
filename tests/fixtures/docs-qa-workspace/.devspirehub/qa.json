@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "profile": "docs-repo",
+  "failOn": "error",
+  "coverage": {
+    "requiredFiles": ["README.md"],
+    "requiredSections": {
+      "README.md": ["Getting Started", "Usage"]
+    },
+    "flagOrphanDocs": true
+  },
+  "navigation": {
+    "sources": ["SUMMARY.md"]
+  }
+}

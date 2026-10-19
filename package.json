@@ -1,7 +1,7 @@
 {
   "name": "devspirehub-markdown-studio",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "qa": "node scripts/run-docs-qa.js",
+    "qa:ci": "node scripts/run-docs-qa.js --profile ci-blocking --format json --out qa-report.json",
     "tauri": "tauri"
   },
   "dependencies": {

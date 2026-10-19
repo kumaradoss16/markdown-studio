@@ -17,7 +17,16 @@ export const RuleId = {
   MISSING_ALT_TEXT: 'RULE_MISSING_ALT_TEXT',
   EMPTY_LINK: 'RULE_EMPTY_LINK',
   CORRUPT_TOC_MARKERS: 'RULE_CORRUPT_TOC_MARKERS',
-  STALE_TOC: 'RULE_STALE_TOC'
+  STALE_TOC: 'RULE_STALE_TOC',
+  BROKEN_CROSS_DOC_ANCHOR: 'RULE_BROKEN_CROSS_DOC_ANCHOR',
+  ORPHAN_DOCUMENT: 'RULE_ORPHAN_DOCUMENT',
+  DANGLING_NAV_ENTRY: 'RULE_DANGLING_NAV_ENTRY',
+  DUPLICATE_NAV_ENTRY: 'RULE_DUPLICATE_NAV_ENTRY',
+  UNLISTED_NAV_PAGE: 'RULE_UNLISTED_NAV_PAGE',
+  UNCOVERED_REQUIRED_SECTION: 'RULE_UNCOVERED_REQUIRED_SECTION',
+  MISSING_REQUIRED_DOC: 'RULE_MISSING_REQUIRED_DOC',
+  EMPTY_DOCUMENT: 'RULE_EMPTY_DOCUMENT',
+  PATH_TRAVERSAL: 'RULE_PATH_TRAVERSAL'
 };
 
 /**
@@ -279,7 +288,60 @@ export class QualityChecker {
       }
     }
 
-    return diagnostics;
+    // Check for empty document if requested or configured
+    if (content.trim().length === 0) {
+      const emptyDocRule = options.profile?.rules?.[RuleId.EMPTY_DOCUMENT];
+      if (options.checkEmptyDoc || (emptyDocRule && emptyDocRule.enabled !== false)) {
+        diagnostics.push({
+          id: `diag-${RuleId.EMPTY_DOCUMENT}-1`,
+          ruleId: RuleId.EMPTY_DOCUMENT,
+          severity: emptyDocRule?.severity || DiagnosticSeverity.WARNING,
+          message: 'Document is empty (0 bytes of content).',
+          line: 1,
+          column: 1,
+          documentRevision: revision,
+          target: '',
+          fixAvailable: false
+        });
+      }
+    }
+
+    const filePath = docSnapshot?.path || options.file || '';
+    const filtered = [];
+    for (const d of diagnostics) {
+      if (filePath && !d.file) {
+        d.file = filePath;
+      }
+      const adjusted = this._applyProfile(d, options.profile);
+      if (adjusted) {
+        filtered.push(adjusted);
+      }
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Applies active profile overrides to a diagnostic (disabling or elevating severity).
+   * @param {Diagnostic} diagnostic
+   * @param {Object} [profile]
+   * @returns {Diagnostic|null}
+   */
+  _applyProfile(diagnostic, profile) {
+    if (!profile || !profile.rules) return diagnostic;
+    const ruleConfig = profile.rules[diagnostic.ruleId];
+    if (ruleConfig) {
+      if (ruleConfig.enabled === false) {
+        return null;
+      }
+      if (ruleConfig.severity) {
+        return {
+          ...diagnostic,
+          severity: ruleConfig.severity
+        };
+      }
+    }
+    return diagnostic;
   }
 
   /**
