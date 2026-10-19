@@ -80,4 +80,38 @@ describe('WorkspaceStore Engine', () => {
     const restored = await store.restoreWorkspace();
     expect(restored).toBe(false);
   });
+
+  it('supports wordWrap, showLineNumbers, fontFamily, and syncScroll options', () => {
+    store.saveSettings({
+      fontFamily: 'Fira Code',
+      wordWrap: false,
+      showLineNumbers: false,
+      syncScroll: false
+    });
+
+    const settings = store.getSettings();
+    expect(settings.fontFamily).toBe('Fira Code');
+    expect(settings.wordWrap).toBe(false);
+    expect(settings.showLineNumbers).toBe(false);
+    expect(settings.syncScroll).toBe(false);
+  });
+
+  it('resets settings to factory defaults with resetSettings', () => {
+    store.saveSettings({
+      theme: 'matrix',
+      accent: 'rose',
+      fontSize: '17px',
+      tabSize: 4,
+      wordWrap: false
+    });
+
+    const reset = store.resetSettings();
+    expect(reset.theme).toBe('cyberpunk');
+    expect(reset.tabSize).toBe(2);
+    expect(reset.wordWrap).toBe(true);
+
+    const fromStore = store.getSettings();
+    expect(fromStore.theme).toBe('cyberpunk');
+    expect(fromStore.tabSize).toBe(2);
+  });
 });

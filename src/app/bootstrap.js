@@ -41,6 +41,9 @@ export async function bootstrapApp(rootElement) {
     if (settings.tabSize) {
       document.documentElement.style.setProperty('--editor-tab-size', String(settings.tabSize));
     }
+    if (settings.fontFamily) {
+      document.documentElement.style.setProperty('--font-editor', settings.fontFamily);
+    }
   } catch (e) {
     console.warn('LocalStorage unavailable for preferences restoration:', e);
   }

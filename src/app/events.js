@@ -78,6 +78,7 @@ export const AppEvents = {
   QA_RUN_COMPLETED: 'qa:run_completed',
   QA_REPORT_EXPORTED: 'qa:report_exported',
   QA_MODAL_OPEN: 'qa:modal_open',
+  SETTINGS_CHANGED: 'settings:changed',
 };
 
 export const eventBus = new EventEmitter();

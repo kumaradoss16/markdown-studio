@@ -135,25 +135,25 @@
   overflow: hidden;
   position: relative;
   font-family: var(--font-editor);
-  font-size: 13px;
+  font-size: var(--font-size-editor, 13px);
 }
 
 .cm-editor {
   height: 100% !important;
   background-color: var(--color-editor-background) !important;
   color: var(--color-text-primary) !important;
-  tab-size: 2 !important;
-  -moz-tab-size: 2 !important;
+  tab-size: var(--editor-tab-size, 2) !important;
+  -moz-tab-size: var(--editor-tab-size, 2) !important;
 }
 
 .cm-scroller {
   font-family: var(--font-editor) !important;
-  font-size: var(--font-size-editor) !important;
+  font-size: var(--font-size-editor, 13px) !important;
   line-height: var(--line-height-editor, 1.5) !important;
   font-variant-ligatures: normal !important;
   font-feature-settings: "liga" 1, "calt" 1 !important;
-  tab-size: 2 !important;
-  -moz-tab-size: 2 !important;
+  tab-size: var(--editor-tab-size, 2) !important;
+  -moz-tab-size: var(--editor-tab-size, 2) !important;
   overflow: auto !important;
   padding: 12px 0;
 }

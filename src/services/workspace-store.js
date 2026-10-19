@@ -10,7 +10,11 @@ export const DEFAULT_SETTINGS = {
   theme: 'cyberpunk',
   accent: DEFAULT_ACCENT,
   fontSize: '13px',
+  fontFamily: 'JetBrains Mono',
   tabSize: 2,
+  wordWrap: true,
+  showLineNumbers: true,
+  syncScroll: true,
   splitRatio: 50,
   viewMode: 'DUAL SPLIT'
 };
@@ -102,6 +106,19 @@ export class WorkspaceStore {
       console.warn('Failed to persist settings:', e);
     }
     return updated;
+  }
+
+  /**
+   * Resets application settings to initial studio defaults.
+   * @returns {typeof DEFAULT_SETTINGS}
+   */
+  resetSettings() {
+    try {
+      this.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS }));
+    } catch (e) {
+      console.warn('Failed to reset settings:', e);
+    }
+    return { ...DEFAULT_SETTINGS };
   }
 
   /**

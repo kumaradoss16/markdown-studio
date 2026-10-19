@@ -998,11 +998,34 @@ export class DialogsComponent {
   showSettingsDialog() {
     const settings = workspaceStore.getSettings();
     const currentTheme = settings.theme || document.documentElement.getAttribute('data-theme') || 'cyberpunk';
-    const currentAccent = accentService.getAccent();
+    const currentAccent = settings.accent || accentService.getAccent();
     const currentFontSize = settings.fontSize || '13px';
+    const currentFontFamily = settings.fontFamily || 'JetBrains Mono';
     const currentTabSize = settings.tabSize || 2;
+    const currentWordWrap = settings.wordWrap !== undefined ? settings.wordWrap : true;
+    const currentShowLineNumbers = settings.showLineNumbers !== undefined ? settings.showLineNumbers : true;
+    const currentViewMode = settings.viewMode || 'DUAL SPLIT';
+    const currentSyncScroll = settings.syncScroll !== undefined ? settings.syncScroll : true;
     const presets = accentService.listPresets();
     const authStatus = gitHubAuthService.getStatus();
+
+    const fontFamilies = [
+      { id: 'JetBrains Mono', label: 'JetBrains Mono (Studio Default)' },
+      { id: 'Fira Code', label: 'Fira Code' },
+      { id: 'IBM Plex Mono', label: 'IBM Plex Mono' },
+      { id: 'Source Code Pro', label: 'Source Code Pro' },
+      { id: 'Consolas', label: 'Consolas' },
+      { id: 'System Monospace', label: 'System Monospace' },
+    ];
+
+    const fontMap = {
+      'JetBrains Mono': "'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', Consolas, monospace",
+      'Fira Code': "'Fira Code', 'JetBrains Mono', monospace",
+      'IBM Plex Mono': "'IBM Plex Mono', monospace",
+      'Source Code Pro': "'Source Code Pro', monospace",
+      'Consolas': "'Consolas', monospace",
+      'System Monospace': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    };
 
     const accentOptionsHtml = presets.map(p => `
       <option value="${p.id}" ${currentAccent === p.id ? 'selected' : ''}>${p.label}</option>
@@ -1012,51 +1035,100 @@ export class DialogsComponent {
       <button type="button" class="accent-swatch-btn ${currentAccent === p.id ? 'active' : ''}" data-accent-id="${p.id}" title="${p.label}" style="width: 22px; height: 22px; border-radius: 50%; background: ${p.hex}; border: 2px solid ${currentAccent === p.id ? '#ffffff' : 'transparent'}; box-shadow: ${currentAccent === p.id ? '0 0 8px ' + p.hex : 'none'}; cursor: pointer; padding: 0; outline: none; transition: transform 0.15s, border-color 0.15s;"></button>
     `).join('');
 
+    const fontOptionsHtml = fontFamilies.map(f => `
+      <option value="${f.id}" ${currentFontFamily === f.id ? 'selected' : ''}>${f.label}</option>
+    `).join('');
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal-card" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-card" style="max-width: 540px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">Studio Settings &amp; Preferences</div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
-          <div>
-            <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Color Theme</label>
-            <select id="themeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
-              <option value="cyberpunk" ${currentTheme === 'cyberpunk' ? 'selected' : ''}>Cyberpunk Dark (Default)</option>
-              <option value="light" ${currentTheme === 'light' ? 'selected' : ''}>Paper Clean Light</option>
-              <option value="monokai" ${currentTheme === 'monokai' ? 'selected' : ''}>Monokai Pro Charcoal</option>
-              <option value="matrix" ${currentTheme === 'matrix' ? 'selected' : ''}>Matrix Emerald Terminal</option>
-            </select>
-          </div>
-
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label style="font-size: 12px; font-weight: 600; color: var(--color-text-primary);">Accent Color</label>
-              <span id="accentLabelBadge" style="font-size: 11px; font-family: var(--font-editor); color: var(--color-accent);">${accentService.getPreset(currentAccent).label}</span>
-            </div>
-            <select id="accentSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none; margin-bottom: 8px;">
-              ${accentOptionsHtml}
-            </select>
-            <div id="accentSwatchesContainer" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 8px; background: rgba(0,0,0,0.15); border-radius: var(--radius-sm);">
-              ${accentSwatchesHtml}
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Editor Font Size</label>
-              <select id="fontSizeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
-                <option value="12px" ${currentFontSize === '12px' ? 'selected' : ''}>12px — Ultra Compact</option>
-                <option value="13px" ${currentFontSize === '13px' ? 'selected' : ''}>13px — Studio Standard</option>
-                <option value="15px" ${currentFontSize === '15px' ? 'selected' : ''}>15px — Medium Comfort</option>
-                <option value="17px" ${currentFontSize === '17px' ? 'selected' : ''}>17px — High Legibility</option>
+          <!-- Appearance & Theming -->
+          <div style="background: var(--color-surface-base); padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm);">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 10px;">Appearance &amp; Theme</div>
+            
+            <div style="margin-bottom: 12px;">
+              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Color Theme</label>
+              <select id="themeSelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                <option value="cyberpunk" ${currentTheme === 'cyberpunk' ? 'selected' : ''}>Cyberpunk Dark (Default)</option>
+                <option value="light" ${currentTheme === 'light' ? 'selected' : ''}>Paper Clean Light</option>
+                <option value="monokai" ${currentTheme === 'monokai' ? 'selected' : ''}>Monokai Pro Charcoal</option>
+                <option value="matrix" ${currentTheme === 'matrix' ? 'selected' : ''}>Matrix Emerald Terminal</option>
               </select>
             </div>
+
             <div>
-              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Tab Sizing</label>
-              <select id="tabSizeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
-                <option value="2" ${currentTabSize === 2 ? 'selected' : ''}>2 Spaces (Markdown Default)</option>
-                <option value="4" ${currentTabSize === 4 ? 'selected' : ''}>4 Spaces (Standard Code)</option>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-text-primary);">Accent Color</label>
+                <span id="accentLabelBadge" style="font-size: 11px; font-family: var(--font-editor); color: var(--color-accent);">${accentService.getPreset(currentAccent).label}</span>
+              </div>
+              <select id="accentSelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none; margin-bottom: 8px;">
+                ${accentOptionsHtml}
               </select>
+              <div id="accentSwatchesContainer" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm);">
+                ${accentSwatchesHtml}
+              </div>
+            </div>
+          </div>
+
+          <!-- Editor & Typography -->
+          <div style="background: var(--color-surface-base); padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm);">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 10px;">Editor &amp; Typography</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Editor Font Size</label>
+                <select id="fontSizeSelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                  <option value="12px" ${currentFontSize === '12px' ? 'selected' : ''}>12px — Ultra Compact</option>
+                  <option value="13px" ${currentFontSize === '13px' ? 'selected' : ''}>13px — Studio Standard</option>
+                  <option value="14px" ${currentFontSize === '14px' ? 'selected' : ''}>14px — Balanced</option>
+                  <option value="15px" ${currentFontSize === '15px' ? 'selected' : ''}>15px — Medium Comfort</option>
+                  <option value="16px" ${currentFontSize === '16px' ? 'selected' : ''}>16px — Enhanced Readability</option>
+                  <option value="17px" ${currentFontSize === '17px' ? 'selected' : ''}>17px — High Legibility</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Monospace Font Family</label>
+                <select id="fontFamilySelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                  ${fontOptionsHtml}
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Tab Sizing</label>
+                <select id="tabSizeSelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                  <option value="2" ${currentTabSize === 2 ? 'selected' : ''}>2 Spaces (Markdown Default)</option>
+                  <option value="4" ${currentTabSize === 4 ? 'selected' : ''}>4 Spaces (Standard Code)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Default View Mode</label>
+                <select id="viewModeSelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                  <option value="DUAL SPLIT" ${currentViewMode === 'DUAL SPLIT' ? 'selected' : ''}>Dual Split (Horizontal)</option>
+                  <option value="SOURCE" ${currentViewMode === 'SOURCE' ? 'selected' : ''}>Source Only</option>
+                  <option value="SPLIT VERTICAL" ${currentViewMode === 'SPLIT VERTICAL' ? 'selected' : ''}>Split Vertical (Stacked)</option>
+                  <option value="PREVIEW" ${currentViewMode === 'PREVIEW' ? 'selected' : ''}>Live Preview Only</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--color-text-primary);">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="showLineNumbersInput" ${currentShowLineNumbers ? 'checked' : ''} />
+                <span>Display Line Numbers in Editor Gutter</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="wordWrapInput" ${currentWordWrap ? 'checked' : ''} />
+                <span>Enable Word Wrap (Wrap Long Lines in Viewport)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="syncScrollInput" ${currentSyncScroll ? 'checked' : ''} />
+                <span>Synchronized Dual Scrolling (Editor &amp; Live Preview)</span>
+              </label>
             </div>
           </div>
 
@@ -1086,16 +1158,27 @@ export class DialogsComponent {
             DevspireHub Markdown Studio v0.7.0 • Local-First Architecture
           </div>
         </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" id="dialogSettingsCancelBtn">Cancel</button>
-          <button class="btn btn-primary" id="dialogSettingsApplyBtn">Apply Settings</button>
+        <div class="modal-actions" style="display: flex; align-items: center; justify-content: space-between;">
+          <button class="btn btn-secondary" id="dialogSettingsResetBtn" style="color: var(--color-accent-amber); font-size: 11.5px;">Reset to Defaults</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="dialogSettingsCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="dialogSettingsApplyBtn">Apply Settings</button>
+          </div>
         </div>
       </div>
     `;
 
     document.body.appendChild(overlay);
 
+    const themeSelect = overlay.querySelector('#themeSelectInput');
     const accentSelect = overlay.querySelector('#accentSelectInput');
+    const fontSizeSelect = overlay.querySelector('#fontSizeSelectInput');
+    const fontFamilySelect = overlay.querySelector('#fontFamilySelectInput');
+    const tabSizeSelect = overlay.querySelector('#tabSizeSelectInput');
+    const viewModeSelect = overlay.querySelector('#viewModeSelectInput');
+    const showLineNumbersCheck = overlay.querySelector('#showLineNumbersInput');
+    const wordWrapCheck = overlay.querySelector('#wordWrapInput');
+    const syncScrollCheck = overlay.querySelector('#syncScrollInput');
     const badge = overlay.querySelector('#accentLabelBadge');
     const swatches = overlay.querySelectorAll('.accent-swatch-btn');
     const patInput = overlay.querySelector('#settingsGithubPatInput');
@@ -1163,29 +1246,59 @@ export class DialogsComponent {
       this.showToast({ type: 'info', message: 'GitHub credentials purged.' });
     });
 
+    // Reset to Defaults Button
+    overlay.querySelector('#dialogSettingsResetBtn')?.addEventListener('click', () => {
+      themeSelect.value = 'cyberpunk';
+      updateAccentUI('cyan');
+      fontSizeSelect.value = '13px';
+      fontFamilySelect.value = 'JetBrains Mono';
+      tabSizeSelect.value = '2';
+      viewModeSelect.value = 'DUAL SPLIT';
+      showLineNumbersCheck.checked = true;
+      wordWrapCheck.checked = true;
+      syncScrollCheck.checked = true;
+      this.showToast({ type: 'info', message: 'Controls reset to studio defaults. Click "Apply Settings" to save.' });
+    });
+
     overlay.querySelector('#dialogSettingsCancelBtn')?.addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.remove();
     });
 
     overlay.querySelector('#dialogSettingsApplyBtn')?.addEventListener('click', async () => {
-      const selectedTheme = overlay.querySelector('#themeSelectInput').value;
-      const selectedAccent = overlay.querySelector('#accentSelectInput').value;
-      const selectedFontSize = overlay.querySelector('#fontSizeSelectInput').value;
-      const selectedTabSize = parseInt(overlay.querySelector('#tabSizeSelectInput').value, 10) || 2;
+      const selectedTheme = themeSelect.value;
+      const selectedAccent = accentSelect.value;
+      const selectedFontSize = fontSizeSelect.value;
+      const selectedFontFamily = fontFamilySelect.value;
+      const selectedTabSize = parseInt(tabSizeSelect.value, 10) || 2;
+      const selectedViewMode = viewModeSelect.value;
+      const selectedShowLineNumbers = showLineNumbersCheck.checked;
+      const selectedWordWrap = wordWrapCheck.checked;
+      const selectedSyncScroll = syncScrollCheck.checked;
       const newPat = patInput.value.trim();
 
+      // Apply appearance tokens to DOM
       document.documentElement.setAttribute('data-theme', selectedTheme);
       accentService.setAccent(selectedAccent);
       document.documentElement.style.setProperty('--font-size-editor', selectedFontSize);
+      document.documentElement.style.setProperty('--editor-tab-size', String(selectedTabSize));
+      document.documentElement.style.setProperty('--font-editor', fontMap[selectedFontFamily] || selectedFontFamily);
 
       // Persist to WorkspaceStore
-      workspaceStore.saveSettings({
+      const updatedSettings = workspaceStore.saveSettings({
         theme: selectedTheme,
         accent: selectedAccent,
         fontSize: selectedFontSize,
-        tabSize: selectedTabSize
+        fontFamily: selectedFontFamily,
+        tabSize: selectedTabSize,
+        viewMode: selectedViewMode,
+        showLineNumbers: selectedShowLineNumbers,
+        wordWrap: selectedWordWrap,
+        syncScroll: selectedSyncScroll
       });
+
+      // Notify all components across the app
+      eventBus.emit(AppEvents.SETTINGS_CHANGED, updatedSettings);
 
       // If user typed a new GitHub PAT, authenticate and persist securely
       if (newPat) {
@@ -1199,7 +1312,7 @@ export class DialogsComponent {
       overlay.remove();
       this.showToast({
         type: 'success',
-        message: `Settings applied: Theme "${selectedTheme}", Accent "${accentService.getPreset(selectedAccent).label}".`
+        message: `Settings applied: Theme "${selectedTheme}", Accent "${accentService.getPreset(selectedAccent).label}", Font "${selectedFontSize}".`
       });
     });
   }

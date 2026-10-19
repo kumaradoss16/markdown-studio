@@ -195,6 +195,12 @@ export class AppShellComponent {
 
     setMode(this.currentMode);
 
+    eventBus.on(AppEvents.SETTINGS_CHANGED, (settings) => {
+      if (settings && settings.viewMode && settings.viewMode !== this.currentMode) {
+        setMode(settings.viewMode);
+      }
+    });
+
     sourceBtn?.addEventListener('click', () => setMode('SOURCE'));
     splitHBtn?.addEventListener('click', () => setMode('DUAL SPLIT'));
     splitVBtn?.addEventListener('click', () => setMode('SPLIT VERTICAL'));
@@ -317,6 +323,7 @@ export class AppShellComponent {
 
     const syncFromEditor = () => {
       if (isSyncing) return;
+      if (workspaceStore.getSettings().syncScroll === false) return;
       const ed = getEditorScroller();
       const prev = getPreviewScroller();
       if (!ed || !prev) return;
@@ -332,6 +339,7 @@ export class AppShellComponent {
 
     const syncFromPreview = () => {
       if (isSyncing) return;
+      if (workspaceStore.getSettings().syncScroll === false) return;
       const ed = getEditorScroller();
       const prev = getPreviewScroller();
       if (!ed || !prev) return;

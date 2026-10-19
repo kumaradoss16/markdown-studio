@@ -187,6 +187,26 @@ export class GitHubAuthService {
   getUser() {
     return this.currentUser;
   }
+
+  /**
+   * Retrieves high-level authentication status for dialogs and UI badges.
+   * @returns {{ authenticated: boolean, state: string, user: any | null }}
+   */
+  getStatus() {
+    return {
+      authenticated: this.isAuthenticated(),
+      state: this.state,
+      user: this.currentUser,
+    };
+  }
+
+  /**
+   * Alias for disconnect().
+   * @returns {Promise<boolean>}
+   */
+  async signOut() {
+    return this.disconnect();
+  }
 }
 
 export const gitHubAuthService = new GitHubAuthService();

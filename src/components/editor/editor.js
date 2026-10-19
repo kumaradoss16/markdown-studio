@@ -21,7 +21,9 @@ export class EditorComponent {
   constructor(container) {
     this.container = container;
     this.view = null;
-    this.showLineNumbers = true;
+    const settings = workspaceStore.getSettings();
+    this.showLineNumbers = settings.showLineNumbers !== undefined ? settings.showLineNumbers : true;
+    this.wordWrap = settings.wordWrap !== undefined ? settings.wordWrap : true;
     this.rawMode = false;
     this.currentDocId = null;
     this.commandController = new EditorCommandMenuController(this);
@@ -43,6 +45,27 @@ export class EditorComponent {
       const active = documentStateManager.getActiveDocument();
       this.updateRemoteBanner(active);
     });
+    eventBus.on(AppEvents.SETTINGS_CHANGED, (settings) => {
+      this.applySettings(settings);
+    });
+  }
+
+  applySettings(settings) {
+    if (!settings) return;
+    if (settings.showLineNumbers !== undefined) {
+      this.showLineNumbers = Boolean(settings.showLineNumbers);
+    }
+    if (settings.wordWrap !== undefined) {
+      this.wordWrap = Boolean(settings.wordWrap);
+    }
+    const active = documentStateManager.getActiveDocument();
+    if (active && this.view) {
+      const scrollPos = this.view.scrollDOM?.scrollTop;
+      this.view.setState(this.createEditorState(active.content || ''));
+      if (this.view.scrollDOM && scrollPos !== undefined) {
+        this.view.scrollDOM.scrollTop = scrollPos;
+      }
+    }
   }
 
   jumpToLine(lineNumber, colNumber = 1) {
@@ -222,6 +245,10 @@ export class EditorComponent {
 
     if (this.showLineNumbers) {
       extensions.push(lineNumbers(), highlightActiveLineGutter(), highlightActiveLine());
+    }
+
+    if (this.wordWrap) {
+      extensions.push(EditorView.lineWrapping);
     }
 
     const tabSize = workspaceStore.getSettings().tabSize || 2;
