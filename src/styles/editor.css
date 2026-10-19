@@ -142,17 +142,22 @@
   height: 100% !important;
   background-color: var(--color-editor-background) !important;
   color: var(--color-text-primary) !important;
+  tab-size: 2 !important;
+  -moz-tab-size: 2 !important;
 }
 
 .cm-scroller {
   font-family: var(--font-editor) !important;
   font-size: var(--font-size-editor) !important;
-  line-height: var(--line-height-editor, 1.6) !important;
+  line-height: var(--line-height-editor, 1.5) !important;
   font-variant-ligatures: normal !important;
   font-feature-settings: "liga" 1, "calt" 1 !important;
+  tab-size: 2 !important;
+  -moz-tab-size: 2 !important;
   overflow: auto !important;
   padding: 12px 0;
 }
+
 
 .cm-gutters {
   background-color: var(--color-editor-background) !important;

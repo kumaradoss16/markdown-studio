@@ -44,29 +44,29 @@ export class SidebarComponent {
         <div class="sidebar-title-area">
           <img src="/markforge-icon.png" alt="MarkForge" width="16" height="16" class="sidebar-brand-icon" style="border-radius: 3px;" />
         </div>
-        <div class="sidebar-actions">
-          <button class="header-btn" id="sidebarNewDocBtn" title="New Document (⌘N)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="sidebar-actions" role="toolbar" aria-label="Sidebar Actions">
+          <button class="header-btn" id="sidebarNewDocBtn" title="New Document (⌘N)" aria-label="New Document">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
             </svg>
           </button>
-          <button class="header-btn" id="sidebarNewFolderBtn" title="New Folder">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button class="header-btn" id="sidebarNewFolderBtn" title="New Folder" aria-label="New Folder">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
             </svg>
           </button>
-          <button class="header-btn" id="sidebarSearchBtn" title="Search (⌘F)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button class="header-btn" id="sidebarSearchBtn" title="Search (⌘F)" aria-label="Search Workspace">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </button>
-          <button class="header-btn" id="sidebarSortBtn" title="Sort files">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button class="header-btn" id="sidebarSortBtn" title="Sort files" aria-label="Sort Files">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/>
             </svg>
           </button>
-          <button class="header-btn" id="sidebarCollapseBtn" title="Collapse sidebar (⌘B)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button class="header-btn" id="sidebarCollapseBtn" title="Collapse sidebar (⌘B)" aria-label="Collapse Sidebar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/>
             </svg>
           </button>
@@ -77,21 +77,21 @@ export class SidebarComponent {
         <!-- Recents -->
         <div class="sidebar-section">
           <div class="folder-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
             <span>Recents</span>
           </div>
           <div class="folder-content">
             <div class="sidebar-item" data-path="ExampleVault/Sprint Review 2026-03-25.md" data-name="Sprint Review 2026-03-25.md">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
               <span>Sprint Review 2026-03-25</span>
-              <button class="item-more-btn" title="More options" data-path="ExampleVault/Sprint Review 2026-03-25.md" data-name="Sprint Review 2026-03-25.md">···</button>
+              <button class="item-more-btn" title="More options" aria-label="More options" data-path="ExampleVault/Sprint Review 2026-03-25.md" data-name="Sprint Review 2026-03-25.md">···</button>
             </div>
           </div>
         </div>
@@ -110,15 +110,16 @@ export class SidebarComponent {
           <div class="knowledge-base-list">
             ${workspaceManager.knowledgeBase.map(item => `
               <div class="sidebar-item ${item.path === activePath ? 'active' : ''}" data-path="${item.path}" data-name="${item.name}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                 </svg>
                 <span>${item.name}</span>
-                <button class="item-more-btn" title="More options" data-path="${item.path}" data-name="${item.name}">···</button>
+                <button class="item-more-btn" title="More options" aria-label="More options for ${item.name}" data-path="${item.path}" data-name="${item.name}">···</button>
               </div>
             `).join('')}
           </div>
         </div>
+
 
         <!-- Tags -->
         <div class="sidebar-section">

@@ -116,7 +116,8 @@ export function buildCodeBlockDecorations(state) {
       if (!inBlock) {
         inBlock = true;
         blockStartLine = line;
-        blockLang = fenceMatch[3] || 'text';
+        const rawLang = fenceMatch[3] ? fenceMatch[3].replace(/[`~]/g, '').trim() : '';
+        blockLang = rawLang || 'text';
         blockCodeLines = [];
       } else {
         // Closing fence

@@ -33,41 +33,48 @@ export class DocumentTabsComponent {
               <div class="doc-tab ${isActive ? 'active' : ''} ${isDirty ? 'dirty' : ''}" 
                    data-id="${doc.id}" 
                    draggable="true" 
+                   role="tab"
+                   aria-selected="${isActive ? 'true' : 'false'}"
                    title="${doc.path || doc.name} (Middle-click to close)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
                 </svg>
                 <span>${doc.name}</span>
                 <span class="tab-dirty-indicator" title="Unsaved changes (Click ✕ on hover to close)"></span>
-                <button class="tab-close-btn" data-close-id="${doc.id}" title="Close tab">✕</button>
+                <button class="tab-close-btn" data-close-id="${doc.id}" title="Close tab" aria-label="Close tab ${doc.name}">✕</button>
               </div>
             `;
           }).join('')}
-          <button class="tab-add-btn" id="newTabBtn" title="New document (⌘N)">+</button>
+          <button class="tab-add-btn" id="newTabBtn" title="New document (⌘N)" aria-label="Create new document">+</button>
         </div>
 
         <!-- Right scroll arrow button -->
-        <button class="tab-arrow-btn" id="tabScrollRight" title="Scroll tabs right" style="display: none; background: transparent; border: none; color: var(--color-text-muted); cursor: pointer; padding: 2px 5px; font-size: 11px;">▶</button>
+        <button class="tab-arrow-btn" id="tabScrollRight" title="Scroll tabs right" aria-label="Scroll tabs right" style="display: none; background: transparent; border: none; color: var(--color-text-muted); cursor: pointer; padding: 2px 5px; font-size: 11px;">▶</button>
 
         <!-- Tab actions -->
-        <div class="tabs-actions" style="display: flex; align-items: center; gap: 4px; margin-left: 6px; padding-right: 4px; flex-shrink: 0;">
-          <button class="header-btn" id="tabHistoryBtn" title="Document Revision History & Audit Trail (⌘H)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="tabs-actions" style="display: flex; align-items: center; gap: 4px; margin-left: 6px; padding-right: 4px; flex-shrink: 0;" role="toolbar" aria-label="Tab Bar Controls">
+          <button class="header-btn" id="tabHistoryBtn" title="Document Revision History & Audit Trail (⌘H)" aria-label="Document Revision History">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/>
               <polyline points="12 6 12 12 16 14"/>
             </svg>
           </button>
-          <button class="header-btn" id="tabSplitToggleBtn" title="Toggle Split View Mode (Horizontal / Vertical)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>
+          <button class="header-btn" id="tabSplitToggleBtn" title="Toggle Split View Mode (Horizontal / Vertical)" aria-label="Toggle Split Orientation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
             </svg>
           </button>
-          <button class="header-btn" id="tabMoreOptionsBtn" title="More Tab Options">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+          <button class="header-btn" id="tabMoreOptionsBtn" title="More Tab Options" aria-label="More tab options">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="19" cy="12" r="1"/>
+              <circle cx="5" cy="12" r="1"/>
             </svg>
           </button>
         </div>
+
       </div>
     `;
 

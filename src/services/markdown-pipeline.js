@@ -309,7 +309,7 @@ export class MarkdownPipeline {
           }
         } : {}),
         code({ text, lang }) {
-          const rawLang = (lang || 'text').trim().split(/\s+/)[0];
+          const rawLang = (lang || 'text').replace(/[`~]/g, '').trim().split(/\s+/)[0];
           const cleanLang = rawLang.toLowerCase() || 'text';
           const displayLang = cleanLang.toUpperCase();
           const escapedCode = (text || '')

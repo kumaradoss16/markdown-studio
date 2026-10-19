@@ -161,6 +161,7 @@ export class ExportEngine {
       margin: 20px 0;
       display: block;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     th, td {
       border: 1px solid var(--border);
@@ -194,6 +195,28 @@ export class ExportEngine {
       color: ${isDark ? '#8b949e' : '#57606a'};
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]):not([data-theme="dark"]) {
+        --bg: #0d1117;
+        --text: #c9d1d9;
+        --border: #30363d;
+        --heading: #f0f6fc;
+        --code-bg: #161b22;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0 16px;
+        margin: 20px auto;
+      }
+      h1 { font-size: 1.65rem; }
+      h2 { font-size: 1.35rem; }
     }
 
     @page {
@@ -301,9 +324,10 @@ export class ExportEngine {
     ${bodyHtml}
   </article>
   <footer class="export-footer">
-    <span>DevspireHub Markdown Studio</span>
+    <span>Generated with DevspireHub Markdown Studio</span>
     <span>Exported ${new Date().toISOString().split('T')[0]}</span>
   </footer>
+
 </body>
 </html>`;
   }
