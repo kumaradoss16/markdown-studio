@@ -13,6 +13,7 @@ import { gitHubAuthService } from '../services/github-auth-service.js';
 import { publicationCoordinator } from '../services/publication-coordinator.js';
 import { accentService } from '../services/accent-service.js';
 import { workspaceStore } from '../services/workspace-store.js';
+import { graphIndexService } from '../services/graph-index-service.js';
 import '../components/github/diff-modal.js';
 import '../components/github/publish-modal.js';
 import '../components/history/history-panel.js';
@@ -20,6 +21,9 @@ import '../components/history/history-diff-modal.js';
 import { AppEvents, eventBus } from './events.js';
 
 export async function bootstrapApp(rootElement) {
+  // Initialize Knowledge Graph auto-sync & indexing
+  graphIndexService.initAutoSync();
+  graphIndexService.buildGraph().catch(e => console.warn('Initial graph indexing error:', e));
   // Restore GitHub session if stored
   gitHubAuthService.restoreSession().catch((e) => console.warn('Could not restore GitHub session:', e));
   // Reconcile any in-flight/uncertain publication attempts from previous crashes (Invariant 17)
@@ -135,6 +139,9 @@ export async function bootstrapApp(rootElement) {
       if (active) {
         eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: active.id, filePath: active.path });
       }
+    } else if (isMod && e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      eventBus.emit(AppEvents.GRAPH_OPEN_REQUESTED);
     }
   });
 

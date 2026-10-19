@@ -79,6 +79,8 @@ export const AppEvents = {
   QA_REPORT_EXPORTED: 'qa:report_exported',
   QA_MODAL_OPEN: 'qa:modal_open',
   SETTINGS_CHANGED: 'settings:changed',
+  GRAPH_UPDATED: 'graph:updated',
+  GRAPH_OPEN_REQUESTED: 'graph:open_requested',
 };
 
 export const eventBus = new EventEmitter();

@@ -8,6 +8,7 @@ import { exportEngine, ExportFormat } from '../../services/export-engine.js';
 import { TEMPLATES } from '../../data/templates.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { projectQaModalComponent } from '../qa/project-qa-modal.js';
+import { graphModalComponent } from '../graph/graph-modal.js';
 import { accentService } from '../../services/accent-service.js';
 import { workspaceStore } from '../../services/workspace-store.js';
 import { recentFilesService } from '../../services/recent-files-service.js';
@@ -54,6 +55,8 @@ export class DialogsComponent {
       eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: payload.docId });
     } else if (payload.type === 'qa' || payload.type === 'project-qa') {
       projectQaModalComponent.show();
+    } else if (payload.type === 'graph' || payload.type === 'knowledge-graph') {
+      graphModalComponent.show();
     }
   }
 
@@ -341,6 +344,7 @@ export class DialogsComponent {
           <div class="sidebar-item" data-action="manage-toc"><strong>Insert / Update Table of Contents (TOC)</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">📑 TOC</span></div>
           <div class="sidebar-item" data-action="view-diagnostics"><strong>Quality Diagnostics &amp; Linting</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-emerald);">🛡️ Check</span></div>
           <div class="sidebar-item" data-action="project-qa"><strong>Documentation QA &amp; Project Verification...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-teal);">🧪 QA</span></div>
+          <div class="sidebar-item" data-action="knowledge-graph"><strong>Knowledge Graph View (Workspace Bi-directional)...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">⌘G</span></div>
           <div class="sidebar-item" data-action="version-history"><strong>Version History &amp; Revisions...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">⌘H</span></div>
           <div class="sidebar-item" data-action="save-doc"><strong>Save Active Document</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⌘S</span></div>
           <div class="sidebar-item" data-action="save-as"><strong>Save As...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⇧⌘S</span></div>
@@ -393,6 +397,9 @@ export class DialogsComponent {
         break;
       case 'project-qa':
         projectQaModalComponent.show();
+        break;
+      case 'knowledge-graph':
+        graphModalComponent.show();
         break;
       case 'version-history':
         if (active) eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: active.id });

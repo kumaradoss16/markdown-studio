@@ -101,6 +101,20 @@ export class AppShellComponent {
             <span class="shortcut-badge" style="font-size: 8.5px;">⌘F</span>
           </button>
 
+          <!-- Graph View -->
+          <button class="header-btn" id="graphViewBtn" title="Knowledge Graph View (⌘G)" aria-label="Open Knowledge Graph">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="6" cy="6" r="3"/>
+              <circle cx="18" cy="6" r="3"/>
+              <circle cx="12" cy="18" r="3"/>
+              <line x1="8.5" y1="7.5" x2="10.5" y2="15.5"/>
+              <line x1="15.5" y1="7.5" x2="13.5" y2="15.5"/>
+              <line x1="9" y1="6" x2="15" y2="6"/>
+            </svg>
+            <span>Graph</span>
+            <span class="shortcut-badge" style="font-size: 8.5px;">⌘G</span>
+          </button>
+
           <!-- PDF -->
           <button class="header-btn" id="pdfExportBtn" title="Export to PDF" aria-label="Export to PDF">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -209,6 +223,11 @@ export class AppShellComponent {
     // Focus mode toggle
     this.container.querySelector('#focusBtn')?.addEventListener('click', () => {
       document.querySelector('.workspace-sidebar')?.classList.toggle('collapsed');
+    });
+
+    // Graph View button in header
+    this.container.querySelector('#graphViewBtn')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.GRAPH_OPEN_REQUESTED);
     });
 
     // PDF / Export button in header
