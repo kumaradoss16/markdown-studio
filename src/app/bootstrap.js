@@ -12,6 +12,7 @@ import { saveCoordinator } from '../core/save-coordinator.js';
 import { gitHubAuthService } from '../services/github-auth-service.js';
 import { publicationCoordinator } from '../services/publication-coordinator.js';
 import { accentService } from '../services/accent-service.js';
+import { workspaceStore } from '../services/workspace-store.js';
 import '../components/github/diff-modal.js';
 import '../components/github/publish-modal.js';
 import '../components/history/history-panel.js';
@@ -25,20 +26,27 @@ export async function bootstrapApp(rootElement) {
   publicationCoordinator.recoverPendingAttempts().catch((e) => console.warn('Publication recovery error:', e));
   // 0. Restore saved theme, accent, and font preferences
   try {
-    const savedTheme = localStorage.getItem('devspirehub:theme');
+    const settings = workspaceStore.getSettings();
+    const savedTheme = localStorage.getItem('devspirehub:theme') || settings.theme;
     if (savedTheme) {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
     // Restore accent color
-    accentService.applyAccent(accentService.getAccent());
+    accentService.applyAccent(settings.accent || accentService.getAccent());
 
-    const savedFontSize = localStorage.getItem('devspirehub:fontSize');
+    const savedFontSize = localStorage.getItem('devspirehub:fontSize') || settings.fontSize;
     if (savedFontSize) {
       document.documentElement.style.setProperty('--font-size-editor', savedFontSize);
+    }
+    if (settings.tabSize) {
+      document.documentElement.style.setProperty('--editor-tab-size', String(settings.tabSize));
     }
   } catch (e) {
     console.warn('LocalStorage unavailable for preferences restoration:', e);
   }
+
+  // Initialize auto sync for workspace state and settings
+  workspaceStore.initAutoSync();
 
   // 1. Mount App Shell
   const appShell = new AppShellComponent(rootElement);
@@ -51,28 +59,31 @@ export async function bootstrapApp(rootElement) {
   const previewContainer = rootElement.querySelector('#previewContainer');
   const statusBarContainer = rootElement.querySelector('#statusBarContainer');
 
-  // 3. Pre-load default documents into StateManager matching the reference UI
-  const initialFiles = [
-    'ExampleVault/Marcus Chen.md',
-    'ExampleVault/Mermaid Style Rules.md',
-    'ExampleVault/Habitat Design.md',
-    'ExampleVault/System Architecture.md',
-    'ExampleVault/Orbital Mechanics.md',
-  ];
+  // 3. Pre-load documents: Restore saved workspace tabs & draft buffers, or load default files
+  const restored = await workspaceStore.restoreWorkspace();
+  if (!restored) {
+    const initialFiles = [
+      'ExampleVault/Marcus Chen.md',
+      'ExampleVault/Mermaid Style Rules.md',
+      'ExampleVault/Habitat Design.md',
+      'ExampleVault/System Architecture.md',
+      'ExampleVault/Orbital Mechanics.md',
+    ];
 
-  for (const filePath of initialFiles) {
-    try {
-      const fileData = await fileSystemService.readFile(filePath);
-      documentStateManager.openDocument(fileData.path, fileData.content, fileData.hash, fileData.mtime);
-    } catch (err) {
-      console.warn(`Could not preload file ${filePath}:`, err);
+    for (const filePath of initialFiles) {
+      try {
+        const fileData = await fileSystemService.readFile(filePath);
+        documentStateManager.openDocument(fileData.path, fileData.content, fileData.hash, fileData.mtime);
+      } catch (err) {
+        console.warn(`Could not preload file ${filePath}:`, err);
+      }
     }
-  }
 
-  // Set Habitat Design.md as the active document as shown in the reference image
-  const habitatDoc = documentStateManager.getOpenDocuments().find(d => d.name === 'Habitat Design.md');
-  if (habitatDoc) {
-    documentStateManager.setActiveDocument(habitatDoc.id);
+    // Set Habitat Design.md as the active document as shown in the reference image
+    const habitatDoc = documentStateManager.getOpenDocuments().find(d => d.name === 'Habitat Design.md');
+    if (habitatDoc) {
+      documentStateManager.setActiveDocument(habitatDoc.id);
+    }
   }
 
   // 4. Mount subcomponents

@@ -2,11 +2,14 @@ import { workspaceManager } from '../../core/workspace-manager.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { saveCoordinator } from '../../core/save-coordinator.js';
 import { AppEvents, eventBus } from '../../app/events.js';
+import { workspaceStore } from '../../services/workspace-store.js';
 
 export class AppShellComponent {
   constructor(container) {
     this.container = container;
-    this.currentMode = 'DUAL SPLIT';
+    const settings = workspaceStore.getSettings();
+    this.currentMode = settings.viewMode || 'DUAL SPLIT';
+    this.splitRatio = typeof settings.splitRatio === 'number' ? settings.splitRatio : 50;
   }
 
   render() {
@@ -121,10 +124,6 @@ export class AppShellComponent {
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </button>
-
-
-          <!-- User avatar -->
-          <div class="avatar-circle" title="Logged in as jt">JT</div>
         </div>
       </header>
 
@@ -179,6 +178,7 @@ export class AppShellComponent {
     const previewBtn = this.container.querySelector('#modePreviewBtn');
 
     const setMode = (mode) => {
+      this.currentMode = mode;
       sourceBtn?.classList.toggle('active', mode === 'SOURCE');
       splitHBtn?.classList.toggle('active', mode === 'DUAL SPLIT');
       splitVBtn?.classList.toggle('active', mode === 'SPLIT VERTICAL');
@@ -189,8 +189,11 @@ export class AppShellComponent {
       if (mode === 'PREVIEW') splitContainer.classList.add('view-preview');
       if (mode === 'SPLIT VERTICAL') splitContainer.classList.add('split-vertical');
 
+      workspaceStore.saveSettings({ viewMode: mode });
       eventBus.emit(AppEvents.VIEW_MODE_CHANGED, mode);
     };
+
+    setMode(this.currentMode);
 
     sourceBtn?.addEventListener('click', () => setMode('SOURCE'));
     splitHBtn?.addEventListener('click', () => setMode('DUAL SPLIT'));
@@ -254,7 +257,12 @@ export class AppShellComponent {
     const splitter = this.container.querySelector('#paneSplitter');
     if (!splitter || !splitContainer) return;
 
+    const initialRatio = this.splitRatio || 50;
+    splitContainer.style.setProperty('--editor-split-size', `${initialRatio}%`);
+    splitContainer.style.setProperty('--preview-split-size', `calc(${100 - initialRatio}% - var(--splitter-size))`);
+
     let isDragging = false;
+    let lastPercent = initialRatio;
 
     splitter.addEventListener('mousedown', (e) => {
       e.preventDefault();
@@ -272,12 +280,14 @@ export class AppShellComponent {
           const clientY = ev.clientY - rect.top;
           let percent = (clientY / rect.height) * 100;
           percent = Math.max(15, Math.min(85, percent));
+          lastPercent = percent;
           splitContainer.style.setProperty('--editor-split-size', `${percent}%`);
           splitContainer.style.setProperty('--preview-split-size', `calc(${100 - percent}% - var(--splitter-size))`);
         } else {
           const clientX = ev.clientX - rect.left;
           let percent = (clientX / rect.width) * 100;
           percent = Math.max(15, Math.min(85, percent));
+          lastPercent = percent;
           splitContainer.style.setProperty('--editor-split-size', `${percent}%`);
           splitContainer.style.setProperty('--preview-split-size', `calc(${100 - percent}% - var(--splitter-size))`);
         }
@@ -290,6 +300,7 @@ export class AppShellComponent {
           document.body.style.removeProperty('cursor');
           window.removeEventListener('mousemove', onMouseMove);
           window.removeEventListener('mouseup', onMouseUp);
+          workspaceStore.saveSettings({ splitRatio: Math.round(lastPercent) });
         }
       };
 

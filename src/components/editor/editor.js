@@ -13,6 +13,7 @@ import { codeBlockDecorations } from '../../features/editor/extensions/code-bloc
 import { remoteDraftService } from '../../services/remote-draft-service.js';
 import { revisionComparisonService } from '../../services/revision-comparison-service.js';
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
+import { workspaceStore } from '../../services/workspace-store.js';
 import { diffModalComponent } from '../github/diff-modal.js';
 import '../github/publish-modal.js';
 
@@ -222,6 +223,9 @@ export class EditorComponent {
     if (this.showLineNumbers) {
       extensions.push(lineNumbers(), highlightActiveLineGutter(), highlightActiveLine());
     }
+
+    const tabSize = workspaceStore.getSettings().tabSize || 2;
+    extensions.push(EditorState.tabSize.of(tabSize));
 
     return EditorState.create({
       doc: initialText,

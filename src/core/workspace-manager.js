@@ -1,5 +1,7 @@
 import { AppEvents, eventBus } from '../app/events.js';
 import { fileSystemService } from '../services/filesystem-service.js';
+import { fileSystemAdapter } from '../services/filesystem-adapter.js';
+import { recentFilesService } from '../services/recent-files-service.js';
 import { documentStateManager } from './document-state-manager.js';
 
 /**
@@ -9,9 +11,7 @@ export class WorkspaceManager {
   constructor() {
     this.vaultName = '';
     this.vaultRoot = 'ExampleVault';
-    this.recents = [
-      { name: 'Sprint Review 2026-03-25.md', path: 'ExampleVault/Sprint Review 2026-03-25.md' }
-    ];
+    this.recents = recentFilesService.getRecents();
     this.folders = [
       { name: 'audio', path: 'ExampleVault/audio', items: [] },
       {
@@ -139,12 +139,77 @@ export class WorkspaceManager {
   }
 
   /**
-   * Renames an item in the workspace tree.
+   * Renames an item (file or directory) in the workspace tree.
    * @param {string} oldPath
    * @param {string} newName
+   * @param {boolean} [isDirectory=null]
    */
-  async renameItem(oldPath, newName) {
-    const cleanName = newName.replace('.md', '');
+  async renameItem(oldPath, newName, isDirectory = null) {
+    const isDir = isDirectory !== null 
+      ? isDirectory 
+      : (this.folders.some(f => f.path === oldPath) || (!oldPath.includes('.') && !newName.endsWith('.md')));
+
+    if (isDir) {
+      const cleanFolder = newName.trim();
+      if (!this.isValidFilename(cleanFolder)) {
+        throw new Error(`Invalid folder name "${newName}". Cannot contain \\ / : * ? " < > |`);
+      }
+      const parts = oldPath.split('/');
+      parts.pop();
+      const newPath = `${parts.join('/')}/${cleanFolder}`;
+
+      await fileSystemAdapter.rename(oldPath, cleanFolder);
+
+      const oldPrefix = oldPath + '/';
+      const newPrefix = newPath + '/';
+
+      // Update in folders
+      for (const folder of this.folders) {
+        if (folder.path === oldPath) {
+          folder.name = cleanFolder;
+          folder.path = newPath;
+        } else if (folder.path.startsWith(oldPrefix)) {
+          folder.path = folder.path.replace(oldPrefix, newPrefix);
+        }
+        if (folder.items) {
+          for (const item of folder.items) {
+            if (item.path.startsWith(oldPrefix)) {
+              item.path = item.path.replace(oldPrefix, newPrefix);
+            }
+          }
+        }
+      }
+
+      // Update in knowledgeBase
+      for (const kb of this.knowledgeBase) {
+        if (kb.path.startsWith(oldPrefix)) {
+          kb.path = kb.path.replace(oldPrefix, newPrefix);
+        }
+      }
+
+      // Update in recents
+      for (const r of this.recents) {
+        if (r.path.startsWith(oldPrefix)) {
+          r.path = r.path.replace(oldPrefix, newPrefix);
+        }
+      }
+      recentFilesService.persist();
+
+      // Update any open documents in documentStateManager
+      for (const doc of documentStateManager.documents.values()) {
+        if (doc.path.startsWith(oldPrefix)) {
+          doc.path = doc.path.replace(oldPrefix, newPrefix);
+          doc.name = doc.path.split('/').pop() || doc.name;
+          eventBus.emit(AppEvents.DOCUMENT_CHANGED, doc);
+        }
+      }
+
+      eventBus.emit(AppEvents.WORKSPACE_CHANGED, { renamed: { oldPath, newPath, isDirectory: true } });
+      return { success: true, oldPath, newPath, name: cleanFolder };
+    }
+
+    // File rename handling
+    const cleanName = newName.replace(/\.md$/, '');
     if (!this.isValidFilename(cleanName)) {
       throw new Error(`Invalid file name "${newName}". Cannot contain \\ / : * ? " < > |`);
     }
@@ -153,6 +218,11 @@ export class WorkspaceManager {
     const newPath = `${parts.join('/')}/${cleanName}.md`;
 
     await fileSystemService.renameFile(oldPath, newPath);
+    try {
+      await fileSystemAdapter.rename(oldPath, `${cleanName}.md`);
+    } catch {
+      // Handled by fileSystemService fallback
+    }
 
     // Update in knowledgeBase
     const kbItem = this.knowledgeBase.find(k => k.path === oldPath);
@@ -167,6 +237,7 @@ export class WorkspaceManager {
       recent.name = `${cleanName}.md`;
       recent.path = newPath;
     }
+    recentFilesService.renameRecent(oldPath, newPath, cleanName);
 
     // Update any open document in documentStateManager
     for (const doc of documentStateManager.documents.values()) {
@@ -177,8 +248,8 @@ export class WorkspaceManager {
       }
     }
 
-    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { renamed: { oldPath, newPath } });
-    return { oldPath, newPath };
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { renamed: { oldPath, newPath, isDirectory: false } });
+    return { success: true, oldPath, newPath };
   }
 
   /**
@@ -195,23 +266,66 @@ export class WorkspaceManager {
   }
 
   /**
-   * Deletes an item from the workspace tree.
+   * Deletes an item (file or directory) from the workspace tree.
    * @param {string} itemPath
+   * @param {boolean} [isDirectory=null]
    */
-  async deleteItem(itemPath) {
+  async deleteItem(itemPath, isDirectory = null) {
+    const isDir = isDirectory !== null 
+      ? isDirectory 
+      : (this.folders.some(f => f.path === itemPath) || (!itemPath.includes('.') && !itemPath.endsWith('.md')));
+
+    if (isDir) {
+      await fileSystemAdapter.delete(itemPath);
+      const prefix = itemPath + '/';
+
+      this.folders = this.folders.filter(f => f.path !== itemPath && !f.path.startsWith(prefix));
+      this.knowledgeBase = this.knowledgeBase.filter(k => k.path !== itemPath && !k.path.startsWith(prefix));
+      this.recents = this.recents.filter(r => r.path !== itemPath && !r.path.startsWith(prefix));
+      recentFilesService.removeRecent(itemPath);
+      for (const r of Array.from(recentFilesService.getRecents())) {
+        if (r.path.startsWith(prefix)) {
+          recentFilesService.removeRecent(r.path);
+        }
+      }
+
+      // Close all open tabs for files within this directory
+      for (const doc of Array.from(documentStateManager.documents.values())) {
+        if (doc.path === itemPath || doc.path.startsWith(prefix)) {
+          documentStateManager.closeDocument(doc.id, true);
+        }
+      }
+
+      eventBus.emit(AppEvents.WORKSPACE_CHANGED, { deleted: itemPath, isDirectory: true });
+      return { success: true, itemPath, isDirectory: true };
+    }
+
+    // File deletion
     await fileSystemService.deleteFile(itemPath);
+    try {
+      await fileSystemAdapter.delete(itemPath);
+    } catch {
+      // Handled by fileSystemService
+    }
+
     this.knowledgeBase = this.knowledgeBase.filter(k => k.path !== itemPath);
     this.recents = this.recents.filter(r => r.path !== itemPath);
+    recentFilesService.removeRecent(itemPath);
+
     for (const folder of this.folders) {
-      folder.items = folder.items.filter(i => i.path !== itemPath);
+      if (folder.items) {
+        folder.items = folder.items.filter(i => i.path !== itemPath);
+      }
     }
-    for (const doc of documentStateManager.documents.values()) {
+
+    for (const doc of Array.from(documentStateManager.documents.values())) {
       if (doc.path === itemPath) {
         documentStateManager.closeDocument(doc.id, true);
       }
     }
-    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { deleted: itemPath });
-    return true;
+
+    eventBus.emit(AppEvents.WORKSPACE_CHANGED, { deleted: itemPath, isDirectory: false });
+    return { success: true, itemPath, isDirectory: false };
   }
 }
 

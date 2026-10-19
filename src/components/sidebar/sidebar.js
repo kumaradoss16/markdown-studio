@@ -1,6 +1,7 @@
 import { workspaceManager } from '../../core/workspace-manager.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { fileSystemService } from '../../services/filesystem-service.js';
+import { recentFilesService } from '../../services/recent-files-service.js';
 import { GraphViewComponent } from './graph-view.js';
 import { FileTreeComponent } from '../file-tree/file-tree.js';
 import { GitHubPanelComponent } from '../github/github-panel.js';
@@ -76,23 +77,28 @@ export class SidebarComponent {
       <div class="sidebar-scroll-area">
         <!-- Recents -->
         <div class="sidebar-section">
-          <div class="folder-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span>Recents</span>
+          <div class="folder-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>Recents</span>
+            </div>
+            ${recentFilesService.getRecents().length > 0 ? `<button class="header-btn" id="sidebarClearRecentsBtn" title="Clear Recent Files" style="font-size: 9px; padding: 1px 5px;">clear</button>` : ''}
           </div>
           <div class="folder-content">
-            <div class="sidebar-item" data-path="ExampleVault/Sprint Review 2026-03-25.md" data-name="Sprint Review 2026-03-25.md">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <span>Sprint Review 2026-03-25</span>
-              <button class="item-more-btn" title="More options" aria-label="More options" data-path="ExampleVault/Sprint Review 2026-03-25.md" data-name="Sprint Review 2026-03-25.md">···</button>
-            </div>
+            ${recentFilesService.getRecents().map(r => `
+              <div class="sidebar-item ${r.path === activePath ? 'active' : ''}" data-path="${r.path}" data-name="${r.name}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.name.replace(/\.md$/, '')}</span>
+                <button class="item-more-btn" title="More options" aria-label="More options for ${r.name}" data-path="${r.path}" data-name="${r.name}">···</button>
+              </div>
+            `).join('')}
           </div>
         </div>
 
@@ -199,6 +205,13 @@ export class SidebarComponent {
       });
     });
 
+    // Clear Recents button
+    this.container.querySelector('#sidebarClearRecentsBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      recentFilesService.clearRecents();
+      eventBus.emit(AppEvents.NOTIFICATION, { type: 'info', message: 'Recent files list cleared.' });
+    });
+
     // File click handler
     this.container.querySelectorAll('.sidebar-item').forEach(el => {
       el.addEventListener('click', async (e) => {
@@ -207,6 +220,16 @@ export class SidebarComponent {
 
         const path = el.getAttribute('data-path');
         if (!path) return;
+
+        const exists = await recentFilesService.verifyFileExists(path);
+        if (!exists) {
+          recentFilesService.removeRecent(path);
+          eventBus.emit(AppEvents.NOTIFICATION, {
+            type: 'warning',
+            message: `File "${path}" does not exist on disk.`
+          });
+          return;
+        }
 
         try {
           const fileData = await fileSystemService.readFile(path);

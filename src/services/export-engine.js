@@ -54,13 +54,18 @@ export class ExportEngine {
     const pipelineResult = this.pipeline.process(docSnapshot, { withHeadingIds: true });
     let bodyHtml = pipelineResult.html;
 
-    // If embedding assets, substitute local image sources with base64 data URIs
-    if (embedAssets && Object.keys(assetMap).length > 0) {
+    // If embedding assets, substitute local image sources with base64 data URIs or inline representations
+    if (embedAssets) {
       bodyHtml = bodyHtml.replace(/<img([^>]+)src=["']([^"']+)["']([^>]*)>/g, (match, prefix, src, suffix) => {
         const decodedSrc = decodeURIComponent(src);
         if (assetMap[decodedSrc] || assetMap[src]) {
           const base64Uri = assetMap[decodedSrc] || assetMap[src];
           return `<img${prefix}src="${base64Uri}"${suffix}>`;
+        }
+        // Handle local SVG paths
+        if (src.endsWith('.svg') && !src.startsWith('http') && !src.startsWith('data:')) {
+          const safeSvg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='24'><rect width='100%' height='100%' fill='%23f1f5f9'/><text x='6' y='16' font-size='10' font-family='monospace' fill='%2364748b'>[SVG: ${encodeURIComponent(src)}]</text></svg>`;
+          return `<img${prefix}src="${safeSvg}"${suffix}>`;
         }
         return match;
       });
@@ -381,16 +386,7 @@ export class ExportEngine {
       }
 
       if (format === ExportFormat.PDF) {
-        // PDF triggers print workflow
-        const html = this.generateStandaloneHtml(docSnapshot, options);
-        return {
-          success: true,
-          format: ExportFormat.PDF,
-          output: html,
-          isPrintReady: true,
-          diagnostics: preflight.diagnostics,
-          summary: preflight.summary
-        };
+        return await this.exportToPdf(docSnapshot, options);
       }
 
       throw new Error(`Unsupported export format: ${format}`);
@@ -401,6 +397,170 @@ export class ExportEngine {
         error: `Export failed: ${err.message}`
       };
     }
+  }
+
+  /**
+   * Executes a robust PDF export or print sequence using an isolated, sandboxed DOM container.
+   * Ensures styles, KaTeX/math typesetting, and images are fully resolved and rendered
+   * before invoking the print dialog or headless PDF capture.
+   * @param {{ name?: string, content?: string, revision?: number, path?: string }} docSnapshot
+   * @param {Object} [options={}]
+   * @param {boolean} [options.triggerPrint=true]
+   * @returns {Promise<{ success: boolean, format: string, output?: string, blocked?: boolean, isPrintReady?: boolean, diagnostics?: Array, summary?: Object, error?: string }>}
+   */
+  async exportToPdf(docSnapshot, options = {}) {
+    const preflight = this.preflightCheck(docSnapshot, options);
+    if (!preflight.canExport) {
+      return {
+        success: false,
+        blocked: true,
+        format: ExportFormat.PDF,
+        diagnostics: preflight.diagnostics,
+        summary: preflight.summary,
+        error: `Pre-flight validation failed with ${preflight.summary.errors} error(s). Correct issues or use force override.`
+      };
+    }
+
+    const html = this.generateStandaloneHtml(docSnapshot, {
+      ...options,
+      theme: 'light', // Standard technical documentation PDF format
+      embedAssets: options.embedAssets !== false
+    });
+
+    const triggerPrint = options.triggerPrint !== false;
+    const isBrowserEnv = typeof window !== 'undefined' && typeof document !== 'undefined';
+    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST);
+
+    if (triggerPrint && isBrowserEnv && !isTestEnv) {
+      try {
+        await this.printHtmlDocument(html, docSnapshot?.name || 'Document');
+      } catch (err) {
+        return {
+          success: false,
+          format: ExportFormat.PDF,
+          error: `PDF print capture failed: ${err.message}`
+        };
+      }
+    }
+
+    return {
+      success: true,
+      format: ExportFormat.PDF,
+      output: html,
+      html,
+      isPrintReady: true,
+      diagnostics: preflight.diagnostics,
+      summary: preflight.summary
+    };
+  }
+
+  /**
+   * Prints an HTML document cleanly using a sandboxed hidden iframe,
+   * waiting for fonts, syntax highlighting, and images to complete rendering.
+   * @param {string} html
+   * @param {string} [title='Document']
+   * @returns {Promise<void>}
+   */
+  async printHtmlDocument(html, title = 'Document') {
+    return new Promise((resolve, reject) => {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.title = `PDF Print Worker - ${title}`;
+
+      document.body.appendChild(iframe);
+
+      const cleanup = () => {
+        setTimeout(() => {
+          if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+          }
+        }, 1200);
+      };
+
+      iframe.onload = async () => {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!doc) {
+            cleanup();
+            resolve();
+            return;
+          }
+
+          // 1. Wait for web fonts if supported
+          if (doc.fonts && doc.fonts.ready) {
+            await doc.fonts.ready.catch(() => {});
+          }
+
+          // 2. Wait for all images to decode/load
+          const images = Array.from(doc.images || []);
+          await Promise.all(images.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(r => {
+              img.onload = r;
+              img.onerror = r;
+            });
+          }));
+
+          // 3. Render KaTeX / Math typesetting if KaTeX is globally available
+          if (typeof window.renderMathInElement === 'function') {
+            try {
+              window.renderMathInElement(doc.body, {
+                delimiters: [
+                  { left: '$$', right: '$$', display: true },
+                  { left: '$', right: '$', display: false }
+                ],
+                throwOnError: false
+              });
+            } catch (_) {}
+          }
+
+          // 4. Wait for paint frame settling
+          if (typeof requestAnimationFrame === 'function') {
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          }
+
+          // 5. Electron webContents.printToPDF or native window.print()
+          if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
+            await window.electronAPI.printToPDF({
+              marginsType: 0,
+              printBackground: true,
+              pageSize: 'A4'
+            });
+            cleanup();
+            resolve();
+          } else if (iframe.contentWindow && typeof iframe.contentWindow.print === 'function') {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            cleanup();
+            resolve();
+          } else {
+            cleanup();
+            resolve();
+          }
+        } catch (err) {
+          cleanup();
+          reject(err);
+        }
+      };
+
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(html);
+        doc.close();
+      } else {
+        cleanup();
+        reject(new Error('Unable to access print frame context.'));
+      }
+    });
   }
 }
 

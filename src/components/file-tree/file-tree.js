@@ -427,7 +427,7 @@ export class FileTreeComponent {
       } else if (action === 'new-folder') {
         eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-folder', parentPath });
       } else if (action === 'rename') {
-        eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'rename', path: node.path, name: node.name });
+        eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'rename', path: node.path, name: node.name, isDirectory: isDir });
       } else if (action === 'duplicate') {
         try {
           const res = await fileSystemAdapter.createFile(parentPath, `${node.name.replace(/\.md$/, '')} (copy).md`);
@@ -444,7 +444,7 @@ export class FileTreeComponent {
         } catch {}
         eventBus.emit(AppEvents.NOTIFICATION, { type: 'info', message: `Copied: ${node.path}` });
       } else if (action === 'delete') {
-        eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'delete-confirm', path: node.path, name: node.name });
+        eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'delete-confirm', path: node.path, name: node.name, isDirectory: isDir });
       }
     });
   }

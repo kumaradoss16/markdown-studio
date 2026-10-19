@@ -175,19 +175,6 @@
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
-.avatar-circle {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), #a855f7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 11px;
-  color: #0b0e14;
-  border: 1px solid var(--color-border-default);
-}
 
 /* Document Tabs Bar */
 .tabs-scroll-area {

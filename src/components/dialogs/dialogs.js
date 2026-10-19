@@ -9,6 +9,11 @@ import { TEMPLATES } from '../../data/templates.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { projectQaModalComponent } from '../qa/project-qa-modal.js';
 import { accentService } from '../../services/accent-service.js';
+import { workspaceStore } from '../../services/workspace-store.js';
+import { recentFilesService } from '../../services/recent-files-service.js';
+import { credentialStore } from '../../services/credential-store.js';
+import { gitHubAuthService } from '../../services/github-auth-service.js';
+import { fileSystemService } from '../../services/filesystem-service.js';
 
 export class DialogsComponent {
   constructor(container) {
@@ -213,14 +218,18 @@ export class DialogsComponent {
   }
 
   showRenameDialog(payload = {}) {
-    const currentName = (payload.name || payload.path || 'Untitled').replace(/\.md$/, '');
+    const isDir = Boolean(payload.isDirectory || payload.type === 'directory');
+    const currentName = isDir 
+      ? (payload.name || payload.path?.split('/').pop() || 'Untitled')
+      : (payload.name || payload.path || 'Untitled').replace(/\.md$/, '');
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal-card">
-        <div class="modal-header">Rename Item</div>
+        <div class="modal-header">Rename ${isDir ? 'Folder' : 'File'}</div>
         <div class="modal-body">
-          <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--color-text-secondary);">New Name</label>
+          <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--color-text-secondary);">${isDir ? 'New Folder Name' : 'New File Name'}</label>
           <input type="text" id="dialogRenameInput" value="${currentName}" 
                  style="width: 100%; padding: 6px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-family: var(--font-editor); font-size: 12px; outline: none;" />
           <div id="dialogRenameError" style="color: var(--color-accent-rose); font-size: 11px; margin-top: 6px; display: none;"></div>
@@ -244,19 +253,22 @@ export class DialogsComponent {
         overlay.remove();
         return;
       }
-      const cleanName = val.replace(/\.md$/, '');
+      const cleanName = isDir ? val : val.replace(/\.md$/, '');
       if (!workspaceManager.isValidFilename(cleanName)) {
         if (errorEl) {
-          errorEl.textContent = `Invalid filename "${val}". Cannot contain \\ / : * ? " < > | or Windows reserved names.`;
+          errorEl.textContent = `Invalid ${isDir ? 'folder' : 'file'} name "${val}". Cannot contain \\ / : * ? " < > | or Windows reserved names.`;
           errorEl.style.display = 'block';
         }
         return;
       }
 
       try {
-        await workspaceManager.renameItem(payload.path, cleanName);
+        await workspaceManager.renameItem(payload.path, cleanName, isDir);
         overlay.remove();
-        eventBus.emit(AppEvents.NOTIFICATION, { type: 'success', message: `Renamed to "${cleanName}.md".` });
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'success',
+          message: isDir ? `Renamed folder to "${cleanName}".` : `Renamed to "${cleanName}.md".`
+        });
       } catch (err) {
         if (errorEl) {
           errorEl.textContent = err.message;
@@ -275,15 +287,20 @@ export class DialogsComponent {
   }
 
   showDeleteConfirmDialog(payload = {}) {
+    const isDir = Boolean(payload.isDirectory || payload.type === 'directory');
     const itemName = payload.name || payload.path || 'this item';
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal-card">
-        <div class="modal-header">Delete Item</div>
+        <div class="modal-header">Delete ${isDir ? 'Folder' : 'Item'}</div>
         <div class="modal-body">
-          Are you sure you want to permanently delete <strong>${itemName}</strong>?<br>
-          <span style="font-size: 11px; color: var(--color-text-muted); display: block; margin-top: 6px;">This action cannot be undone and will remove the file from your workspace.</span>
+          Are you sure you want to permanently delete <strong>${itemName}</strong>${isDir ? ' and all containing files' : ''}?<br>
+          <span style="font-size: 11px; color: var(--color-text-muted); display: block; margin-top: 6px;">
+            ${isDir 
+              ? 'This action cannot be undone and will recursively remove the folder and all child documents from your workspace.'
+              : 'This action cannot be undone and will remove the file from your workspace.'}
+          </span>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" id="dialogDeleteCancelBtn">Cancel</button>
@@ -297,7 +314,7 @@ export class DialogsComponent {
     overlay.querySelector('#dialogDeleteCancelBtn')?.addEventListener('click', () => overlay.remove());
     overlay.querySelector('#dialogDeleteConfirmBtn')?.addEventListener('click', async () => {
       try {
-        await workspaceManager.deleteItem(payload.path);
+        await workspaceManager.deleteItem(payload.path, isDir);
         overlay.remove();
         eventBus.emit(AppEvents.NOTIFICATION, { type: 'success', message: `Deleted "${itemName}".` });
       } catch (err) {
@@ -319,6 +336,7 @@ export class DialogsComponent {
         </div>
         <div id="paletteItems" style="max-height: 320px; overflow-y: auto; padding: 6px 0;">
           <div class="sidebar-item" data-action="new-doc"><strong>New Document</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⌘N</span></div>
+          <div class="sidebar-item" data-action="recent-files"><strong>Recent Files &amp; Workspace History...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Recents</span></div>
           <div class="sidebar-item" data-action="templates"><strong>Technical Documentation Templates...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Templates</span></div>
           <div class="sidebar-item" data-action="manage-toc"><strong>Insert / Update Table of Contents (TOC)</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">📑 TOC</span></div>
           <div class="sidebar-item" data-action="view-diagnostics"><strong>Quality Diagnostics &amp; Linting</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-emerald);">🛡️ Check</span></div>
@@ -361,6 +379,9 @@ export class DialogsComponent {
       case 'new-doc':
         eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-file' });
         break;
+      case 'recent-files':
+        this.showRecentFilesPalette();
+        break;
       case 'templates':
         this.showTemplatesDialog();
         break;
@@ -395,6 +416,99 @@ export class DialogsComponent {
         this.showSettingsDialog();
         break;
     }
+  }
+
+  showRecentFilesPalette() {
+    const recents = recentFilesService.getRecents();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const renderItems = (items) => {
+      if (items.length === 0) {
+        return `<div style="padding: 24px; text-align: center; color: var(--color-text-muted); font-size: 12px;">No recent files found.</div>`;
+      }
+      return items.map(r => `
+        <div class="sidebar-item recent-file-entry" data-path="${r.path}" data-name="${r.name}" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div>
+              <div style="font-size: 12.5px; font-weight: 500; color: #fff;">${r.name}</div>
+              <div style="font-size: 10px; font-family: var(--font-editor); color: var(--color-text-muted);">${r.path}</div>
+            </div>
+          </div>
+          <span style="font-size: 10px; color: var(--color-accent-teal); font-family: var(--font-editor);">${recentFilesService.formatTimeAgo(r.lastAccessed)}</span>
+        </div>
+      `).join('');
+    };
+
+    overlay.innerHTML = `
+      <div class="modal-card" style="max-width: 540px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle);">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <input type="text" id="recentSearchInput" placeholder="Filter recent files..." style="background: transparent; border: none; outline: none; color: #fff; font-size: 13px; width: 100%;" />
+          </div>
+          <button class="btn btn-secondary" id="clearRecentsBtn" style="font-size: 10.5px; padding: 3px 8px;">Clear All</button>
+        </div>
+        <div id="recentFilesContainer" style="max-height: 320px; overflow-y: auto; padding: 6px 0;">
+          ${renderItems(recents)}
+        </div>
+        <div class="modal-actions" style="border-top: 1px solid var(--color-border-subtle); padding: 8px 14px;">
+          <button class="btn btn-secondary" id="closeRecentPaletteBtn">Close</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const searchInput = overlay.querySelector('#recentSearchInput');
+    const container = overlay.querySelector('#recentFilesContainer');
+    searchInput.focus();
+
+    const attachEntryClicks = () => {
+      container.querySelectorAll('.recent-file-entry').forEach(el => {
+        el.addEventListener('click', async () => {
+          const path = el.getAttribute('data-path');
+          const name = el.getAttribute('data-name');
+          const exists = await recentFilesService.verifyFileExists(path);
+          if (!exists) {
+            recentFilesService.removeRecent(path);
+            this.showToast({ type: 'warning', message: `File "${name}" could not be found on disk.` });
+            overlay.remove();
+            return;
+          }
+          try {
+            const fileData = await fileSystemService.readFile(path);
+            documentStateManager.openDocument(fileData.path, fileData.content, fileData.hash, fileData.mtime);
+            overlay.remove();
+          } catch {
+            documentStateManager.createDocument(name, '', path);
+            overlay.remove();
+          }
+        });
+      });
+    };
+
+    attachEntryClicks();
+
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const filtered = recentFilesService.getRecents().filter(r => 
+        r.name.toLowerCase().includes(q) || r.path.toLowerCase().includes(q)
+      );
+      container.innerHTML = renderItems(filtered);
+      attachEntryClicks();
+    });
+
+    overlay.querySelector('#clearRecentsBtn')?.addEventListener('click', () => {
+      recentFilesService.clearRecents();
+      container.innerHTML = renderItems([]);
+      this.showToast({ type: 'info', message: 'Recent files list cleared.' });
+    });
+
+    overlay.querySelector('#closeRecentPaletteBtn')?.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
   }
 
   showDiagnosticsDialog() {
@@ -865,14 +979,30 @@ export class DialogsComponent {
     // Handle PDF export
     overlay.querySelector('#exportPdfBtn')?.addEventListener('click', async () => {
       overlay.remove();
-      window.print();
+      this.showToast({ type: 'info', message: 'Generating clean, print-optimized document...' });
+      try {
+        const res = await exportEngine.exportToPdf(activeDoc, {
+          force: true,
+          embedAssets: embedImages,
+          triggerPrint: true
+        });
+        if (!res.success) {
+          this.showToast({ type: 'danger', message: res.error || 'Failed to prepare PDF.' });
+        }
+      } catch (err) {
+        this.showToast({ type: 'danger', message: `PDF export error: ${err.message}` });
+      }
     });
   }
 
   showSettingsDialog() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'cyberpunk';
+    const settings = workspaceStore.getSettings();
+    const currentTheme = settings.theme || document.documentElement.getAttribute('data-theme') || 'cyberpunk';
     const currentAccent = accentService.getAccent();
+    const currentFontSize = settings.fontSize || '13px';
+    const currentTabSize = settings.tabSize || 2;
     const presets = accentService.listPresets();
+    const authStatus = gitHubAuthService.getStatus();
 
     const accentOptionsHtml = presets.map(p => `
       <option value="${p.id}" ${currentAccent === p.id ? 'selected' : ''}>${p.label}</option>
@@ -885,7 +1015,7 @@ export class DialogsComponent {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-card" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">Studio Settings &amp; Preferences</div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
           <div>
@@ -911,14 +1041,45 @@ export class DialogsComponent {
             </div>
           </div>
 
-          <div>
-            <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Editor Font Size</label>
-            <select id="fontSizeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
-              <option value="12px">12px — Ultra Compact</option>
-              <option value="13px" selected>13px — Studio Standard</option>
-              <option value="15px">15px — Medium Comfort</option>
-              <option value="17px">17px — High Legibility</option>
-            </select>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Editor Font Size</label>
+              <select id="fontSizeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                <option value="12px" ${currentFontSize === '12px' ? 'selected' : ''}>12px — Ultra Compact</option>
+                <option value="13px" ${currentFontSize === '13px' ? 'selected' : ''}>13px — Studio Standard</option>
+                <option value="15px" ${currentFontSize === '15px' ? 'selected' : ''}>15px — Medium Comfort</option>
+                <option value="17px" ${currentFontSize === '17px' ? 'selected' : ''}>17px — High Legibility</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Tab Sizing</label>
+              <select id="tabSizeSelectInput" style="width: 100%; padding: 8px 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
+                <option value="2" ${currentTabSize === 2 ? 'selected' : ''}>2 Spaces (Markdown Default)</option>
+                <option value="4" ${currentTabSize === 4 ? 'selected' : ''}>4 Spaces (Standard Code)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- GitHub Token Storage Section -->
+          <div style="padding: 12px; background: var(--color-surface-base); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--color-text-primary); display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
+                GitHub Personal Access Token (PAT)
+              </label>
+              <span id="settingsGithubStatusBadge" class="badge" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: ${authStatus.authenticated ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.1)'}; color: ${authStatus.authenticated ? 'var(--color-accent-emerald)' : 'var(--color-text-muted)'};">
+                ${authStatus.authenticated ? `Connected (@${authStatus.user?.login || 'user'})` : 'Not Connected'}
+              </span>
+            </div>
+            <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 8px;">
+              Persisted using client-side cryptographic isolation. Never stored in plaintext on disk.
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+              <input type="password" id="settingsGithubPatInput" placeholder="${authStatus.authenticated ? '••••••••••••••••••••••••' : 'Enter ghp_ personal access token...'}" style="flex: 1; padding: 6px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-family: var(--font-editor); font-size: 11.5px; outline: none;" />
+              <button type="button" class="btn btn-secondary" id="settingsTestPatBtn" style="font-size: 11px; padding: 4px 10px;">Test Token</button>
+              <button type="button" class="btn btn-secondary" id="settingsPurgePatBtn" style="font-size: 11px; padding: 4px 10px; color: var(--color-accent-rose);" title="Purge stored token">Purge</button>
+            </div>
+            <div id="settingsPatFeedback" style="font-size: 11px; display: none;"></div>
           </div>
 
           <div style="padding: 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-muted);">
@@ -937,6 +1098,9 @@ export class DialogsComponent {
     const accentSelect = overlay.querySelector('#accentSelectInput');
     const badge = overlay.querySelector('#accentLabelBadge');
     const swatches = overlay.querySelectorAll('.accent-swatch-btn');
+    const patInput = overlay.querySelector('#settingsGithubPatInput');
+    const feedbackEl = overlay.querySelector('#settingsPatFeedback');
+    const statusBadge = overlay.querySelector('#settingsGithubStatusBadge');
 
     const updateAccentUI = (accentId) => {
       const preset = accentService.getPreset(accentId);
@@ -964,25 +1128,72 @@ export class DialogsComponent {
       });
     });
 
+    // Test Token Button
+    overlay.querySelector('#settingsTestPatBtn')?.addEventListener('click', async () => {
+      const token = patInput.value.trim() || await credentialStore.getCredential();
+      if (!token) {
+        feedbackEl.style.display = 'block';
+        feedbackEl.style.color = 'var(--color-accent-rose)';
+        feedbackEl.textContent = 'Please enter a GitHub token to test.';
+        return;
+      }
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.color = 'var(--color-accent-cyan)';
+      feedbackEl.textContent = 'Testing token against GitHub API...';
+      const res = await credentialStore.testCredential(token);
+      if (res.valid) {
+        feedbackEl.style.color = 'var(--color-accent-emerald)';
+        feedbackEl.textContent = `✅ Token valid for @${res.user} (Scopes: ${res.scopes?.join(', ') || 'none'})`;
+      } else {
+        feedbackEl.style.color = 'var(--color-accent-rose)';
+        feedbackEl.textContent = `❌ ${res.error}`;
+      }
+    });
+
+    // Purge Token Button
+    overlay.querySelector('#settingsPurgePatBtn')?.addEventListener('click', async () => {
+      await credentialStore.purgeCredential();
+      await gitHubAuthService.signOut();
+      patInput.value = '';
+      statusBadge.textContent = 'Purged / Not Connected';
+      statusBadge.style.color = 'var(--color-text-muted)';
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.color = 'var(--color-accent-teal)';
+      feedbackEl.textContent = 'Stored credentials purged from memory and secure storage.';
+      this.showToast({ type: 'info', message: 'GitHub credentials purged.' });
+    });
+
     overlay.querySelector('#dialogSettingsCancelBtn')?.addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.remove();
     });
 
-    overlay.querySelector('#dialogSettingsApplyBtn')?.addEventListener('click', () => {
+    overlay.querySelector('#dialogSettingsApplyBtn')?.addEventListener('click', async () => {
       const selectedTheme = overlay.querySelector('#themeSelectInput').value;
       const selectedAccent = overlay.querySelector('#accentSelectInput').value;
       const selectedFontSize = overlay.querySelector('#fontSizeSelectInput').value;
+      const selectedTabSize = parseInt(overlay.querySelector('#tabSizeSelectInput').value, 10) || 2;
+      const newPat = patInput.value.trim();
 
       document.documentElement.setAttribute('data-theme', selectedTheme);
       accentService.setAccent(selectedAccent);
       document.documentElement.style.setProperty('--font-size-editor', selectedFontSize);
 
-      try {
-        localStorage.setItem('devspirehub:theme', selectedTheme);
-        localStorage.setItem('devspirehub:fontSize', selectedFontSize);
-      } catch (e) {
-        console.warn('Failed to persist settings:', e);
+      // Persist to WorkspaceStore
+      workspaceStore.saveSettings({
+        theme: selectedTheme,
+        accent: selectedAccent,
+        fontSize: selectedFontSize,
+        tabSize: selectedTabSize
+      });
+
+      // If user typed a new GitHub PAT, authenticate and persist securely
+      if (newPat) {
+        try {
+          await gitHubAuthService.authenticateWithToken(newPat);
+        } catch (err) {
+          this.showToast({ type: 'warning', message: `Could not verify GitHub token: ${err.message}` });
+        }
       }
 
       overlay.remove();

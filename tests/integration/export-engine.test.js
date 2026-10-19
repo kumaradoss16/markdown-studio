@@ -107,5 +107,44 @@ describe('ExportEngine Integration', () => {
     expect(res.output).toContain('.export-footer');
     expect(res.output).toContain('display: none !important;');
   });
+
+  it('generates PDF print document via exportToPdf with clean formatting', async () => {
+    const doc = {
+      id: 'doc-pdf-test',
+      name: 'lab-report.md',
+      content: '# Lab Report\n\n| Param | Value |\n|---|---|\n| Voltage | 3.3V |\n\n```python\nprint("status ok")\n```',
+      revision: 1
+    };
+
+    const res = await engine.exportToPdf(doc, {
+      force: true,
+      triggerPrint: false
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.html).toContain('<!DOCTYPE html>');
+    expect(res.html).toContain('@page {');
+    expect(res.html).toContain('margin: 15mm;');
+    expect(res.html).toContain('break-inside: avoid');
+    expect(res.html).toContain('Lab Report');
+  });
+
+  it('rejects exportToPdf when blocking quality gate errors are present and force is false', async () => {
+    const brokenDoc = {
+      id: 'doc-pdf-err',
+      name: 'broken-lab.md',
+      content: '# Broken Lab\n\n```js\nunclosed\n',
+      revision: 1
+    };
+
+    const res = await engine.exportToPdf(brokenDoc, {
+      force: false,
+      triggerPrint: false
+    });
+
+    expect(res.success).toBe(false);
+    expect(res.blocked).toBe(true);
+    expect(res.error).toContain('Pre-flight validation failed');
+  });
 });
 
