@@ -206,39 +206,89 @@ export class ExportEngine {
         max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-        color: #000000 !important;
+        color: #1e293b !important;
         background: #ffffff !important;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
         font-size: 11pt !important;
         line-height: 1.5 !important;
       }
-      h1, h2, h3, h4, h5, h6 {
-        color: #000000 !important;
-        border-color: #cbd5e1 !important;
-        page-break-after: avoid;
-        break-after: avoid;
+      h1 {
+        font-size: 24pt !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        margin-top: 0 !important;
+        margin-bottom: 16px !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
-      pre, blockquote, table, img, figure {
-        page-break-inside: avoid;
-        break-inside: avoid;
+      h2 {
+        font-size: 18pt !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        margin-top: 28px !important;
+        margin-bottom: 12px !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      h3, h4, h5, h6 {
+        color: #0f172a !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      pre, blockquote, table, img, figure, tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       a {
-        color: #000000 !important;
+        color: #1e293b !important;
         text-decoration: underline !important;
       }
       code {
+        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
         background: #f1f5f9 !important;
-        color: #000000 !important;
+        color: #0f172a !important;
         border: none !important;
+        border-radius: 3px !important;
+        padding: 2px 5px !important;
       }
       pre {
-        background: #f8fafc !important;
-        color: #000000 !important;
-        border: 1px solid #e2e8f0 !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 12px 16px !important;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+        font-size: 9.5pt !important;
+        line-height: 1.45 !important;
+        overflow: visible !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+      }
+      pre code {
+        background: transparent !important;
+        color: inherit !important;
       }
       blockquote {
         border-left: 3px solid #cbd5e1 !important;
         background: #f8fafc !important;
         color: #334155 !important;
+        padding: 8px 14px !important;
+        margin: 14px 0 !important;
+      }
+      table {
+        border: 1px solid #cbd5e1 !important;
+        display: table !important;
+        width: 100% !important;
+      }
+      th {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        font-weight: 600 !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      td {
+        border: 1px solid #cbd5e1 !important;
+        color: #1e293b !important;
       }
       .export-footer {
         display: none !important;

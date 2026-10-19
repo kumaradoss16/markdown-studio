@@ -197,24 +197,110 @@ export class MarkdownService {
   <title>${cleanTitle}</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
       max-width: 860px;
       margin: 40px auto;
       padding: 0 24px;
       color: #1e293b;
       background: #ffffff;
     }
-    h1, h2, h3, h4 { color: #0f172a; margin-top: 1.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
-    code { font-family: 'JetBrains Mono', Consolas, monospace; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 0.9em; }
-    pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    h1 {
+      font-size: 24pt;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-size: 18pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 28px;
+      margin-bottom: 12px;
+    }
+    h3 {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+    h4, h5, h6 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+    p, ul, ol {
+      color: #1e293b;
+      margin: 10px 0;
+      font-size: 11pt;
+      line-height: 1.5;
+    }
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    pre {
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      overflow-x: auto;
+    }
     pre code { background: none; color: inherit; padding: 0; }
-    blockquote { border-left: 4px solid ${accentHex}; margin: 16px 0; padding-left: 14px; color: #475569; }
-    table { border-collapse: collapse; width: 100%; margin: 18px 0; }
-    th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
-    th { background: #f8fafc; font-weight: 600; }
-    img { max-width: 100%; height: auto; border-radius: 6px; }
-    .metric-card { display: inline-block; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-right: 8px; }
+    blockquote {
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      padding: 8px 14px;
+      margin: 14px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 16px 0;
+      border: 1px solid #cbd5e1;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background: #f8fafc;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    td {
+      color: #1e293b;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    .metric-card {
+      display: inline-block;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      margin-right: 8px;
+      background: #ffffff;
+    }
     .metric-card .val { font-size: 1.25rem; font-weight: bold; color: ${accentHex}; }
 
     @page {
@@ -227,36 +313,82 @@ export class MarkdownService {
         margin: 0 !important;
         padding: 0 !important;
         max-width: 100% !important;
-        color: #000000 !important;
+        color: #1e293b !important;
         background: #ffffff !important;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
         font-size: 11pt !important;
         line-height: 1.5 !important;
       }
-      h1, h2, h3, h4, h5, h6 {
-        color: #000000 !important;
-        page-break-after: avoid;
-        break-after: avoid;
+      h1 {
+        font-size: 24pt !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        margin-top: 0 !important;
+        margin-bottom: 16px !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
-      pre, blockquote, table, img, figure {
-        page-break-inside: avoid;
-        break-inside: avoid;
+      h2 {
+        font-size: 18pt !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        margin-top: 28px !important;
+        margin-bottom: 12px !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      h3, h4, h5, h6 {
+        color: #0f172a !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      pre, blockquote, table, img, figure, tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       a {
-        color: #000000 !important;
+        color: #1e293b !important;
         text-decoration: underline !important;
       }
       code {
+        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
         background: #f1f5f9 !important;
-        color: #000000 !important;
+        color: #0f172a !important;
+        border-radius: 3px !important;
+        padding: 2px 5px !important;
       }
       pre {
-        background: #f8fafc !important;
-        color: #000000 !important;
-        border: 1px solid #e2e8f0 !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 12px 16px !important;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+        font-size: 9.5pt !important;
+        line-height: 1.45 !important;
+        overflow: visible !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
       }
       blockquote {
         border-left: 3px solid #cbd5e1 !important;
+        background: #f8fafc !important;
         color: #334155 !important;
+      }
+      table {
+        border: 1px solid #cbd5e1 !important;
+        display: table !important;
+        width: 100% !important;
+      }
+      th {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        font-weight: 600 !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      td {
+        border: 1px solid #cbd5e1 !important;
+        color: #1e293b !important;
       }
     }
   </style>
