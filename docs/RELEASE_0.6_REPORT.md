@@ -1,12 +1,12 @@
 # Release 0.6.0 Engineering & Quality Report
-**DevspireHub Markdown Studio**  
+**MarkForge Markdown Studio**  
 *Document Revision History, Side-by-Side Diffs, Restore Previews, and Durable Audit Logging*
 
 ---
 
 ## 1. Executive Summary
 
-Release 0.6.0 adds enterprise-grade revision tracking, side-by-side line diffs, preview-first document restoration, and append-only audit logging to DevspireHub Markdown Studio. Built under a strict "secure-by-default, invariant-first" architecture, the new capabilities guarantee:
+Release 0.6.0 adds enterprise-grade revision tracking, side-by-side line diffs, preview-first document restoration, and append-only audit logging to MarkForge Markdown Studio. Built under a strict "secure-by-default, invariant-first" architecture, the new capabilities guarantee:
 1. **History Immutability:** Historical revision records are append-only; restorations create new checkpoints rather than rewriting past records.
 2. **Preview Isolation:** Generating a diff or preview is strictly read-only and never mutates active working state, CodeMirror buffer, or disk storage.
 3. **Stale Base & Dirty Document Protection:** Concurrent modifications made during review invalidate stale restore actions; unsaved changes require explicit conflict confirmation.
@@ -37,18 +37,18 @@ Release 0.6.0 adds enterprise-grade revision tracking, side-by-side line diffs, 
 ## 3. Architecture & Components Implemented
 
 ### 3.1. Services Layer
-- [`src/services/revision-history-store.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/services/revision-history-store.js): Content-addressed blob store (`devspirehub:history:blob:<hash>`) and index (`devspirehub:history:index:<key>`) with FIFO 50-entry eviction and pinning support for in-flight previews.
-- [`src/services/change-summary-service.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/services/change-summary-service.js): Generates deterministic change summaries across `local_save`, `autosnapshot`, `restore`, `publish`, and `remote_refresh`.
-- [`src/services/audit-log-service.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/services/audit-log-service.js): Append-only audit logger (`devspirehub:audit_log:v1`) with recursive secret redaction and multi-attribute query filtering.
+- `src/services/revision-history-store.js`: Content-addressed blob store (`devspirehub:history:blob:<hash>`) and index (`devspirehub:history:index:<key>`) with FIFO 50-entry eviction and pinning support for in-flight previews.
+- `src/services/change-summary-service.js`: Generates deterministic change summaries across `local_save`, `autosnapshot`, `restore`, `publish`, and `remote_refresh`.
+- `src/services/audit-log-service.js`: Append-only audit logger (`devspirehub:audit_log:v1`) with recursive secret redaction and multi-attribute query filtering.
 
 ### 3.2. Core Layer
-- [`src/core/history-coordinator.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/core/history-coordinator.js): Orchestrates automatic snapshot capture on save, baseline recording on file open, manual checkpoint creation, and audit recording.
-- [`src/core/restore-coordinator.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/core/restore-coordinator.js): Governs preview creation with pinning and stale check, dirty conflict enforcement, and atomic restoration.
+- `src/core/history-coordinator.js`: Orchestrates automatic snapshot capture on save, baseline recording on file open, manual checkpoint creation, and audit recording.
+- `src/core/restore-coordinator.js`: Governs preview creation with pinning and stale check, dirty conflict enforcement, and atomic restoration.
 
 ### 3.3. Presentation Layer
-- [`src/components/history/history-panel.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/components/history/history-panel.js): Revision timeline and audit log tab, revision multi-selection (A vs B diff), compare with working buffer, and restore preview triggers.
-- [`src/components/history/history-diff-modal.js`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/components/history/history-diff-modal.js): Side-by-side / dual-pane line diff modal with XSS sanitization, dirty buffer warning banners, and confirmation triggers.
-- [`src/styles/history.css`](file:///C:/Users/kumar/.gemini/antigravity/scratch/devspirehub-markdown-studio/src/styles/history.css): Design system styles for revision cards, source pills, diff containers, and audit log entries.
+- `src/components/history/history-panel.js`: Revision timeline and audit log tab, revision multi-selection (A vs B diff), compare with working buffer, and restore preview triggers.
+- `src/components/history/history-diff-modal.js`: Side-by-side / dual-pane line diff modal with XSS sanitization, dirty buffer warning banners, and confirmation triggers.
+- `src/styles/history.css`: Design system styles for revision cards, source pills, diff containers, and audit log entries.
 - UI Triggers: Integrated via keyboard shortcut (`⌘H` / `Ctrl+H`), Document Tabs action button (`#tabHistoryBtn`), and Command Palette (`Version History: Open Document History`).
 
 ---
@@ -86,4 +86,4 @@ dist/assets/index-BAyzG9mu.js   913.29 kB │ gzip: 289.31 kB
 
 ## 5. Conclusion & Release Readiness
 
-Release 0.6.0 meets all functional, architectural, security, and quality gate specifications. DevspireHub Markdown Studio is ready for production deployment.
+Release 0.6.0 meets all functional, architectural, security, and quality gate specifications. MarkForge Markdown Studio is ready for production deployment.

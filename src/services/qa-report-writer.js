@@ -116,7 +116,7 @@ export class QaReportWriter {
 
     const statusBadge = passed ? '✅ **PASSED**' : '❌ **FAILED**';
 
-    let md = `# DevspireHub Documentation QA Report\n\n`;
+    let md = `# MarkForge Documentation QA Report\n\n`;
     md += `- **Status:** ${statusBadge}\n`;
     md += `- **Profile:** \`${profile}\`\n`;
     md += `- **Workspace Root:** \`${workspaceRoot}\`\n`;
@@ -187,7 +187,7 @@ export class QaReportWriter {
 
     const lines = [];
     lines.push(`=======================================================`);
-    lines.push(` DevspireHub Documentation QA (Profile: ${profile})`);
+    lines.push(` MarkForge Documentation QA (Profile: ${profile})`);
     lines.push(`=======================================================`);
     lines.push(`Files Scanned: ${summary.filesScanned}`);
     lines.push(`Errors: ${summary.errors} | Warnings: ${summary.warnings} | Info: ${summary.info}`);

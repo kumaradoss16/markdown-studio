@@ -1,4 +1,4 @@
-# DevspireHub Markdown Studio — Release 0.3 Architecture Specification
+# MarkForge Markdown Studio — Release 0.3 Architecture Specification
 
 **Classification:** Reliability-sensitive feature release  
 **Release:** v0.3.0  

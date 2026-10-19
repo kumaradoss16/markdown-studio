@@ -237,7 +237,7 @@ export class CredentialStore {
         headers: {
           'Authorization': `token ${token.trim()}`,
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'DevspireHub-Markdown-Studio'
+          'User-Agent': 'MarkForge-Markdown-Studio'
         }
       });
       if (res.ok) {

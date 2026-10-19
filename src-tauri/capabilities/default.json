@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Restricted desktop capabilities for DevspireHub Markdown Studio",
+  "description": "Restricted desktop capabilities for MarkForge Markdown Studio",
   "windows": ["main"],
   "permissions": [
     "core:default",

@@ -1,20 +1,20 @@
 # Backup & Recovery Architecture
 
-DevspireHub Markdown Studio is engineered with an **offline-first, zero-data-loss architecture**. This guide covers the journaling mechanism, storage locations, snapshot lifecycle, and step-by-step recovery procedures for uncommitted changes following an unexpected system shutdown or application crash.
+MarkForge Markdown Studio is engineered with an **offline-first, zero-data-loss architecture**. This guide covers the journaling mechanism, storage locations, snapshot lifecycle, and step-by-step recovery procedures for uncommitted changes following an unexpected system shutdown or application crash.
 
 ---
 
 ## 1. Storage & Persistence Architecture
 
-DevspireHub Markdown Studio operates completely offline. All document state, workspace graphs, metadata, and crash recovery snapshots are persisted locally on the client machine.
+MarkForge Markdown Studio operates completely offline. All document state, workspace graphs, metadata, and crash recovery snapshots are persisted locally on the client machine.
 
 ### Operating System Storage Locations
 
 | OS | Application Config & Recovery Store | Cache & Log Output |
 |---|---|---|
-| **Windows** | `%APPDATA%\devspirehub-markdown-studio\` <br> `IndexedDB` / `localStorage` under WebView2 / Tauri container | `%LOCALAPPDATA%\devspirehub-markdown-studio\logs\` |
-| **macOS** | `~/Library/Application Support/devspirehub-markdown-studio/` | `~/Library/Logs/devspirehub-markdown-studio/` |
-| **Linux** | `~/.config/devspirehub-markdown-studio/` | `~/.cache/devspirehub-markdown-studio/logs/` |
+| **Windows** | `%APPDATA%\markforge-markdown-studio\` <br> `IndexedDB` / `localStorage` under WebView2 / Tauri container | `%LOCALAPPDATA%\markforge-markdown-studio\logs\` |
+| **macOS** | `~/Library/Application Support/markforge-markdown-studio/` | `~/Library/Logs/markforge-markdown-studio/` |
+| **Linux** | `~/.config/markforge-markdown-studio/` | `~/.cache/markforge-markdown-studio/logs/` |
 
 ---
 
@@ -82,6 +82,6 @@ If the UI is inaccessible or the application was uninstalled:
 
 ## 4. Best Practices for Document Protection
 
-1. **Version Control Integration**: Maintain your workspace within a Git repository. DevspireHub Markdown Studio's revision history works harmoniously alongside Git.
+1. **Version Control Integration**: Maintain your workspace within a Git repository. MarkForge Markdown Studio's revision history works harmoniously alongside Git.
 2. **Periodic Workspace Backups**: Automated backup tools (e.g., Windows File History, macOS Time Machine, `rsync`) can safely snapshot the workspace directory at any time; Studio's transactional file writing ensures disk files are never left in a partially written state.
 3. **Clean Workspace Shutdowns**: While the 3-second journaling minimizes loss to a maximum of 3 seconds of typing, explicitly saving files (`Ctrl+S` / `Cmd+S`) or closing tabs cleanly triggers standard disk write-through operations.

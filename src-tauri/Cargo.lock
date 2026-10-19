@@ -567,21 +567,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "devspirehub-markdown-studio"
-version = "1.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tempfile",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1755,6 +1740,21 @@ name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
+
+[[package]]
+name = "markforge-markdown-studio"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tempfile",
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "markup5ever"

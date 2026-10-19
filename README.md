@@ -160,4 +160,4 @@ cargo test --lib
 ---
 
 ## License
-Proprietary - DevspireHub Team.
+Proprietary - MarkForge Team.

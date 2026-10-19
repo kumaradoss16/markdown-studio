@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * DevspireHub Markdown Studio - Source Code Packaging Script
+ * MarkForge Markdown Studio - Source Code Packaging Script
  * Generates a clean, reproducible source-code.zip archive containing
  * only necessary application sources, omitting node_modules, build outputs,
  * native target binaries, git metadata, and local secrets.

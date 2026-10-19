@@ -1,6 +1,6 @@
 # Security Architecture & Vulnerability Disclosure
 
-DevspireHub Markdown Studio is engineered with a **secure-by-default, offline-first** security architecture. This document outlines our threat model, defensive boundaries, credential protections, and responsible vulnerability reporting policy.
+MarkForge Markdown Studio is engineered with a **secure-by-default, offline-first** security architecture. This document outlines our threat model, defensive boundaries, credential protections, and responsible vulnerability reporting policy.
 
 ---
 
@@ -63,7 +63,7 @@ DevspireHub Markdown Studio is engineered with a **secure-by-default, offline-fi
 
 ## 3. Offline-First Privacy Guarantee
 
-* DevspireHub Markdown Studio contains **zero telemetry**, **zero analytics trackers**, and **zero external CDN dependencies**.
+* MarkForge Markdown Studio contains **zero telemetry**, **zero analytics trackers**, and **zero external CDN dependencies**.
 * Editing, rendering, graph indexing, Table of Contents generation, Quality Diagnostics, and PDF/HTML exports run 100% locally without sending document content across the wire.
 
 ---

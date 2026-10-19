@@ -176,5 +176,5 @@ export async function bootstrapApp(rootElement) {
     }
   });
 
-  console.log('DevspireHub Markdown Studio bootstrapped successfully.');
+  console.log('MarkForge Markdown Studio bootstrapped successfully.');
 }

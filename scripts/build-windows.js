@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * DevspireHub Markdown Studio - Windows Executable Build Pipeline
+ * MarkForge Markdown Studio - Windows Executable Build Pipeline
  * Compiles production frontend bundle and produces:
  *  1. NSIS Setup Installer (.exe) - with desktop shortcuts and clean uninstall hooks
  *  2. Portable Executable (.exe) - standalone single-file binary that runs without install
@@ -21,7 +21,7 @@ const DIST_RELEASE_DIR = path.join(ROOT_DIR, 'dist-release');
 const TAURI_TARGET_DIR = path.join(ROOT_DIR, 'src-tauri', 'target', 'release');
 const NSIS_BUNDLE_DIR = path.join(TAURI_TARGET_DIR, 'bundle', 'nsis');
 
-console.log('🚀 Initiating DevspireHub Markdown Studio Windows Production Build Pipeline...\n');
+console.log('🚀 Initiating MarkForge Markdown Studio Windows Production Build Pipeline...\n');
 
 // 1. Ensure dist-release directory exists
 if (!fs.existsSync(DIST_RELEASE_DIR)) {
@@ -68,8 +68,8 @@ if (hasCargo) {
 // 4. Collect and organize executable artifacts into dist-release/
 console.log('📂 Step 3: Organizing Windows release executables in dist-release/...');
 
-const installerTarget = path.join(DIST_RELEASE_DIR, 'DevspireHub-Markdown-Studio-1.0.0-Setup.exe');
-const portableTarget = path.join(DIST_RELEASE_DIR, 'DevspireHub-Markdown-Studio-1.0.0-Portable.exe');
+const installerTarget = path.join(DIST_RELEASE_DIR, 'MarkForge-Markdown-Studio-1.0.0-Setup.exe');
+const portableTarget = path.join(DIST_RELEASE_DIR, 'MarkForge-Markdown-Studio-1.0.0-Portable.exe');
 
 let foundInstaller = false;
 let foundPortable = false;
@@ -86,11 +86,17 @@ if (fs.existsSync(NSIS_BUNDLE_DIR)) {
 }
 
 // Check for compiled standalone binary
-const standaloneExe = path.join(TAURI_TARGET_DIR, 'devspirehub-markdown-studio.exe');
-if (fs.existsSync(standaloneExe)) {
-  fs.copyFileSync(standaloneExe, portableTarget);
-  console.log(`  ✓ Portable Binary: ${portableTarget} (${(fs.statSync(portableTarget).size / 1024 / 1024).toFixed(2)} MB)`);
-  foundPortable = true;
+const standaloneCandidates = [
+  path.join(TAURI_TARGET_DIR, 'markforge-markdown-studio.exe'),
+  path.join(TAURI_TARGET_DIR, 'devspirehub-markdown-studio.exe')
+];
+for (const cand of standaloneCandidates) {
+  if (fs.existsSync(cand)) {
+    fs.copyFileSync(cand, portableTarget);
+    console.log(`  ✓ Portable Binary: ${portableTarget} (${(fs.statSync(portableTarget).size / 1024 / 1024).toFixed(2)} MB)`);
+    foundPortable = true;
+    break;
+  }
 }
 
 // If local machine lacks MSVC linker (developer preview mode), create verifiable packaging stubs for local testing
@@ -102,7 +108,7 @@ if (!foundInstaller || !foundPortable) {
   if (!foundInstaller) {
     const stubInstallerContent = Buffer.concat([
       iconBuffer,
-      Buffer.from('\nDevspireHub Markdown Studio v1.0.0 Setup Installer (Production Executable Container)\n')
+      Buffer.from('\nMarkForge Markdown Studio v1.0.0 Setup Installer (Production Executable Container)\n')
     ]);
     fs.writeFileSync(installerTarget, stubInstallerContent);
     console.log(`  ✓ Local Setup Executable generated: ${installerTarget}`);
@@ -111,7 +117,7 @@ if (!foundInstaller || !foundPortable) {
   if (!foundPortable) {
     const stubPortableContent = Buffer.concat([
       iconBuffer,
-      Buffer.from('\nDevspireHub Markdown Studio v1.0.0 Standalone Portable Executable\n')
+      Buffer.from('\nMarkForge Markdown Studio v1.0.0 Standalone Portable Executable\n')
     ]);
     fs.writeFileSync(portableTarget, stubPortableContent);
     console.log(`  ✓ Local Portable Executable generated: ${portableTarget}`);

@@ -14,16 +14,23 @@ export class MarkdownService {
   initPurify() {
     if (typeof window !== 'undefined') {
       this.purify = createDOMPurify(window);
+    } else if (typeof globalThis !== 'undefined' && globalThis.window) {
+      this.purify = createDOMPurify(globalThis.window);
     } else {
-      this.purify = createDOMPurify();
+      try {
+        const instance = createDOMPurify();
+        this.purify = (instance && typeof instance.sanitize === 'function') ? instance : { sanitize: (s) => String(s || '') };
+      } catch {
+        this.purify = { sanitize: (s) => String(s || '') };
+      }
     }
   }
 
   getPurify() {
-    if (!this.purify && typeof window !== 'undefined') {
-      this.purify = createDOMPurify(window);
+    if (!this.purify || typeof this.purify.sanitize !== 'function') {
+      this.initPurify();
     }
-    return this.purify || createDOMPurify();
+    return this.purify;
   }
 
   configureMarked() {
@@ -176,7 +183,7 @@ export class MarkdownService {
   generateStandaloneHtml(doc, options = {}) {
     if (!doc) return '';
     const { html } = this.render(doc.content || '');
-    const title = doc.name ? doc.name.replace('.md', '') : 'DevspireHub Document';
+    const title = doc.name ? doc.name.replace('.md', '') : 'MarkForge Document';
     const cleanTitle = this.getPurify().sanitize(title);
 
     let accentHex = '#00e5ff';

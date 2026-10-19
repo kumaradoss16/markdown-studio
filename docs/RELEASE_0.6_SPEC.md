@@ -1,4 +1,4 @@
-# DevspireHub Markdown Studio — Release 0.6 Architecture Specification
+# MarkForge Markdown Studio — Release 0.6 Architecture Specification
 ## Document Revision History, Side-by-Side Diffs, Change Summaries, Restore Previews, and Audit Records
 
 **Classification:** Reliability-sensitive & security-critical feature release  

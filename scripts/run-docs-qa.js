@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Headless CLI verification runner for DevspireHub Documentation QA.
+ * Headless CLI verification runner for MarkForge Documentation QA.
  * Suitable for CI/CD workflows, pull-request gates, and local repository audits.
  */
 
@@ -82,7 +82,7 @@ function createNodeFsAdapter(rootDir) {
     const entries = fs.readdirSync(currentDir, { withFileTypes: true });
 
     for (const entry of entries) {
-      if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'dist') {
+      if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'dist-release' || entry.name === 'target' || entry.name === 'tests') {
         continue;
       }
       const relPath = relativeBase ? `${relativeBase}/${entry.name}` : entry.name;

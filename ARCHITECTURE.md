@@ -1,8 +1,8 @@
-# DevspireHub Markdown Studio — Architecture & Technical Design
+# MarkForge Markdown Studio — Architecture & Technical Design
 
 ## 1. Architectural Principles
 
-DevspireHub Markdown Studio follows a strictly layered, local-first architecture designed to ensure zero data loss, rock-solid security boundaries, and high-performance editing.
+MarkForge Markdown Studio follows a strictly layered, local-first architecture designed to ensure zero data loss, rock-solid security boundaries, and high-performance editing.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐

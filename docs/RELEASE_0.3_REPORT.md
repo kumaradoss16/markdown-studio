@@ -1,4 +1,4 @@
-# DevspireHub Markdown Studio — Release 0.3 Engineering Report
+# MarkForge Markdown Studio — Release 0.3 Engineering Report
 
 **Release Version:** `v0.3.0`  
 **Classification:** Reliability-sensitive feature release  
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Release 0.3 delivers a production-grade documentation toolkit for **DevspireHub Markdown Studio**, elevating the application from a local markdown editor into a verified technical documentation authoring, linting, and export platform.
+Release 0.3 delivers a production-grade documentation toolkit for **MarkForge Markdown Studio**, elevating the application from a local markdown editor into a verified technical documentation authoring, linting, and export platform.
 
 Every functional addition was engineered under strict data-integrity invariants:
 - **Zero silent mutations:** All source alterations (TOC updates, template application) are explicit and narrow.

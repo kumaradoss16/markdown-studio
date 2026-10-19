@@ -252,7 +252,7 @@ export class PublicationCoordinator {
             owner: snapshot.destination.owner,
             repo: snapshot.destination.repo,
             title: sanitizedMsg,
-            body: `Automated documentation update for \`${snapshot.destination.path}\` via DevspireHub Markdown Studio.`,
+            body: `Automated documentation update for \`${snapshot.destination.path}\` via MarkForge Markdown Studio.`,
             head: workingBranch,
             base: snapshot.destination.branch,
           });

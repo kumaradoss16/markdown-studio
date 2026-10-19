@@ -99,7 +99,7 @@ export class GitHubApiClient {
 
     const headers = {
       Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'DevspireHub-Markdown-Studio/0.4.0',
+      'User-Agent': 'MarkForge-Markdown-Studio/1.0.0',
       ...(options.headers || {}),
     };
 

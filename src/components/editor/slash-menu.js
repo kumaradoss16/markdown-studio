@@ -108,7 +108,7 @@ export const SLASH_COMMANDS = [
     title: 'Fenced Code Block',
     desc: 'Syntax highlighted code container',
     icon: '</>',
-    snippet: '```javascript\n// Write code here\nconsole.log("DevspireHub");\n```\n',
+    snippet: '```javascript\n// Write code here\nconsole.log("MarkForge");\n```\n',
     shortcut: '```'
   },
   {

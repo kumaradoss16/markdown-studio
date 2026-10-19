@@ -51,17 +51,18 @@ export class MarkdownPipeline {
     if (!this.purify) {
       if (typeof window !== 'undefined') {
         this.purify = createDOMPurify(window);
+      } else if (typeof globalThis !== 'undefined' && globalThis.window) {
+        this.purify = createDOMPurify(globalThis.window);
       } else {
         try {
-          // In Node.js testing/CLI environment
-          const { JSDOM } = require('jsdom');
-          this.purify = createDOMPurify(new JSDOM('').window);
-        } catch {
-          try {
-            this.purify = createDOMPurify();
-          } catch {
-            this.purify = { sanitize: (s) => s };
+          const instance = createDOMPurify();
+          if (instance && typeof instance.sanitize === 'function') {
+            this.purify = instance;
+          } else {
+            this.purify = { sanitize: (s) => String(s || '') };
           }
+        } catch {
+          this.purify = { sanitize: (s) => String(s || '') };
         }
       }
     }

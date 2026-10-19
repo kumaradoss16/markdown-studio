@@ -1,7 +1,7 @@
 # GitHub Publication Authorization & Permission Architecture
 
 ## Overview
-This document specifies the authentication boundaries, required token permissions, and failure-handling matrix for GitHub publishing in DevspireHub Markdown Studio (Release 0.5+).
+This document specifies the authentication boundaries, required token permissions, and failure-handling matrix for GitHub publishing in MarkForge Markdown Studio (Release 0.5+).
 
 ---
 

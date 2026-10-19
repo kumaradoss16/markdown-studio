@@ -1,6 +1,6 @@
 # DevOps Release & Build Automation Guide
 
-This guide details the automated build pipeline, release mechanics, packaging scripts, and GitHub Actions workflow for **DevspireHub Markdown Studio**.
+This guide details the automated build pipeline, release mechanics, packaging scripts, and GitHub Actions workflow for **MarkForge Markdown Studio**.
 
 ---
 
@@ -32,8 +32,8 @@ Git Tag (v1.0.0) ──> GitHub Actions (windows-latest)
 
 | Artifact Name | Type | Description |
 |---|---|---|
-| `DevspireHub-Markdown-Studio-1.0.0-Setup.exe` | **NSIS Installer** | Setup wizard with desktop and Start Menu shortcut creation, per-user installation, and clean uninstaller. |
-| `DevspireHub-Markdown-Studio-1.0.0-Portable.exe` | **Portable Executable** | Standalone single-file binary that runs immediately without administrative installation. |
+| `MarkForge-Markdown-Studio-1.0.0-Setup.exe` | **NSIS Installer** | Setup wizard with desktop and Start Menu shortcut creation, per-user installation, and clean uninstaller. |
+| `MarkForge-Markdown-Studio-1.0.0-Portable.exe` | **Portable Executable** | Standalone single-file binary that runs immediately without administrative installation. |
 | `source-code.zip` | **Clean Source Archive** | Pristine project source code archive excluding `node_modules`, `dist`, `.git`, and build caches. |
 | `checksums.txt` | **Integrity Verification** | SHA-256 cryptographic hashes for all distribution files. |
 
@@ -91,7 +91,7 @@ npm run build:win
 ```
 * Compiles web assets with Vite.
 * Invokes the Tauri compiler to build native Windows packages.
-* Outputs `DevspireHub-Markdown-Studio-1.0.0-Setup.exe` and `DevspireHub-Markdown-Studio-1.0.0-Portable.exe` to `dist-release/`.
+* Outputs `MarkForge-Markdown-Studio-1.0.0-Setup.exe` and `MarkForge-Markdown-Studio-1.0.0-Portable.exe` to `dist-release/`.
 
 ### Package Clean Source Archive
 ```bash
@@ -108,5 +108,5 @@ node scripts/generate-checksums.js dist-release dist-release/checksums.txt
 
 ### Verify Checksums Locally
 ```powershell
-Get-FileHash dist-release\DevspireHub-Markdown-Studio-1.0.0-Setup.exe -Algorithm SHA256
+Get-FileHash dist-release\MarkForge-Markdown-Studio-1.0.0-Setup.exe -Algorithm SHA256
 ```

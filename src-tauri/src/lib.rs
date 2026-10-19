@@ -15,5 +15,5 @@ pub fn run() {
             list_workspace
         ])
         .run(tauri::generate_context!())
-        .expect("error while running DevspireHub Markdown Studio");
+        .expect("error while running MarkForge Markdown Studio");
 }

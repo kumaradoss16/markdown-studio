@@ -1,6 +1,6 @@
 # Troubleshooting & Operational Guide
 
-This guide provides troubleshooting steps and diagnostic procedures for common operational issues encountered in DevspireHub Markdown Studio.
+This guide provides troubleshooting steps and diagnostic procedures for common operational issues encountered in MarkForge Markdown Studio.
 
 ---
 
@@ -33,7 +33,7 @@ The Bi-Directional Link Graph relies on HTML5 Canvas and D3 force simulation.
 ### Issue: High CPU / Fan Spin When Graph View is Open
 - **Cause**: Active force simulation on massive workspaces (>1,000 documents).
 - **Resolution**:
-  - DevspireHub Markdown Studio implements **auto-cooling** (alpha decays to 0 after ~300 ticks). Once the graph settles, the simulation completely enters idle sleep.
+  - MarkForge Markdown Studio implements **auto-cooling** (alpha decays to 0 after ~300 ticks). Once the graph settles, the simulation completely enters idle sleep.
   - If you are continuously dragging nodes, simulation remains active. Release the node to allow the graph to cool.
 
 ---
@@ -83,7 +83,7 @@ If WikiLink indexing or workspace search shows stale or ghost files:
 ## 5. Security & Content Blocking
 
 ### Issue: External Images or Scripts Do Not Load
-- **Cause**: DevspireHub Markdown Studio enforces a **Strict Content Security Policy (CSP)** and blocks external network requests by default.
+- **Cause**: MarkForge Markdown Studio enforces a **Strict Content Security Policy (CSP)** and blocks external network requests by default.
 - **Resolution**:
   - Remote images: By default, remote `http://` / `https://` images may be blocked unless explicitly permitted in settings or stored locally in your workspace assets folder (`./assets/image.png`).
   - Scripts: Inline `<script>` execution and `javascript:` URLs are unconditionally prohibited in preview mode to prevent Cross-Site Scripting (XSS).

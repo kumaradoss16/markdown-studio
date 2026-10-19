@@ -30,7 +30,7 @@ describe('Release 0.2 Export Engine & Standalone HTML Generation', () => {
     const html = markdownService.generateStandaloneHtml(emptyDoc);
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<title>DevspireHub Document</title>');
+    expect(html).toContain('<title>MarkForge Document</title>');
   });
 
   it('correctly toggles and sorts workspace knowledge base', () => {

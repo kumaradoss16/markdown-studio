@@ -4,5 +4,6 @@ dist-release/
 target/
 src-tauri/target/
 *.log
+qa-report.json
 .DS_Store
 Thumbs.db

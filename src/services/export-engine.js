@@ -74,7 +74,7 @@ export class ExportEngine {
     const firstH1 = pipelineResult.headings.find(h => h.level === 1);
     const title = firstH1
       ? firstH1.text
-      : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'DevspireHub Documentation');
+      : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'MarkForge Documentation');
     const purify = this.pipeline.getPurify();
     const cleanTitle = purify.sanitize(title);
 
@@ -101,7 +101,7 @@ export class ExportEngine {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="generator" content="DevspireHub Markdown Studio v0.7.0">
+  <meta name="generator" content="MarkForge Markdown Studio v1.0.0">
   <title>${cleanTitle}</title>
   <style>
     :root {
@@ -329,7 +329,7 @@ export class ExportEngine {
     ${bodyHtml}
   </article>
   <footer class="export-footer">
-    <span>Generated with DevspireHub Markdown Studio</span>
+    <span>Generated with MarkForge Markdown Studio</span>
     <span>Exported ${new Date().toISOString().split('T')[0]}</span>
   </footer>
 

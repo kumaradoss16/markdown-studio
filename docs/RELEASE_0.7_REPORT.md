@@ -1,4 +1,4 @@
-# DevspireHub Markdown Studio — Release 0.7.0 Engineering Report
+# MarkForge Markdown Studio — Release 0.7.0 Engineering Report
 **Advanced Documentation QA, Multi-File Link Verification, Navigation Integrity, Coverage, and CI Automation**
 
 - **Release Version:** `v0.7.0`
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary
 
-Release 0.7.0 elevates DevspireHub Markdown Studio into an enterprise-grade Documentation Quality Assurance and Continuous Integration (CI) verification platform.
+Release 0.7.0 elevates MarkForge Markdown Studio into an enterprise-grade Documentation Quality Assurance and Continuous Integration (CI) verification platform.
 
 Teams managing multi-document repositories, technical handbooks, and open-source documentation hubs can now:
 1. **Validate workspace-wide links & cross-doc anchors:** Detect broken internal anchors, missing local files, missing local images, and cross-document heading slugs (`guide.md#architecture`) without running a web server.

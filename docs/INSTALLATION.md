@@ -1,6 +1,6 @@
 # Installation & Deployment Guide
 
-Welcome to **DevspireHub Markdown Studio** (Release 1.0 Production). This document covers system prerequisites, installation methods across supported operating systems, in-place upgrades, and verification procedures.
+Welcome to **MarkForge Markdown Studio** (Release 1.0 Production). This document covers system prerequisites, installation methods across supported operating systems, in-place upgrades, and verification procedures.
 
 ---
 
@@ -19,28 +19,28 @@ Welcome to **DevspireHub Markdown Studio** (Release 1.0 Production). This docume
 ## 2. Desktop Installation
 
 ### Windows (NSIS Installer or Portable)
-1. Download `DevspireHub-Markdown-Studio_1.0.0_x64-setup.exe` or portable `.zip` from the GitHub Releases page.
-2. Run the installer and choose an installation directory (defaults to `%LOCALAPPDATA%\Programs\DevspireHub Markdown Studio`).
+1. Download `MarkForge-Markdown-Studio-1.0.0-Setup.exe` or portable `.exe` from the GitHub Releases page.
+2. Run the installer and choose an installation directory (defaults to `%LOCALAPPDATA%\Programs\MarkForge Markdown Studio`).
 3. Launch via the Start Menu shortcut or desktop icon.
 4. **Silent Enterprise Install:**
    ```powershell
-   DevspireHub-Markdown-Studio_1.0.0_x64-setup.exe /S /D=C:\Program Files\DevspireHub Markdown Studio
+   MarkForge-Markdown-Studio-1.0.0-Setup.exe /S /D=C:\Program Files\MarkForge Markdown Studio
    ```
 
 ### macOS (.dmg / .app)
-1. Download `DevspireHub-Markdown-Studio_1.0.0_aarch64.dmg` (Apple Silicon) or `_x64.dmg` (Intel).
-2. Open the disk image and drag **DevspireHub Markdown Studio** into your `/Applications` folder.
+1. Download `MarkForge-Markdown-Studio_1.0.0_aarch64.dmg` (Apple Silicon) or `_x64.dmg` (Intel).
+2. Open the disk image and drag **MarkForge Markdown Studio** into your `/Applications` folder.
 3. First launch: If Gatekeeper prompts verification, click **Open** or permit via `System Settings > Privacy & Security`.
 
 ### Linux (AppImage / Debian)
 * **AppImage (Distro-agnostic):**
   ```bash
-  chmod +x DevspireHub-Markdown-Studio_1.0.0_amd64.AppImage
-  ./DevspireHub-Markdown-Studio_1.0.0_amd64.AppImage
+  chmod +x MarkForge-Markdown-Studio_1.0.0_amd64.AppImage
+  ./MarkForge-Markdown-Studio_1.0.0_amd64.AppImage
   ```
 * **Debian / Ubuntu (.deb):**
   ```bash
-  sudo dpkg -i devspirehub-markdown-studio_1.0.0_amd64.deb
+  sudo dpkg -i markforge-markdown-studio_1.0.0_amd64.deb
   sudo apt-get install -f
   ```
 
@@ -53,7 +53,7 @@ To run the studio within an offline local server or browser environment:
 ```bash
 # 1. Clone repository
 git clone https://github.com/kumaradoss16/markdown-studio.git
-cd devspirehub-markdown-studio
+cd markforge-markdown-studio
 
 # 2. Install production dependencies
 npm ci
@@ -71,9 +71,9 @@ Access the studio at `http://localhost:5173`.
 
 ## 4. In-Place Version Upgrades
 
-DevspireHub Markdown Studio preserves 100% of user data, preferences, custom themes, accent selections, and recovery journals during upgrades:
+MarkForge Markdown Studio preserves 100% of user data, preferences, custom themes, accent selections, and recovery journals during upgrades:
 
-1. Close any running instances of DevspireHub Markdown Studio.
+1. Close any running instances of MarkForge Markdown Studio.
 2. Install the new version over the existing installation directory.
 3. On first launch, the schema migration engine automatically preserves:
    * Application preferences: `devspirehub:settings`
@@ -89,7 +89,7 @@ Every release provides an official `checksums.txt` file. Verify downloaded binar
 
 * **Windows (PowerShell):**
   ```powershell
-  Get-FileHash -Algorithm SHA256 .\DevspireHub-Markdown-Studio_1.0.0_x64-setup.exe
+  Get-FileHash -Algorithm SHA256 .\MarkForge-Markdown-Studio-1.0.0-Setup.exe
   ```
 * **macOS / Linux:**
   ```bash

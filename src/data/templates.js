@@ -1,5 +1,5 @@
 /**
- * Technical Documentation Templates for DevspireHub Markdown Studio Release 0.3.
+ * Technical Documentation Templates for MarkForge Markdown Studio Release 1.0.
  */
 
 export const TEMPLATES = [
@@ -293,7 +293,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Prerequisites
 
 Before beginning this tutorial, ensure you have:
-1. DevspireHub Markdown Studio installed and running.
+1. MarkForge Markdown Studio installed and running.
 2. A working directory with sample markdown notes.
 
 ## Step 1: Initialize Your Document

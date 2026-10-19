@@ -1162,7 +1162,7 @@ export class DialogsComponent {
           </div>
 
           <div style="padding: 10px; background: var(--color-surface-base); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-muted);">
-            DevspireHub Markdown Studio v0.7.0 • Local-First Architecture
+            MarkForge Markdown Studio v1.0.0 • Local-First Architecture
           </div>
         </div>
         <div class="modal-actions" style="display: flex; align-items: center; justify-content: space-between;">

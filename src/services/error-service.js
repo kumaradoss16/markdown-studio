@@ -1,5 +1,5 @@
 /**
- * Standardized error codes and error normalization for DevspireHub Markdown Studio
+ * Standardized error codes and error normalization for MarkForge Markdown Studio
  */
 
 export const ErrorCode = {

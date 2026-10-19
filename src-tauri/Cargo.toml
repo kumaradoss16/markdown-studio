@@ -1,12 +1,12 @@
 [package]
-name = "devspirehub-markdown-studio"
+name = "markforge-markdown-studio"
 version = "1.0.0"
-description = "DevspireHub Markdown Studio - A lightweight, local-first Markdown documentation workspace for desktop"
-authors = ["DevspireHub Team"]
+description = "MarkForge Markdown Studio - A lightweight, local-first Markdown documentation workspace for desktop"
+authors = ["MarkForge Team"]
 edition = "2021"
 
 [lib]
-name = "devspirehub_markdown_studio_lib"
+name = "markforge_markdown_studio_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

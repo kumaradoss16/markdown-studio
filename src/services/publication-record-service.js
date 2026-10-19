@@ -95,7 +95,7 @@ export class PublicationRecordService {
         baseCommitSha: destination?.baseCommitSha || null,
         baseBlobSha: destination?.baseBlobSha || null,
       },
-      commitMessage: redactSensitiveData(commitMessage || 'Update markdown via DevspireHub Markdown Studio'),
+      commitMessage: redactSensitiveData(commitMessage || 'Update markdown via MarkForge Markdown Studio'),
       state: PublicationState.READY_FOR_REVIEW,
       outcomeState: OutcomeState.NOT_SENT,
       createdAt: now,

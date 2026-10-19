@@ -1,4 +1,4 @@
-# DevspireHub Markdown Studio — Release 0.7.0 Architecture Specification
+# MarkForge Markdown Studio — Release 0.7.0 Architecture Specification
 **Advanced Documentation QA for Large Repositories**
 
 **Classification:** High-Reliability Documentation Quality & CI Verification Release  
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary & Product Objective
 
-Release 0.7.0 expands DevspireHub Markdown Studio from active-file editing diagnostics into an **enterprise-grade, workspace-wide Documentation QA and CI validation platform**.
+Release 0.7.0 expands MarkForge Markdown Studio from active-file editing diagnostics into an **enterprise-grade, workspace-wide Documentation QA and CI validation platform**.
 
 Teams managing multi-folder documentation repositories, technical handbooks, and open-source projects can now:
 - Run deterministic project-wide link validation (local files, cross-document anchor slugs `file.md#heading`, local images, and opt-in rate-limited remote URLs).
@@ -170,7 +170,7 @@ Release 0.7 enforces 12 immutable invariants across UI, background workers, and 
 
 ### 6.2 NavigationChecker
 - Discovers navigation documents declared in `config.navigation.sources` or default conventions (`SUMMARY.md`, `docs/SUMMARY.md`, `nav.md`).
-- Parses markdown list items containing links (`* [Title](path/to/doc.md)`).
+- Parses markdown list items containing links (e.g. `* Title -> document-path`).
 - Validations:
   - **Dangling entries:** Nav links pointing to non-existent files $\rightarrow$ `RULE_DANGLING_NAV_ENTRY` (`ERROR`).
   - **Duplicate entries:** Multiple nav items referencing the identical file path $\rightarrow$ `RULE_DUPLICATE_NAV_ENTRY` (`WARNING`).

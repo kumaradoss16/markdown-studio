@@ -45,7 +45,7 @@ function walkDir(dir, callback) {
   }
 }
 
-console.log('🔍 Running DevspireHub Markdown Studio Release 1.0 Lint Gate...\n');
+console.log('🔍 Running MarkForge Markdown Studio Release 1.0 Lint Gate...\n');
 
 // 1. JSON Schema & Syntax Checks
 const jsonFiles = [

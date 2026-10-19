@@ -175,7 +175,7 @@ export class GitHubWriteClient {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/');
     const url = `${this.baseUrl}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodedPath}`;
 
-    const sanitizedMessage = redactSensitiveData(commitMessage || 'Update markdown via DevspireHub Markdown Studio');
+    const sanitizedMessage = redactSensitiveData(commitMessage || 'Update markdown via MarkForge Markdown Studio');
     const base64Content = encodeBase64Utf8(content);
 
     const body = {
@@ -202,7 +202,7 @@ export class GitHubWriteClient {
           Accept: 'application/vnd.github.v3+json',
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'User-Agent': 'DevspireHub-Markdown-Studio/0.5.0',
+          'User-Agent': 'MarkForge-Markdown-Studio/1.0.0',
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -370,7 +370,7 @@ export class GitHubWriteClient {
           Accept: 'application/vnd.github.v3+json',
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'User-Agent': 'DevspireHub-Markdown-Studio/0.5.0',
+          'User-Agent': 'MarkForge-Markdown-Studio/1.0.0',
         },
         body: JSON.stringify({
           ref: `refs/heads/${cleanBranch}`,
@@ -507,7 +507,7 @@ export class GitHubWriteClient {
           Accept: 'application/vnd.github.v3+json',
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'User-Agent': 'DevspireHub-Markdown-Studio/0.5.0',
+          'User-Agent': 'MarkForge-Markdown-Studio/1.0.0',
         },
         body: JSON.stringify({
           title: redactSensitiveData(title),

@@ -1,6 +1,6 @@
 # Release Notes — Version 1.0.0 Production Hardening
 
-DevspireHub Markdown Studio **Release 1.0.0** marks the milestone transition from developer preview to a dependable, hardened, production-ready desktop and offline-first documentation studio.
+MarkForge Markdown Studio **Release 1.0.0** marks the milestone transition from developer preview to a dependable, hardened, production-ready desktop and offline-first documentation studio.
 
 This release is centered around **software reliability, application security, explicit data-integrity invariants, and reproducible distribution quality gates**.
 
@@ -65,6 +65,6 @@ This release is centered around **software reliability, application security, ex
 
 ## 5. Architectural Boundaries & Known Limits
 
-- **Single-User Desktop & Offline Workspace**: DevspireHub Markdown Studio is intentionally designed as an offline-first single-user application. It does not contain server-side collaborative CRDT synchronizers or cloud-hosted user databases.
+- **Single-User Desktop & Offline Workspace**: MarkForge Markdown Studio is intentionally designed as an offline-first single-user application. It does not contain server-side collaborative CRDT synchronizers or cloud-hosted user databases.
 - **Local File Protocol Isolation**: The application does not serve or mount arbitrary `file://` resources from outside the active workspace directory.
 - **Hardware Acceleration Requirements**: Graph view requires HTML5 Canvas support; environments with disabled hardware acceleration automatically fall back to software rendering.
