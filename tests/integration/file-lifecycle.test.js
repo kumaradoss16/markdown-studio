@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { FileSystemService } from '../../src/services/filesystem-service.js';
 import { DocumentStateManager } from '../../src/core/document-state-manager.js';
 import { SaveCoordinator } from '../../src/core/save-coordinator.js';
+import { populateTestFixtures } from '../fixtures/sample-workspace.js';
 
 describe('Integration: Document & Filesystem Lifecycle', () => {
   let fsService;
@@ -10,6 +11,7 @@ describe('Integration: Document & Filesystem Lifecycle', () => {
 
   beforeEach(() => {
     fsService = new FileSystemService();
+    populateTestFixtures(fsService);
     stateManager = new DocumentStateManager();
     coordinator = new SaveCoordinator(stateManager, fsService);
   });

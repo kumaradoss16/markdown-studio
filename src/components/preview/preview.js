@@ -120,8 +120,21 @@ export class PreviewComponent {
     const scrollArea = this.container.querySelector('#previewScrollArea');
     if (!scrollArea) return;
 
-    if (!doc || !doc.content) {
-      scrollArea.innerHTML = '<div style="padding: 40px; color: var(--color-text-muted); text-align: center;">No preview available</div>';
+    if (!doc) {
+      scrollArea.innerHTML = `
+        <div class="preview-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--color-text-muted); font-size: 12px; text-align: center; padding: 40px;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.5; margin-bottom: 12px;">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          <span>No document open to preview</span>
+        </div>
+      `;
+      return;
+    }
+
+    if (doc.content === undefined || doc.content === null) {
+      scrollArea.innerHTML = '<div style="padding: 40px; color: var(--color-text-muted); text-align: center;">Document content empty</div>';
       return;
     }
 

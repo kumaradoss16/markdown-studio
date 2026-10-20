@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fileSystemAdapter } from '../../src/services/filesystem-adapter.js';
+import { fileSystemService } from '../../src/services/filesystem-service.js';
 import { createNodeElement, getNodeIcon } from '../../src/components/file-tree/tree-node.js';
 import { FileTreeComponent } from '../../src/components/file-tree/file-tree.js';
 import { documentStateManager } from '../../src/core/document-state-manager.js';
+import { populateTestFixtures } from '../fixtures/sample-workspace.js';
 
 describe('File Hierarchy Explorer System', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+    populateTestFixtures(fileSystemService);
   });
 
   describe('fileSystemAdapter', () => {

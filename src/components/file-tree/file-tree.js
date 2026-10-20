@@ -84,7 +84,16 @@ export class FileTreeComponent {
           this.renderRecursiveNode(child, this.treeEl, 0);
         }
       } else {
-        this.treeEl.innerHTML = `<div class="file-tree-empty">No files in workspace</div>`;
+        this.treeEl.innerHTML = `
+          <div class="file-tree-empty">
+            <div style="margin-bottom: 6px;">No files in workspace</div>
+            <button class="file-tree-empty-btn" id="fileTreeEmptyNewDoc" type="button">+ New Document</button>
+          </div>
+        `;
+        this.treeEl.querySelector('#fileTreeEmptyNewDoc')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-file' });
+        });
       }
 
       // Restore active highlight

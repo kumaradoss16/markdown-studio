@@ -14,9 +14,16 @@ export class FileSystemService {
   }
 
   /**
-   * Initializes virtual workspace files matching the reference workspace if not already present.
+   * Initializes virtual workspace files matching clean install state (zero seeded files).
    */
   initializeDefaultWorkspace() {
+    // Clean install starts with empty virtual storage
+  }
+
+  /**
+   * Populates sample fixture dataset strictly for testing or manual fixture loading.
+   */
+  populateSampleData() {
     const habitatContent = `---
 tags: [design, habitat, engineering, noforn, orcon]
 status: approved

@@ -10,6 +10,20 @@ import { documentStateManager } from './document-state-manager.js';
 export class WorkspaceManager {
   constructor() {
     this.vaultName = '';
+    this.vaultRoot = 'workspace';
+    this.recents = recentFilesService.getRecents();
+    this.folders = [];
+    this.knowledgeBase = [];
+    this.tags = [];
+    this.activeTagFilter = null;
+    this.graphNodes = [];
+    this.graphEdges = [];
+  }
+
+  /**
+   * Populates sample fixture dataset strictly for testing or manual fixture loading.
+   */
+  populateSampleData() {
     this.vaultRoot = 'ExampleVault';
     this.recents = recentFilesService.getRecents();
     this.folders = [
@@ -43,7 +57,6 @@ export class WorkspaceManager {
       '#engineering', '#flashcards', '#habitat', '#history',
       '#logs', '#march-2026', '#math', '#media'
     ];
-    this.activeTagFilter = null;
     this.graphNodes = [
       { id: 'Habitat Design', label: 'Habitat Design', isCenter: true, x: 140, y: 80 },
       { id: 'System Arch.', label: 'System Arch.', x: 210, y: 35 },

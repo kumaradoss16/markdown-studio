@@ -4,6 +4,9 @@ import { documentStateManager } from '../../src/core/document-state-manager.js';
 import { workspaceManager } from '../../src/core/workspace-manager.js';
 
 describe('Release 0.2 Export Engine & Standalone HTML Generation', () => {
+  beforeEach(() => {
+    workspaceManager.populateSampleData();
+  });
   it('generates a complete standalone HTML document with embedded CSS and sanitized body', () => {
     const doc = {
       name: 'Habitat Design.md',

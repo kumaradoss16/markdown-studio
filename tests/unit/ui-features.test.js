@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { WorkspaceManager } from '../../src/core/workspace-manager.js';
 import { DocumentStateManager } from '../../src/core/document-state-manager.js';
 import { SLASH_COMMANDS } from '../../src/components/editor/slash-menu.js';
+import { fileSystemService } from '../../src/services/filesystem-service.js';
+import { populateTestFixtures } from '../fixtures/sample-workspace.js';
 
 describe('UI and Workspace Features', () => {
   let workspace;
@@ -9,6 +11,7 @@ describe('UI and Workspace Features', () => {
 
   beforeEach(() => {
     workspace = new WorkspaceManager();
+    populateTestFixtures(fileSystemService, workspace);
     docManager = new DocumentStateManager();
   });
 

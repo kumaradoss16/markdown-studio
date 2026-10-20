@@ -78,31 +78,11 @@ export async function bootstrapApp(rootElement) {
   const previewContainer = rootElement.querySelector('#previewContainer');
   const statusBarContainer = rootElement.querySelector('#statusBarContainer');
 
-  // 3. Pre-load documents: Restore saved workspace tabs & draft buffers, or load default files
+  // 3. Pre-load documents: Restore saved workspace tabs & draft buffers if present
   const restored = await workspaceStore.restoreWorkspace();
   if (!restored) {
-    const initialFiles = [
-      'ExampleVault/Marcus Chen.md',
-      'ExampleVault/Mermaid Style Rules.md',
-      'ExampleVault/Habitat Design.md',
-      'ExampleVault/System Architecture.md',
-      'ExampleVault/Orbital Mechanics.md',
-    ];
-
-    for (const filePath of initialFiles) {
-      try {
-        const fileData = await fileSystemService.readFile(filePath);
-        documentStateManager.openDocument(fileData.path, fileData.content, fileData.hash, fileData.mtime);
-      } catch (err) {
-        console.warn(`Could not preload file ${filePath}:`, err);
-      }
-    }
-
-    // Set Habitat Design.md as the active document as shown in the reference image
-    const habitatDoc = documentStateManager.getOpenDocuments().find(d => d.name === 'Habitat Design.md');
-    if (habitatDoc) {
-      documentStateManager.setActiveDocument(habitatDoc.id);
-    }
+    // Clean install default: Zero pre-loaded mock files or sample tabs.
+    // Workspace boots into pristine empty state with empty open tabs.
   }
 
   // Check for any ungraceful shutdown crash recoveries

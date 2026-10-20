@@ -9,7 +9,6 @@ import { saveCoordinator } from '../../core/save-coordinator.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { EditorCommandMenuController } from './slash-menu.js';
 import { formattingKeymap, toggleInlineFormat, applyBlockFormat } from '../../features/editor/commands/formatting.js';
-import { codeBlockDecorations } from '../../features/editor/extensions/code-block.js';
 import { remoteDraftService } from '../../services/remote-draft-service.js';
 import { revisionComparisonService } from '../../services/revision-comparison-service.js';
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
@@ -238,7 +237,6 @@ export class EditorComponent {
 
   createEditorState(initialText = '') {
     const extensions = [
-      codeBlockDecorations,
       history(),
       search({ top: true }),
       oneDark,
@@ -301,7 +299,34 @@ export class EditorComponent {
 
     if (!doc) {
       this.currentDocId = null;
-      cmHost.innerHTML = '<div style="padding: 40px; color: var(--color-text-muted); text-align: center;">No document open</div>';
+      cmHost.innerHTML = `
+        <div class="editor-empty-state">
+          <div class="empty-state-card">
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent, #38BDF8)" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <h3>No Document Open</h3>
+            <p>Create a new document or open an existing file to start writing.</p>
+            <div class="empty-state-actions">
+              <button class="empty-action-btn primary" id="emptyStateNewDocBtn" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>New Document</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      cmHost.querySelector('#emptyStateNewDocBtn')?.addEventListener('click', () => {
+        eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-file' });
+      });
       if (this.view) {
         this.view.destroy();
         this.view = null;

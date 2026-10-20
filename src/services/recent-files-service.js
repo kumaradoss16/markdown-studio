@@ -29,7 +29,7 @@ export class RecentFilesService {
     try {
       if (typeof localStorage === 'undefined') return [];
       const raw = localStorage.getItem(RECENT_FILES_KEY);
-      if (raw === null) return this.getDefaultRecents();
+      if (raw === null) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
     } catch {
@@ -38,18 +38,7 @@ export class RecentFilesService {
   }
 
   getDefaultRecents() {
-    return [
-      {
-        name: 'Sprint Review 2026-03-25.md',
-        path: 'ExampleVault/Sprint Review 2026-03-25.md',
-        lastAccessed: Date.now() - 3600000
-      },
-      {
-        name: 'Habitat Design.md',
-        path: 'ExampleVault/Habitat Design.md',
-        lastAccessed: Date.now() - 7200000
-      }
-    ];
+    return [];
   }
 
   persist() {

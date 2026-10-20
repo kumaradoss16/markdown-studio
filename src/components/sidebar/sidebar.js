@@ -11,6 +11,7 @@ export class SidebarComponent {
   constructor(container) {
     this.container = container;
     this.activeContextMenu = null;
+    this.collapsedSections = this.getCollapsedSections();
     this.setupListeners();
 
     // Close context menu on outside click or escape
@@ -27,6 +28,61 @@ export class SidebarComponent {
     });
   }
 
+  getCollapsedSections() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('markforge:sidebar:collapsed');
+        if (raw) return new Set(JSON.parse(raw));
+      }
+    } catch {
+      // fallback
+    }
+    return new Set();
+  }
+
+  saveCollapsedSections() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('markforge:sidebar:collapsed', JSON.stringify([...this.collapsedSections]));
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  isSectionCollapsed(sectionId) {
+    return this.collapsedSections.has(sectionId);
+  }
+
+  toggleSection(sectionId) {
+    if (this.collapsedSections.has(sectionId)) {
+      this.collapsedSections.delete(sectionId);
+    } else {
+      this.collapsedSections.add(sectionId);
+    }
+    this.saveCollapsedSections();
+
+    const sectionEl = this.container.querySelector(`[data-section-id="${sectionId}"]`);
+    if (!sectionEl) return;
+
+    const isCollapsed = this.isSectionCollapsed(sectionId);
+    sectionEl.classList.toggle('is-collapsed', isCollapsed);
+
+    const toggleBtn = sectionEl.querySelector('.section-toggle-header');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+      const chevron = toggleBtn.querySelector('.section-chevron');
+      if (chevron) {
+        chevron.classList.toggle('collapsed', isCollapsed);
+      }
+    }
+
+    const contentEl = sectionEl.querySelector('.section-content');
+    if (contentEl) {
+      contentEl.style.display = isCollapsed ? 'none' : '';
+    }
+  }
+
   setupListeners() {
     eventBus.on(AppEvents.DOCUMENT_ACTIVATED, (doc) => {
       this.updateActiveItem(doc);
@@ -38,7 +94,13 @@ export class SidebarComponent {
 
   render() {
     const activeDoc = documentStateManager.getActiveDocument();
-    const activePath = activeDoc ? activeDoc.path : 'ExampleVault/Habitat Design.md';
+    const activePath = activeDoc ? activeDoc.path : '';
+
+    const isRecentsCollapsed = this.isSectionCollapsed('recents');
+    const isFilesystemCollapsed = this.isSectionCollapsed('filesystem');
+    const isKbCollapsed = this.isSectionCollapsed('knowledge-base');
+    const isTagsCollapsed = this.isSectionCollapsed('tags');
+    const isGithubCollapsed = this.isSectionCollapsed('github');
 
     this.container.innerHTML = `
       <div class="sidebar-header">
@@ -76,21 +138,23 @@ export class SidebarComponent {
 
       <div class="sidebar-scroll-area">
         <!-- Recents -->
-        <div class="sidebar-section">
-          <div class="folder-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <div class="sidebar-section recents-section ${isRecentsCollapsed ? 'is-collapsed' : ''}" data-section-id="recents">
+          <div class="folder-header section-toggle-header" role="button" tabindex="0" aria-expanded="${!isRecentsCollapsed}" aria-label="Toggle Recent Files section" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg class="section-chevron ${isRecentsCollapsed ? 'collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              <span>Recents</span>
+              <span style="font-weight: 600;">Recents</span>
             </div>
             ${recentFilesService.getRecents().length > 0 ? `<button class="header-btn" id="sidebarClearRecentsBtn" title="Clear Recent Files" style="font-size: 9px; padding: 1px 5px;">clear</button>` : ''}
           </div>
-          <div class="folder-content">
-            ${recentFilesService.getRecents().map(r => `
+          <div class="folder-content section-content" style="${isRecentsCollapsed ? 'display: none;' : ''}">
+            ${recentFilesService.getRecents().length === 0 ? `
+              <div class="sidebar-empty-hint">No recent files</div>
+            ` : recentFilesService.getRecents().map(r => `
               <div class="sidebar-item ${r.path === activePath ? 'active' : ''}" data-path="${r.path}" data-name="${r.name}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -103,49 +167,82 @@ export class SidebarComponent {
         </div>
 
         <!-- File Tree Explorer -->
-        <div class="sidebar-section file-tree-section">
-          <div class="sidebar-section-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Filesystem</span>
+        <div class="sidebar-section file-tree-section ${isFilesystemCollapsed ? 'is-collapsed' : ''}" data-section-id="filesystem">
+          <div class="sidebar-section-title section-toggle-header" role="button" tabindex="0" aria-expanded="${!isFilesystemCollapsed}" aria-label="Toggle Filesystem section" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg class="section-chevron ${isFilesystemCollapsed ? 'collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+              <span>Filesystem</span>
+            </div>
           </div>
-          <div id="sidebarFileTreeMount"></div>
+          <div class="section-content" style="${isFilesystemCollapsed ? 'display: none;' : ''}">
+            <div id="sidebarFileTreeMount"></div>
+          </div>
         </div>
 
         <!-- Knowledge Base -->
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Knowledge Base</div>
-          <div class="knowledge-base-list">
-            ${workspaceManager.knowledgeBase.map(item => `
-              <div class="sidebar-item ${item.path === activePath ? 'active' : ''}" data-path="${item.path}" data-name="${item.name}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                </svg>
-                <span>${item.name}</span>
-                <button class="item-more-btn" title="More options" aria-label="More options for ${item.name}" data-path="${item.path}" data-name="${item.name}">···</button>
-              </div>
-            `).join('')}
+        <div class="sidebar-section knowledge-base-section ${isKbCollapsed ? 'is-collapsed' : ''}" data-section-id="knowledge-base">
+          <div class="sidebar-section-title section-toggle-header" role="button" tabindex="0" aria-expanded="${!isKbCollapsed}" aria-label="Toggle Knowledge Base section" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg class="section-chevron ${isKbCollapsed ? 'collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+              <span>Knowledge Base</span>
+            </div>
+          </div>
+          <div class="section-content" style="${isKbCollapsed ? 'display: none;' : ''}">
+            <div class="knowledge-base-list">
+              ${workspaceManager.knowledgeBase.length === 0 ? `
+                <div class="sidebar-empty-hint">Knowledge base empty</div>
+              ` : workspaceManager.knowledgeBase.map(item => `
+                <div class="sidebar-item ${item.path === activePath ? 'active' : ''}" data-path="${item.path}" data-name="${item.name}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span>${item.name}</span>
+                  <button class="item-more-btn" title="More options" aria-label="More options for ${item.name}" data-path="${item.path}" data-name="${item.name}">···</button>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
 
-
         <!-- Tags -->
-        <div class="sidebar-section">
-          <div class="sidebar-section-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Tags [${workspaceManager.tags.length}]</span>
-            <button class="header-btn" style="font-size: 9px; padding: 1px 4px;">filter</button>
+        <div class="sidebar-section tags-section ${isTagsCollapsed ? 'is-collapsed' : ''}" data-section-id="tags">
+          <div class="sidebar-section-title section-toggle-header" role="button" tabindex="0" aria-expanded="${!isTagsCollapsed}" aria-label="Toggle Tags section" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg class="section-chevron ${isTagsCollapsed ? 'collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+              <span>Tags [${workspaceManager.tags.length}]</span>
+            </div>
+            ${workspaceManager.tags.length > 0 ? `<button class="header-btn" style="font-size: 9px; padding: 1px 4px;">filter</button>` : ''}
           </div>
-          <div class="tags-container">
-            ${workspaceManager.tags.map(tag => `
-              <span class="tag-pill ${workspaceManager.activeTagFilter === tag ? 'active' : ''}" data-tag="${tag}">${tag}</span>
-            `).join('')}
+          <div class="section-content" style="${isTagsCollapsed ? 'display: none;' : ''}">
+            <div class="tags-container">
+              ${workspaceManager.tags.length === 0 ? `
+                <div class="sidebar-empty-hint" style="padding: 2px 0;">No tags found</div>
+              ` : workspaceManager.tags.map(tag => `
+                <span class="tag-pill ${workspaceManager.activeTagFilter === tag ? 'active' : ''}" data-tag="${tag}">${tag}</span>
+              `).join('')}
+            </div>
           </div>
         </div>
 
         <!-- GitHub Explorer Section (Release 0.4) -->
-        <div class="sidebar-section github-panel-section">
-          <div class="sidebar-section-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>GitHub Workspace</span>
+        <div class="sidebar-section github-panel-section ${isGithubCollapsed ? 'is-collapsed' : ''}" data-section-id="github">
+          <div class="sidebar-section-title section-toggle-header" role="button" tabindex="0" aria-expanded="${!isGithubCollapsed}" aria-label="Toggle GitHub Workspace section" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg class="section-chevron ${isGithubCollapsed ? 'collapsed' : ''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+              <span>GitHub Workspace</span>
+            </div>
           </div>
-          <div id="sidebarGitHubMount"></div>
+          <div class="section-content" style="${isGithubCollapsed ? 'display: none;' : ''}">
+            <div id="sidebarGitHubMount"></div>
+          </div>
         </div>
 
         <!-- Graph View Container -->
@@ -153,7 +250,7 @@ export class SidebarComponent {
       </div>
 
       <div class="sidebar-footer">
-        <span><strong style="color: var(--color-text-primary);">${activeDoc ? activeDoc.name.replace('.md', '') : 'Habitat Design'}</strong></span>
+        <span><strong style="color: var(--color-text-primary);">${activeDoc ? activeDoc.name.replace(/\.md$/, '') : 'No Document Active'}</strong></span>
       </div>
     `;
 
@@ -208,8 +305,34 @@ export class SidebarComponent {
     // Clear Recents button
     this.container.querySelector('#sidebarClearRecentsBtn')?.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       recentFilesService.clearRecents();
+      this.render();
       eventBus.emit(AppEvents.NOTIFICATION, { type: 'info', message: 'Recent files list cleared.' });
+    });
+
+    // Section collapse / expand accordion toggles
+    this.container.querySelectorAll('.section-toggle-header').forEach(header => {
+      const sectionEl = header.closest('.sidebar-section');
+      const sectionId = sectionEl?.getAttribute('data-section-id');
+      if (!sectionId) return;
+
+      const onToggle = (e) => {
+        if (e.target.closest('button') || e.target.closest('.header-btn')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleSection(sectionId);
+      };
+
+      header.addEventListener('click', onToggle);
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target.closest('button') || e.target.closest('.header-btn')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          this.toggleSection(sectionId);
+        }
+      });
     });
 
     // File click handler
