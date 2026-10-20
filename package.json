@@ -14,7 +14,8 @@
     "qa:ci": "node scripts/run-docs-qa.js --profile ci-blocking --format json --out qa-report.json",
     "build:win": "node scripts/build-windows.js",
     "pack:source": "node scripts/package-source.js",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.0",

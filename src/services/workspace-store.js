@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS = {
   tabSize: 2,
   wordWrap: true,
   showLineNumbers: true,
-  syncScroll: true,
+  syncScroll: false,
   splitRatio: 50,
   viewMode: 'DUAL SPLIT'
 };

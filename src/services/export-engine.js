@@ -111,10 +111,14 @@ export class ExportEngine {
       --heading: ${headingColor};
       --code-bg: ${codeBg};
       --accent: ${accent};
+      --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace;
+      --font-display: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --letter-spacing-display: -0.02em;
     }
     *, *::before, *::after { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      font-family: var(--font-sans);
       line-height: 1.65;
       max-width: 920px;
       margin: 40px auto;
@@ -123,10 +127,12 @@ export class ExportEngine {
       background: var(--bg);
     }
     h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-display);
       color: var(--heading);
       margin-top: 1.6em;
       margin-bottom: 0.6em;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: var(--letter-spacing-display, -0.02em);
       line-height: 1.25;
       scroll-margin-top: 24px;
     }
@@ -136,12 +142,14 @@ export class ExportEngine {
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     code {
-      font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+      font-family: var(--font-mono);
       font-size: 85%;
       background: var(--code-bg);
       padding: 0.2em 0.4em;
       border-radius: 4px;
       border: 1px solid var(--border);
+      font-variant-ligatures: normal;
+      font-feature-settings: "liga" 1, "calt" 1;
     }
     pre {
       background: var(--code-bg);
@@ -150,8 +158,11 @@ export class ExportEngine {
       padding: 16px;
       overflow-x: auto;
       line-height: 1.45;
+      font-family: var(--font-mono);
+      font-variant-ligatures: normal;
+      font-feature-settings: "liga" 1, "calt" 1;
     }
-    pre code { background: transparent; padding: 0; border: none; font-size: 0.9em; }
+    pre code { background: transparent; padding: 0; border: none; font-size: 0.9em; font-family: inherit; }
     blockquote {
       border-left: 4px solid var(--accent);
       margin: 16px 0;
@@ -236,9 +247,13 @@ export class ExportEngine {
         padding: 0 !important;
         color: #1e293b !important;
         background: #ffffff !important;
-        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-family: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         font-size: 11pt !important;
         line-height: 1.5 !important;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        letter-spacing: -0.02em !important;
       }
       h1 {
         font-size: 24pt !important;
@@ -272,7 +287,9 @@ export class ExportEngine {
         text-decoration: underline !important;
       }
       code {
-        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+        font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace !important;
+        font-variant-ligatures: normal !important;
+        font-feature-settings: "liga" 1, "calt" 1 !important;
         background: #f1f5f9 !important;
         color: #0f172a !important;
         border: none !important;
@@ -285,7 +302,9 @@ export class ExportEngine {
         border: 1px solid #cbd5e1 !important;
         border-radius: 6px !important;
         padding: 12px 16px !important;
-        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+        font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace !important;
+        font-variant-ligatures: normal !important;
+        font-feature-settings: "liga" 1, "calt" 1 !important;
         font-size: 9.5pt !important;
         line-height: 1.45 !important;
         overflow: visible !important;

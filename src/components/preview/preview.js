@@ -2,11 +2,13 @@ import { markdownPipeline } from '../../services/markdown-pipeline.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { resolveWorkspacePath } from '../../services/project-link-checker.js';
+import { workspaceStore } from '../../services/workspace-store.js';
 
 export class PreviewComponent {
   constructor(container) {
     this.container = container;
     this.renderTimer = null;
+    this.syncScroll = workspaceStore.getSettings().syncScroll === true;
     this.setupListeners();
   }
 
@@ -25,6 +27,32 @@ export class PreviewComponent {
       if (this.renderTimer) clearTimeout(this.renderTimer);
       this.renderPreview(doc);
     });
+
+    eventBus.on(AppEvents.SYNC_SCROLL_TOGGLED, ({ enabled }) => {
+      this.syncScroll = Boolean(enabled);
+      this.updateSyncScrollUI(this.syncScroll);
+    });
+
+    eventBus.on(AppEvents.SETTINGS_CHANGED, (settings) => {
+      if (settings && settings.syncScroll !== undefined) {
+        this.syncScroll = Boolean(settings.syncScroll);
+        this.updateSyncScrollUI(this.syncScroll);
+      }
+    });
+  }
+
+  updateSyncScrollUI(enabled) {
+    const btn = this.container.querySelector('#previewSyncScrollBtn');
+    if (!btn) return;
+    btn.classList.toggle('active', enabled);
+    btn.setAttribute('aria-pressed', String(enabled));
+    btn.title = enabled
+      ? 'Synchronized Scrolling: ON (Click to decouple panes)'
+      : 'Synchronized Scrolling: OFF (Click to link scrolling)';
+    const linkIcon = btn.querySelector('.sync-icon-link');
+    const unlinkIcon = btn.querySelector('.sync-icon-unlink');
+    if (linkIcon) linkIcon.style.display = enabled ? '' : 'none';
+    if (unlinkIcon) unlinkIcon.style.display = enabled ? 'none' : '';
   }
 
   render() {
@@ -36,6 +64,18 @@ export class PreviewComponent {
         </div>
         <div class="preview-tools-group">
           <span class="parser-badge">PARSER: GFM + LATEX</span>
+          <button class="tool-btn preview-sync-btn ${this.syncScroll ? 'active' : ''}" id="previewSyncScrollBtn" title="${this.syncScroll ? 'Synchronized Scrolling: ON (Click to decouple panes)' : 'Synchronized Scrolling: OFF (Click to link scrolling)'}" aria-label="Toggle Synchronized Scrolling" aria-pressed="${this.syncScroll}">
+            <svg class="sync-icon-link" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="${this.syncScroll ? '' : 'display:none;'}">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <svg class="sync-icon-unlink" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="${this.syncScroll ? 'display:none;' : ''}">
+              <path d="M18.84 12.25l1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M5.16 11.75l-1.72 1.71a5 5 0 0 0 7.07 7.07l1.72-1.71"></path>
+              <line x1="2" y1="2" x2="22" y2="22"></line>
+            </svg>
+            <span>Sync</span>
+          </button>
           <button class="preview-export-btn" id="previewExportBtn" title="Export HTML / Markdown">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -47,6 +87,23 @@ export class PreviewComponent {
       </div>
       <div class="preview-scroll-area" id="previewScrollArea"></div>
     `;
+
+    const syncBtn = this.container.querySelector('#previewSyncScrollBtn');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', () => {
+        const current = workspaceStore.getSettings().syncScroll === true;
+        const next = !current;
+        workspaceStore.saveSettings({ syncScroll: next });
+        this.syncScroll = next;
+        this.updateSyncScrollUI(next);
+        eventBus.emit(AppEvents.SETTINGS_CHANGED, { syncScroll: next });
+        eventBus.emit(AppEvents.SYNC_SCROLL_TOGGLED, { enabled: next });
+        eventBus.emit(AppEvents.NOTIFICATION, {
+          type: 'info',
+          message: next ? 'Synchronized scrolling enabled' : 'Independent scrolling enabled (Panes decoupled)'
+        });
+      });
+    }
 
     const exportBtn = this.container.querySelector('#previewExportBtn');
     if (exportBtn) {

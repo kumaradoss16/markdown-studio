@@ -335,49 +335,136 @@ export class AppShellComponent {
   }
 
   setupSyncScroll() {
-    let isSyncing = false;
+    this.syncScrollEnabled = workspaceStore.getSettings().syncScroll === true;
+    this.isScrollingEditor = false;
+    this.isScrollingPreview = false;
+    this.editorScrollTimer = null;
+    this.previewScrollTimer = null;
+    this.currentEditorScroller = null;
+    this.currentPreviewScroller = null;
 
-    const getEditorScroller = () => document.querySelector('.cm-scroller');
-    const getPreviewScroller = () => document.querySelector('#previewScrollArea');
+    this.onEditorScroll = () => {
+      if (!this.syncScrollEnabled) return;
+      if (this.isScrollingPreview) return;
 
-    const syncFromEditor = () => {
-      if (isSyncing) return;
-      if (workspaceStore.getSettings().syncScroll === false) return;
-      const ed = getEditorScroller();
-      const prev = getPreviewScroller();
+      const ed = this.currentEditorScroller;
+      const prev = this.currentPreviewScroller;
       if (!ed || !prev) return;
 
       const maxEd = ed.scrollHeight - ed.clientHeight;
       if (maxEd <= 0) return;
-      const ratio = ed.scrollTop / maxEd;
 
-      isSyncing = true;
-      prev.scrollTop = ratio * (prev.scrollHeight - prev.clientHeight);
-      requestAnimationFrame(() => { isSyncing = false; });
+      this.isScrollingEditor = true;
+      const ratio = Math.max(0, Math.min(1, ed.scrollTop / maxEd));
+      const maxPrev = prev.scrollHeight - prev.clientHeight;
+      if (maxPrev > 0) {
+        prev.scrollTop = Math.round(ratio * maxPrev);
+      }
+
+      clearTimeout(this.editorScrollTimer);
+      this.editorScrollTimer = setTimeout(() => {
+        this.isScrollingEditor = false;
+      }, 60);
     };
 
-    const syncFromPreview = () => {
-      if (isSyncing) return;
-      if (workspaceStore.getSettings().syncScroll === false) return;
-      const ed = getEditorScroller();
-      const prev = getPreviewScroller();
+    this.onPreviewScroll = () => {
+      if (!this.syncScrollEnabled) return;
+      if (this.isScrollingEditor) return;
+
+      const ed = this.currentEditorScroller;
+      const prev = this.currentPreviewScroller;
       if (!ed || !prev) return;
 
       const maxPrev = prev.scrollHeight - prev.clientHeight;
       if (maxPrev <= 0) return;
-      const ratio = prev.scrollTop / maxPrev;
 
-      isSyncing = true;
-      ed.scrollTop = ratio * (ed.scrollHeight - ed.clientHeight);
-      requestAnimationFrame(() => { isSyncing = false; });
+      this.isScrollingPreview = true;
+      const ratio = Math.max(0, Math.min(1, prev.scrollTop / maxPrev));
+      const maxEd = ed.scrollHeight - ed.clientHeight;
+      if (maxEd > 0) {
+        ed.scrollTop = Math.round(ratio * maxEd);
+      }
+
+      clearTimeout(this.previewScrollTimer);
+      this.previewScrollTimer = setTimeout(() => {
+        this.isScrollingPreview = false;
+      }, 60);
     };
 
-    document.addEventListener('scroll', (e) => {
-      if (e.target && e.target.classList && e.target.classList.contains('cm-scroller')) {
-        syncFromEditor();
-      } else if (e.target && e.target.id === 'previewScrollArea') {
-        syncFromPreview();
+    this.bindSyncScrollListeners = () => {
+      this.unbindSyncScrollListeners();
+
+      if (!this.syncScrollEnabled) return;
+
+      const ed = document.querySelector('.cm-scroller');
+      const prev = document.querySelector('#previewScrollArea');
+
+      if (ed) {
+        this.currentEditorScroller = ed;
+        ed.addEventListener('scroll', this.onEditorScroll, { passive: true });
       }
-    }, true);
+      if (prev) {
+        this.currentPreviewScroller = prev;
+        prev.addEventListener('scroll', this.onPreviewScroll, { passive: true });
+      }
+    };
+
+    this.unbindSyncScrollListeners = () => {
+      if (this.currentEditorScroller && this.onEditorScroll) {
+        this.currentEditorScroller.removeEventListener('scroll', this.onEditorScroll);
+      }
+      if (this.currentPreviewScroller && this.onPreviewScroll) {
+        this.currentPreviewScroller.removeEventListener('scroll', this.onPreviewScroll);
+      }
+      this.currentEditorScroller = null;
+      this.currentPreviewScroller = null;
+      this.isScrollingEditor = false;
+      this.isScrollingPreview = false;
+      if (this.editorScrollTimer) clearTimeout(this.editorScrollTimer);
+      if (this.previewScrollTimer) clearTimeout(this.previewScrollTimer);
+    };
+
+    // If enabled initially, bind listeners after DOM settles
+    if (this.syncScrollEnabled) {
+      setTimeout(() => this.bindSyncScrollListeners(), 100);
+    }
+
+    eventBus.on(AppEvents.SETTINGS_CHANGED, (settings) => {
+      if (settings && settings.syncScroll !== undefined) {
+        const next = Boolean(settings.syncScroll);
+        if (this.syncScrollEnabled !== next) {
+          this.syncScrollEnabled = next;
+          if (this.syncScrollEnabled) {
+            this.bindSyncScrollListeners();
+          } else {
+            this.unbindSyncScrollListeners();
+          }
+        }
+      }
+    });
+
+    eventBus.on(AppEvents.SYNC_SCROLL_TOGGLED, ({ enabled }) => {
+      const next = Boolean(enabled);
+      if (this.syncScrollEnabled !== next) {
+        this.syncScrollEnabled = next;
+        if (this.syncScrollEnabled) {
+          this.bindSyncScrollListeners();
+        } else {
+          this.unbindSyncScrollListeners();
+        }
+      }
+    });
+
+    eventBus.on(AppEvents.DOCUMENT_ACTIVATED, () => {
+      if (this.syncScrollEnabled) {
+        setTimeout(() => this.bindSyncScrollListeners(), 80);
+      }
+    });
+
+    eventBus.on(AppEvents.VIEW_MODE_CHANGED, () => {
+      if (this.syncScrollEnabled) {
+        setTimeout(() => this.bindSyncScrollListeners(), 80);
+      }
+    });
   }
 }

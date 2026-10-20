@@ -134,7 +134,7 @@
   min-height: 0;
   overflow: hidden;
   position: relative;
-  font-family: var(--font-editor);
+  font-family: var(--font-mono);
   font-size: var(--font-size-editor, 13px);
 }
 
@@ -147,11 +147,11 @@
 }
 
 .cm-scroller {
-  font-family: var(--font-editor) !important;
+  font-family: var(--font-mono) !important;
   font-size: var(--font-size-editor, 13px) !important;
   line-height: var(--line-height-editor, 1.5) !important;
-  font-variant-ligatures: normal !important;
-  font-feature-settings: "liga" 1, "calt" 1 !important;
+  font-variant-ligatures: var(--font-ligatures, normal) !important;
+  font-feature-settings: var(--font-features-mono, "liga" 1, "calt" 1) !important;
   tab-size: var(--editor-tab-size, 2) !important;
   -moz-tab-size: var(--editor-tab-size, 2) !important;
   overflow: auto !important;
@@ -191,3 +191,21 @@
 .cm-comment { color: var(--color-text-dim); }
 .cm-keyword { color: var(--color-accent-violet); }
 .cm-string { color: var(--color-accent-emerald); }
+
+/* Synchronized Scrolling Toggle Button */
+#toolSyncScroll, .preview-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#toolSyncScroll svg, .preview-sync-btn svg {
+  flex-shrink: 0;
+}
+
+#toolSyncScroll.active, .preview-sync-btn.active {
+  background-color: var(--color-toolbar-active-bg, rgba(56, 189, 248, 0.15));
+  border: 1px solid var(--color-toolbar-active-border, rgba(56, 189, 248, 0.4));
+  color: var(--color-toolbar-active-color, var(--color-accent));
+  box-shadow: var(--shadow-accent-glow);
+}

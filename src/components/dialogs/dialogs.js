@@ -1018,20 +1018,22 @@ export class DialogsComponent {
 
     const fontFamilies = [
       { id: 'JetBrains Mono', label: 'JetBrains Mono (Studio Default)' },
-      { id: 'Fira Code', label: 'Fira Code' },
+      { id: 'Fira Code', label: 'Fira Code (with Ligatures)' },
+      { id: 'Cascadia Code', label: 'Cascadia Code' },
       { id: 'IBM Plex Mono', label: 'IBM Plex Mono' },
       { id: 'Source Code Pro', label: 'Source Code Pro' },
       { id: 'Consolas', label: 'Consolas' },
-      { id: 'System Monospace', label: 'System Monospace' },
+      { id: 'System Monospace', label: 'System Monospace (SF Mono / Menlo)' },
     ];
 
     const fontMap = {
-      'JetBrains Mono': "'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', Consolas, monospace",
-      'Fira Code': "'Fira Code', 'JetBrains Mono', monospace",
+      'JetBrains Mono': "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', Consolas, monospace",
+      'Fira Code': "'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace",
+      'Cascadia Code': "'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
       'IBM Plex Mono': "'IBM Plex Mono', monospace",
       'Source Code Pro': "'Source Code Pro', monospace",
       'Consolas': "'Consolas', monospace",
-      'System Monospace': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      'System Monospace': "ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     };
 
     const accentOptionsHtml = presets.map(p => `
@@ -1263,7 +1265,7 @@ export class DialogsComponent {
       viewModeSelect.value = 'DUAL SPLIT';
       showLineNumbersCheck.checked = true;
       wordWrapCheck.checked = true;
-      syncScrollCheck.checked = true;
+      syncScrollCheck.checked = false;
       this.showToast({ type: 'info', message: 'Controls reset to studio defaults. Click "Apply Settings" to save.' });
     });
 

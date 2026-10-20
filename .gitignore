@@ -7,3 +7,4 @@ src-tauri/target/
 qa-report.json
 .DS_Store
 Thumbs.db
+.vs/

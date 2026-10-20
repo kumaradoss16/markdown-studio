@@ -28,6 +28,13 @@ if (!fs.existsSync(DIST_RELEASE_DIR)) {
   fs.mkdirSync(DIST_RELEASE_DIR, { recursive: true });
 }
 
+// Ensure multi-resolution 32-bit transparent Windows icons exist
+const iconPath = path.join(ROOT_DIR, 'src-tauri', 'icons', 'icon.ico');
+if (!fs.existsSync(iconPath) || fs.statSync(iconPath).size < 10000) {
+  console.log('🎨 Generating multi-resolution transparent Windows icon assets...');
+  execSync('node scripts/generate-icons.js', { cwd: ROOT_DIR, stdio: 'inherit' });
+}
+
 // 2. Build production web bundle (Vite)
 console.log('📦 Step 1: Compiling web assets with Vite...');
 try {

@@ -24,6 +24,7 @@ export class EditorComponent {
     const settings = workspaceStore.getSettings();
     this.showLineNumbers = settings.showLineNumbers !== undefined ? settings.showLineNumbers : true;
     this.wordWrap = settings.wordWrap !== undefined ? settings.wordWrap : true;
+    this.syncScroll = settings.syncScroll !== undefined ? Boolean(settings.syncScroll) : false;
     this.rawMode = false;
     this.currentDocId = null;
     this.commandController = new EditorCommandMenuController(this);
@@ -48,6 +49,10 @@ export class EditorComponent {
     eventBus.on(AppEvents.SETTINGS_CHANGED, (settings) => {
       this.applySettings(settings);
     });
+    eventBus.on(AppEvents.SYNC_SCROLL_TOGGLED, ({ enabled }) => {
+      this.syncScroll = Boolean(enabled);
+      this.updateSyncScrollUI(this.syncScroll);
+    });
   }
 
   applySettings(settings) {
@@ -58,6 +63,10 @@ export class EditorComponent {
     if (settings.wordWrap !== undefined) {
       this.wordWrap = Boolean(settings.wordWrap);
     }
+    if (settings.syncScroll !== undefined) {
+      this.syncScroll = Boolean(settings.syncScroll);
+      this.updateSyncScrollUI(this.syncScroll);
+    }
     const active = documentStateManager.getActiveDocument();
     if (active && this.view) {
       const scrollPos = this.view.scrollDOM?.scrollTop;
@@ -66,6 +75,20 @@ export class EditorComponent {
         this.view.scrollDOM.scrollTop = scrollPos;
       }
     }
+  }
+
+  updateSyncScrollUI(enabled) {
+    const btn = this.container.querySelector('#toolSyncScroll');
+    if (!btn) return;
+    btn.classList.toggle('active', enabled);
+    btn.setAttribute('aria-pressed', String(enabled));
+    btn.title = enabled
+      ? 'Synchronized Scrolling: ON (Click to decouple panes)'
+      : 'Synchronized Scrolling: OFF (Click to link scrolling)';
+    const linkIcon = btn.querySelector('.sync-icon-link');
+    const unlinkIcon = btn.querySelector('.sync-icon-unlink');
+    if (linkIcon) linkIcon.style.display = enabled ? '' : 'none';
+    if (unlinkIcon) unlinkIcon.style.display = enabled ? 'none' : '';
   }
 
   jumpToLine(lineNumber, colNumber = 1) {
@@ -161,6 +184,18 @@ export class EditorComponent {
               <line x1="12" y1="3" x2="12" y2="21"></line>
             </svg>
             <span>Split</span>
+          </button>
+          <button class="tool-btn ${this.syncScroll ? 'active' : ''}" id="toolSyncScroll" title="${this.syncScroll ? 'Synchronized Scrolling: ON (Click to decouple panes)' : 'Synchronized Scrolling: OFF (Click to link scrolling)'}" aria-label="Toggle Synchronized Scrolling" aria-pressed="${this.syncScroll}">
+            <svg class="sync-icon-link" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="${this.syncScroll ? '' : 'display:none;'}">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <svg class="sync-icon-unlink" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="${this.syncScroll ? 'display:none;' : ''}">
+              <path d="M18.84 12.25l1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M5.16 11.75l-1.72 1.71a5 5 0 0 0 7.07 7.07l1.72-1.71"></path>
+              <line x1="2" y1="2" x2="22" y2="22"></line>
+            </svg>
+            <span>Sync</span>
           </button>
           <button class="tool-btn" id="toolFind" title="Find in document (⌘F)" aria-label="Find in Document">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -469,6 +504,20 @@ export class EditorComponent {
 
     this.container.querySelector('#toolSplit')?.addEventListener('click', () => {
       document.querySelector('#modeSplitHBtn')?.click();
+    });
+
+    this.container.querySelector('#toolSyncScroll')?.addEventListener('click', () => {
+      const current = workspaceStore.getSettings().syncScroll === true;
+      const next = !current;
+      workspaceStore.saveSettings({ syncScroll: next });
+      this.syncScroll = next;
+      this.updateSyncScrollUI(next);
+      eventBus.emit(AppEvents.SETTINGS_CHANGED, { syncScroll: next });
+      eventBus.emit(AppEvents.SYNC_SCROLL_TOGGLED, { enabled: next });
+      eventBus.emit(AppEvents.NOTIFICATION, {
+        type: 'info',
+        message: next ? 'Synchronized scrolling enabled' : 'Independent scrolling enabled (Panes decoupled)'
+      });
     });
 
     eventBus.on(AppEvents.VIEW_MODE_CHANGED, (mode) => {

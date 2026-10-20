@@ -1,3 +1,44 @@
+/* Typography: Modern Local @font-face declarations prioritizing locally installed premium font families */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: local('Inter'), local('Inter Regular'), local('Inter-Regular');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'), local('PlusJakartaSans-Regular');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: local('JetBrains Mono'), local('JetBrainsMono-Regular'), local('JetBrainsMono');
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: local('Fira Code'), local('FiraCode-Regular');
+}
+
+@font-face {
+  font-family: 'Cascadia Code';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: local('Cascadia Code'), local('CascadiaCode-Regular'), local('Cascadia');
+}
+
 :root {
   /* Surface and Background Colors */
   --color-app-background: #0b0e14;
@@ -55,12 +96,22 @@
   --color-status-saving: #38bdf8;
   --color-status-error: #f43f5e;
 
-  /* Fonts & Typography Stack */
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif;
-  --font-editor: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', Consolas, monospace;
-  --font-preview: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-toolbar-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif;
-  --font-toolbar-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  /* Fonts & Typography Stack (Elevated Precision Hierarchy) */
+  --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace;
+  --font-display: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Font Ligatures & Micro-Typography */
+  --font-ligatures: normal;
+  --font-features-mono: "liga" 1, "calt" 1;
+  --letter-spacing-display: -0.02em;
+
+  /* Stack Aliases & Component Mappings */
+  --font-ui: var(--font-sans);
+  --font-editor: var(--font-mono);
+  --font-preview: var(--font-sans);
+  --font-toolbar-ui: var(--font-sans);
+  --font-toolbar-mono: var(--font-mono);
 
   /* Ribbon Sub-Header Toolbar Tokens */
   --toolbar-height: 38px;
