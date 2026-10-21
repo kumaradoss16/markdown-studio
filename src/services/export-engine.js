@@ -38,16 +38,17 @@ export class ExportEngine {
   }
 
   /**
-   * Generates self-contained, sanitized HTML.
+   * Generates self-contained, sanitized HTML matching the filesystem-lab.pdf reference format.
+   * Strips all corner text, page headers, footers, timestamps, URLs, copy buttons, and interactive artifacts.
    * @param {{ name?: string, content?: string, revision?: number }} docSnapshot
    * @param {Object} [options={}]
-   * @param {string} [options.theme='dark'] 'dark' | 'light'
+   * @param {string} [options.theme='light'] 'light' | 'dark'
    * @param {boolean} [options.embedAssets=true]
    * @param {Record<string, string>} [options.assetMap={}] Map of local asset path -> base64 data URI
    * @returns {string} Standalone HTML document string
    */
   generateStandaloneHtml(docSnapshot, options = {}) {
-    const theme = options.theme || 'dark';
+    const theme = options.theme || 'light'; // Force light theme for PDF/print layout
     const embedAssets = options.embedAssets !== false;
     const assetMap = options.assetMap || {};
 
@@ -71,19 +72,23 @@ export class ExportEngine {
       });
     }
 
+    // Remove all corner text, code block headers, buttons, and UI artifacts
+    bodyHtml = bodyHtml
+      .replace(/<(div|footer)[^>]*class="export-footer"[^>]*>[\s\S]*?<\/(div|footer)>/gi, '')
+      .replace(/<div[^>]*class="fenced-code-header"[^>]*>[\s\S]*?<\/div>/gi, '')
+      .replace(/<button[^>]*class=".*?copy.*?"[^>]*>[\s\S]*?<\/button>/gi, '')
+      .replace(/<button[^>]*>[\s\S]*?<\/button>/gi, '')
+      .replace(/<span[^>]*class=".*?badge.*?"[^>]*>[\s\S]*?<\/span>/gi, '')
+      .replace(/\[Copy\]/gi, '')
+      .replace(/http:\/\/localhost:\d+\//gi, '');
+
     const firstH1 = pipelineResult.headings.find(h => h.level === 1);
     const title = firstH1
       ? firstH1.text
-      : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'MarkForge Documentation');
+      : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'Documentation');
     const purify = this.pipeline.getPurify();
     const cleanTitle = purify.sanitize(title);
 
-    const isDark = theme === 'dark';
-    const bg = isDark ? '#0d1117' : '#ffffff';
-    const text = isDark ? '#c9d1d9' : '#1f2328';
-    const border = isDark ? '#30363d' : '#d0d7de';
-    const headingColor = isDark ? '#f0f6fc' : '#1f2328';
-    const codeBg = isDark ? '#161b22' : '#f6f8fa';
     let accent = '#00e5ff';
     if (typeof options.accent === 'string' && options.accent.trim()) {
       const maybePreset = accentService.getPreset(options.accent.trim());
@@ -97,249 +102,366 @@ export class ExportEngine {
     }
 
     return `<!DOCTYPE html>
-<html lang="en" data-theme="${theme}">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="MarkForge Markdown Studio v1.0.0">
   <title>${cleanTitle}</title>
   <style>
+    /* === FILESYSTEM-LAB REFERENCE STYLE === */
     :root {
-      --bg: ${bg};
-      --text: ${text};
-      --border: ${border};
-      --heading: ${headingColor};
-      --code-bg: ${codeBg};
+      --primary-black: #000000;
+      --primary-white: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #cbd5e1;
+      --code-bg: #f1f5f9;
+      --code-text: #0f172a;
       --accent: ${accent};
-      --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace;
-      --font-display: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --letter-spacing-display: -0.02em;
     }
-    *, *::before, *::after { box-sizing: border-box; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
     body {
-      font-family: var(--font-sans);
-      line-height: 1.65;
-      max-width: 920px;
-      margin: 40px auto;
-      padding: 0 32px;
-      color: var(--text);
-      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 
+                   Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: var(--primary-black);
+      background-color: var(--primary-white);
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* === TYPOGRAPHY === */
     h1, h2, h3, h4, h5, h6 {
-      font-family: var(--font-display);
-      color: var(--heading);
+      font-weight: 700;
+      color: var(--primary-black);
       margin-top: 1.6em;
       margin-bottom: 0.6em;
-      font-weight: 700;
-      letter-spacing: var(--letter-spacing-display, -0.02em);
       line-height: 1.25;
-      scroll-margin-top: 24px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
-    h1 { font-size: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
-    h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
-    h3 { font-size: 1.25rem; }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+
+    h1 {
+      font-size: 24pt;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.3em;
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 18pt;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.25em;
+    }
+
+    h3 {
+      font-size: 14pt;
+      font-weight: 700;
+    }
+
+    h4 {
+      font-size: 12pt;
+      font-weight: 700;
+    }
+
+    h5, h6 {
+      font-size: 11pt;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0.8em 0;
+      text-align: justify;
+    }
+
+    /* === LINKS === */
+    a {
+      color: var(--primary-black);
+      text-decoration: underline;
+      word-break: break-word;
+    }
+
+    a:visited {
+      color: var(--primary-black);
+    }
+
+    /* === CODE & PRE === */
     code {
-      font-family: var(--font-mono);
-      font-size: 85%;
-      background: var(--code-bg);
-      padding: 0.2em 0.4em;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      font-variant-ligatures: normal;
-      font-feature-settings: "liga" 1, "calt" 1;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 9.5pt;
+      background-color: var(--code-bg);
+      color: var(--code-text);
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: none;
+      word-break: break-word;
     }
+
     pre {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 9.5pt;
+      background-color: var(--code-bg);
+      color: var(--code-text);
+      border: 1px solid var(--border-color);
       border-radius: 6px;
-      padding: 16px;
-      overflow-x: auto;
+      padding: 12px 16px;
+      margin: 1em 0;
       line-height: 1.45;
-      font-family: var(--font-mono);
-      font-variant-ligatures: normal;
-      font-feature-settings: "liga" 1, "calt" 1;
+      overflow: visible;
+      white-space: pre-wrap;
+      word-break: break-word;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
-    pre code { background: transparent; padding: 0; border: none; font-size: 0.9em; font-family: inherit; }
+
+    pre code {
+      background-color: transparent;
+      color: inherit;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      font-size: inherit;
+    }
+
+    /* === BLOCKQUOTE === */
     blockquote {
-      border-left: 4px solid var(--accent);
-      margin: 16px 0;
-      padding: 4px 16px;
-      color: ${isDark ? '#8b949e' : '#57606a'};
-      background: var(--border);
-      border-radius: 0 4px 4px 0;
+      border-left: 3px solid var(--border-color);
+      background-color: #f8fafc;
+      color: #334155;
+      padding: 8px 14px;
+      margin: 1em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
+
+    blockquote p {
+      margin: 0;
+      text-align: left;
+    }
+
+    /* === LISTS === */
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    li {
+      margin: 0.4em 0;
+      text-align: justify;
+    }
+
+    li + li {
+      margin-top: 0.4em;
+    }
+
+    /* === TABLES === */
     table {
       border-collapse: collapse;
       width: 100%;
-      margin: 20px 0;
-      display: block;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      margin: 1em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
+
     th, td {
-      border: 1px solid var(--border);
-      padding: 8px 14px;
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
       text-align: left;
+      color: var(--primary-black);
     }
+
     th {
-      background: var(--code-bg);
+      background-color: #f8fafc;
       font-weight: 600;
+      color: var(--primary-black);
     }
+
+    td {
+      background-color: var(--primary-white);
+    }
+
+    /* === IMAGES === */
     img {
       max-width: 100%;
       height: auto;
+      border: 1px solid var(--border-color);
       border-radius: 6px;
-      border: 1px solid var(--border);
+      margin: 1em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
+
+    /* === HORIZONTAL RULE === */
     hr {
-      border: 0;
+      border: none;
+      border-top: 1px solid var(--border-color);
       height: 1px;
-      background: var(--border);
-      margin: 32px 0;
-    }
-    ul, ol { padding-left: 2em; margin: 12px 0; }
-    li + li { margin-top: 4px; }
-    .wiki-embed-media { margin: 16px 0; }
-    .export-footer {
-      margin-top: 60px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
-      font-size: 0.85rem;
-      color: ${isDark ? '#8b949e' : '#57606a'};
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
+      margin: 2em 0;
+      page-break-after: avoid;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]):not([data-theme="dark"]) {
-        --bg: #0d1117;
-        --text: #c9d1d9;
-        --border: #30363d;
-        --heading: #f0f6fc;
-        --code-bg: #161b22;
-      }
+    /* === REMOVE INTERACTIVE ELEMENTS === */
+    button, input, select, textarea {
+      display: none !important;
     }
 
-    @media (max-width: 768px) {
-      body {
-        padding: 0 16px;
-        margin: 20px auto;
-      }
-      h1 { font-size: 1.65rem; }
-      h2 { font-size: 1.35rem; }
+    .export-footer,
+    .fenced-code-header,
+    .fenced-code-copy-btn,
+    .copy-btn,
+    .badge,
+    .metric-card,
+    [class*="interactive"],
+    [class*="toolbar"],
+    .wiki-embed-media {
+      display: none !important;
     }
 
+    /* === PRINT STYLES === */
     @page {
+      size: A4;
       margin: 15mm;
-      size: auto;
+      padding: 0;
     }
 
     @media print {
+      html, body {
+        width: 100%;
+        height: auto;
+        margin: 0;
+        padding: 0;
+      }
+
       body {
         max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-        color: #1e293b !important;
-        background: #ffffff !important;
-        font-family: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         font-size: 11pt !important;
         line-height: 1.5 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
       }
+
       h1, h2, h3, h4, h5, h6 {
-        font-family: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        letter-spacing: -0.02em !important;
+        color: #000000 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-inside: avoid !important;
       }
+
       h1 {
-        font-size: 24pt !important;
-        font-weight: 700 !important;
-        color: #0f172a !important;
         margin-top: 0 !important;
-        margin-bottom: 16px !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
+        margin-bottom: 0.8em !important;
       }
-      h2 {
-        font-size: 18pt !important;
-        font-weight: 700 !important;
-        color: #0f172a !important;
-        margin-top: 28px !important;
-        margin-bottom: 12px !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
+
+      h2, h3 {
+        margin-top: 1.2em !important;
+        margin-bottom: 0.6em !important;
       }
-      h3, h4, h5, h6 {
-        color: #0f172a !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
+
+      p {
+        margin: 0.6em 0 !important;
+        orphans: 2;
+        widows: 2;
       }
-      pre, blockquote, table, img, figure, tr {
+
+      pre, blockquote, table, img, figure {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
+
       a {
-        color: #1e293b !important;
+        color: #000000 !important;
         text-decoration: underline !important;
       }
+
       code {
-        font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace !important;
-        font-variant-ligatures: normal !important;
-        font-feature-settings: "liga" 1, "calt" 1 !important;
-        background: #f1f5f9 !important;
+        background-color: #f1f5f9 !important;
         color: #0f172a !important;
+        padding: 2px 5px !important;
         border: none !important;
         border-radius: 3px !important;
-        padding: 2px 5px !important;
       }
-      pre {
-        background: #ffffff !important;
-        color: #334155 !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 6px !important;
-        padding: 12px 16px !important;
-        font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace !important;
-        font-variant-ligatures: normal !important;
-        font-feature-settings: "liga" 1, "calt" 1 !important;
-        font-size: 9.5pt !important;
-        line-height: 1.45 !important;
-        overflow: visible !important;
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-      }
+
       pre code {
-        background: transparent !important;
+        background-color: transparent !important;
         color: inherit !important;
       }
-      blockquote {
-        border-left: 3px solid #cbd5e1 !important;
-        background: #f8fafc !important;
-        color: #334155 !important;
-        padding: 8px 14px !important;
-        margin: 14px 0 !important;
-      }
+
       table {
         border: 1px solid #cbd5e1 !important;
-        display: table !important;
-        width: 100% !important;
       }
+
       th {
-        background: #f8fafc !important;
-        color: #0f172a !important;
-        font-weight: 600 !important;
+        background-color: #f8fafc !important;
         border: 1px solid #cbd5e1 !important;
       }
+
       td {
         border: 1px solid #cbd5e1 !important;
-        color: #1e293b !important;
       }
-      .export-footer {
+
+      /* === REMOVE ALL CORNER TEXT & HEADERS/FOOTERS === */
+      header, footer {
         display: none !important;
       }
+
+      .export-footer,
+      .page-header,
+      .page-footer,
+      [class*="corner"],
+      [class*="metadata"],
+      .timestamp,
+      .url-display,
+      .copy-button,
+      .fenced-code-header,
+      .fenced-code-copy-btn,
+      button {
+        display: none !important;
+      }
+
+      /* === NO PAGE NUMBERS, URLS, OR TIMESTAMPS === */
+      @bottom-left {
+        content: none !important;
+      }
+
+      @bottom-center {
+        content: none !important;
+      }
+
+      @bottom-right {
+        content: none !important;
+      }
+
+      @top-left {
+        content: none !important;
+      }
+
+      @top-center {
+        content: none !important;
+      }
+
+      @top-right {
+        content: none !important;
+      }
+    }
+
+    /* === PREVENT WIDOWS & ORPHANS === */
+    article {
+      orphans: 3;
+      widows: 3;
     }
   </style>
 </head>
@@ -347,11 +469,6 @@ export class ExportEngine {
   <article class="markdown-body">
     ${bodyHtml}
   </article>
-  <footer class="export-footer">
-    <span>Generated with MarkForge Markdown Studio</span>
-    <span>Exported ${new Date().toISOString().split('T')[0]}</span>
-  </footer>
-
 </body>
 </html>`;
   }
@@ -436,13 +553,13 @@ export class ExportEngine {
         format: ExportFormat.PDF,
         diagnostics: preflight.diagnostics,
         summary: preflight.summary,
-        error: `Pre-flight validation failed with ${preflight.summary.errors} error(s). Correct issues or use force override.`
+        error: `Pre-flight validation failed with ${preflight.summary.errors} error(s).`
       };
     }
 
     const html = this.generateStandaloneHtml(docSnapshot, {
       ...options,
-      theme: 'light', // Standard technical documentation PDF format
+      theme: 'light',
       embedAssets: options.embedAssets !== false
     });
 
@@ -457,7 +574,7 @@ export class ExportEngine {
         return {
           success: false,
           format: ExportFormat.PDF,
-          error: `PDF print capture failed: ${err.message}`
+          error: `PDF capture failed: ${err.message}`
         };
       }
     }

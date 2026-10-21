@@ -422,16 +422,23 @@
 
 /* Print & PDF Export Styling (Standardized to filesystem-lab specifications) */
 @page {
+  size: A4;
   margin: 15mm;
-  size: auto;
+  padding: 0;
+  @bottom-left { content: none !important; }
+  @bottom-center { content: none !important; }
+  @bottom-right { content: none !important; }
+  @top-left { content: none !important; }
+  @top-center { content: none !important; }
+  @top-right { content: none !important; }
 }
 
 @media print {
   /* Suppress browser/HTML headers, footers, and margins */
   html, body {
     background: #ffffff !important;
-    color: #1e293b !important;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    color: #000000 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     font-size: 11pt !important;
     line-height: 1.5 !important;
     height: auto !important;
@@ -443,6 +450,8 @@
   }
 
   /* Hide application shell chrome, overlays, toolbar ribbon, modals, and decorations */
+  header,
+  footer,
   .app-header,
   .workspace-sidebar,
   .editor-pane,
@@ -452,13 +461,27 @@
   .modal-overlay,
   .toast-container,
   .export-footer,
+  .page-header,
+  .page-footer,
+  [class*="corner"],
+  [class*="metadata"],
+  .timestamp,
+  .url-display,
+  .copy-button,
+  .copy-btn,
+  .fenced-code-header,
+  .fenced-code-copy-btn,
   .floating-format-toolbar,
   .slash-menu-popup,
   .tag-pill,
   .pane-splitter,
   .diff-overlay,
   .history-panel-drawer,
-  .qa-floating-badge {
+  .qa-floating-badge,
+  button,
+  input,
+  select,
+  textarea {
     display: none !important;
     visibility: hidden !important;
   }

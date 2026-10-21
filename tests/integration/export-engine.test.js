@@ -146,5 +146,82 @@ describe('ExportEngine Integration', () => {
     expect(res.blocked).toBe(true);
     expect(res.error).toContain('Pre-flight validation failed');
   });
+
+  describe('filesystem-lab.pdf Format & Clean Alignment Verification', () => {
+    const sampleDoc = {
+      id: 'doc-fs-lab',
+      name: 'filesystem-lab.md',
+      content: `# Filesystem Lab
+
+Welcome to the automated lab.
+
+| Component | Status | Spec |
+|---|---|---|
+| Core Bus | Operational | 10 Gbps |
+
+\`\`\`python
+def execute_lab():
+    print("Filesystem verification running")
+\`\`\`
+
+> Note: All parameters must meet standard margins.
+
+<div class="export-footer">Metadata footer</div>
+<button class="copy-btn">[Copy]</button>
+<span class="badge">TEST-BADGE</span>
+http://localhost:3000/report
+`,
+      revision: 2
+    };
+
+    it('removes all corner text, copy buttons, badges, export-footers, and localhost URLs', async () => {
+      const res = await engine.exportToPdf(sampleDoc, { force: true, triggerPrint: false });
+
+      expect(res.success).toBe(true);
+      // Stripped artifacts
+      expect(res.html).not.toContain('<div class="export-footer">Metadata footer</div>');
+      expect(res.html).not.toContain('<button class="copy-btn">[Copy]</button>');
+      expect(res.html).not.toContain('<span class="badge">TEST-BADGE</span>');
+      expect(res.html).not.toContain('[Copy]');
+      expect(res.html).not.toContain('http://localhost:3000/');
+
+      // Preserved markdown content
+      expect(res.html).toContain('Filesystem Lab');
+      expect(res.html).toContain('Core Bus');
+      expect(res.html).toContain('execute_lab');
+    });
+
+    it('enforces 15mm margins, A4 size, and suppresses corner boxes in print layout', async () => {
+      const res = await engine.exportToPdf(sampleDoc, { force: true, triggerPrint: false });
+
+      expect(res.html).toContain('size: A4;');
+      expect(res.html).toContain('margin: 15mm;');
+      expect(res.html).toContain('@bottom-left {');
+      expect(res.html).toContain('content: none !important;');
+      expect(res.html).toContain('@top-right {');
+      expect(res.html).toContain('.export-footer,');
+      expect(res.html).toContain('button, input, select, textarea {');
+    });
+
+    it('enforces professional typography hierarchy and print color rules', async () => {
+      const res = await engine.exportToPdf(sampleDoc, { force: true, triggerPrint: false });
+
+      // Typography hierarchy
+      expect(res.html).toContain('h1 {');
+      expect(res.html).toContain('font-size: 24pt;');
+      expect(res.html).toContain('h2 {');
+      expect(res.html).toContain('font-size: 18pt;');
+      expect(res.html).toContain('h3 {');
+      expect(res.html).toContain('font-size: 14pt;');
+      expect(res.html).toContain('code {');
+      expect(res.html).toContain('font-size: 9.5pt;');
+
+      // Avoid page breaks inside blocks and tables
+      expect(res.html).toContain('page-break-inside: avoid;');
+      expect(res.html).toContain('break-inside: avoid;');
+      expect(res.html).toContain('page-break-after: avoid;');
+      expect(res.html).toContain('break-after: avoid;');
+    });
+  });
 });
 
