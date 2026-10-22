@@ -138,6 +138,8 @@ export class MarkdownService {
 
     const purify = this.getPurify();
     // Sanitize output strictly
+    // No form elements (input, textarea, select) or event handlers allowed for XSS prevention.
+    // Event handlers are explicitly forbidden in FORBID_ATTR, and form elements are excluded from ALLOWED_TAGS.
     const sanitizedHtml = purify.sanitize(rawHtml, {
       ALLOWED_TAGS: [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -146,11 +148,10 @@ export class MarkdownService {
         'ul', 'ol', 'li', 'hr', 'br',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
         'img', 'span', 'div',
-        'input',
       ],
       ALLOWED_ATTR: [
         'href', 'title', 'alt', 'src', 'class', 'style', 'id',
-        'type', 'checked', 'disabled', 'data-wiki-target',
+        'data-wiki-target',
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
       FORBID_TAGS: ['script', 'style', 'iframe', 'frame', 'object', 'embed', 'form', 'base', 'meta', 'link', 'applet', 'xml', 'template'],
