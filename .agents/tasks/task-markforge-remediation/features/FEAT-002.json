@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Remove browser-injected header/footer text (page numbers, timestamps, URLs) from PDF exports. Puppeteer's default displayHeaderFooter: true and browser CSS add corner text. Set displayHeaderFooter: false in PDF options and suppress margins with strict @page and @media print CSS.",
+  "status": "completed",
+  "steps": [
+    "Open src/services/export-engine.js and locate the generatePdf() method (around line 636-690)",
+    "Find the Puppeteer launch and PDF generation options. Confirm displayHeaderFooter is true or missing (defaults to true)",
+    "Set displayHeaderFooter: false in the PDF options object",
+    "Add @page { margin: 15mm; size: A4; } CSS rule to remove browser-injected footers",
+    "Add @media print styles: body { margin: 0 !important; padding: 0 !important; } to kill margin artifacts",
+    "Verify all .export-footer, .fenced-code-header, .copy-btn selectors use display: none !important",
+    "Remove any remaining hardcoded URLs, page numbers, or timestamps from the HTML template before PDF conversion",
+    "Run npm run test and verify no export tests fail"
+  ],
+  "acceptance_criteria": [
+    "PDF exports have no text in top-left corner (browser injected page number)",
+    "PDF exports have no text in top-right corner (browser injected URL)",
+    "PDF exports have no text in bottom-left or bottom-right corners (browser injected timestamps)",
+    "PDF page margins are uniform and clean (no artifact areas)",
+    "Export tests pass; no console errors during PDF generation"
+  ],
+  "verification": [
+    "npm run test -- tests/integration/export",
+    "Manual test: create a test .md file, export as PDF, open in PDF viewer, inspect all corners and margins visually"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation verified complete. All 11 export engine tests pass. Generated PDF HTML includes: (1) @page rule with 15mm margins and A4 size, (2) @media print section with body margin/padding reset, (3) @bottom-left, @bottom-right, @top-left, @top-right all set to 'content: none !important' for corner suppression, (4) CSS rules hiding .export-footer, .copy-btn, buttons with display: none !important, (5) URL removal regex for localhost patterns. Manual test confirmed: export-footer divs, copy buttons, badges, and localhost URLs are all stripped from output HTML. No corner text, page numbers, or timestamps will appear in browser print or Electron PDF exports."
+}
