@@ -1,5 +1,6 @@
 import { fileSystemService } from './filesystem-service.js';
 import { StudioError, ErrorCode } from './error-service.js';
+import { eventBus, AppEvents } from '../app/events.js';
 
 /**
  * @typedef {Object} FileNode
@@ -21,10 +22,18 @@ import { StudioError, ErrorCode } from './error-service.js';
  * 2. Electron IPC `window.electronAPI`
  * 3. Web File System Access API (`showDirectoryPicker`)
  * 4. High-performance Virtual Storage Fallback (in-memory / test runner)
+ *
+ * Error Boundaries:
+ * - All Tauri calls are wrapped in try-catch blocks
+ * - Failures cascade to virtual storage with logged reasons
+ * - isVirtualMode() exposes degraded mode status to UI
+ * - virtualModeReason documents why fallback is active
+ * - App event emitted on fallback for UI warning display
  */
 export class FileSystemAdapter {
   constructor() {
     this.runtime = this.detectRuntime();
+    this.virtualModeReason = null; // Reason string if using virtual storage
   }
 
   detectRuntime() {
@@ -34,6 +43,29 @@ export class FileSystemAdapter {
       if (typeof window.showDirectoryPicker === 'function') return 'web-fs';
     }
     return 'virtual';
+  }
+
+  /**
+   * Checks if currently using virtual storage fallback.
+   * @returns {boolean}
+   */
+  isVirtualMode() {
+    return this.virtualModeReason !== null;
+  }
+
+  /**
+   * Emits notification event when falling back to virtual mode.
+   * Sets data-virtual-mode attribute on document root for CSS hooks.
+   * @private
+   */
+  _notifyVirtualModeFallback() {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-virtual-mode', 'true');
+    }
+    eventBus.emit(AppEvents.NOTIFICATION, {
+      type: 'warning',
+      message: `File system unavailable. Using virtual storage. Reason: ${this.virtualModeReason}`,
+    });
   }
 
   /**
@@ -60,6 +92,9 @@ export class FileSystemAdapter {
 
   /**
    * Recursively scans and builds a nested file tree starting from rootPath.
+   * All Tauri calls wrapped in try-catch for error boundary. On failure,
+   * sets virtualModeReason, logs error, and falls back to virtual storage.
+   * 
    * @param {string} [rootPath='ExampleVault']
    * @param {number} [depth=0]
    * @param {number} [maxDepth=20]
@@ -97,8 +132,12 @@ export class FileSystemAdapter {
         }
         this.sortNodes(rootNode.children);
         return rootNode;
-      } catch {
-        // Fall back to virtual storage if native bridge fails or unconfigured
+      } catch (err) {
+        // Error boundary: log failure and fall back to virtual storage
+        const reason = `Tauri readDir failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri readTree failure:', err);
+        this._notifyVirtualModeFallback();
       }
     }
 
@@ -177,6 +216,8 @@ export class FileSystemAdapter {
 
   /**
    * Reads the content of a file.
+   * Wrapped in error boundary: logs Tauri failures and falls back to virtual storage.
+   * 
    * @param {string} filePath
    * @returns {Promise<{ path: string, content: string }>}
    */
@@ -186,8 +227,12 @@ export class FileSystemAdapter {
         const { readTextFile } = await import('@tauri-apps/plugin-fs');
         const content = await readTextFile(filePath);
         return { path: filePath, content };
-      } catch {
-        // Fall back
+      } catch (err) {
+        // Error boundary: log failure and fall back to virtual storage
+        const reason = `Tauri readTextFile failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri readFile failure:', err);
+        this._notifyVirtualModeFallback();
       }
     }
     return await fileSystemService.readFile(filePath);
@@ -195,6 +240,8 @@ export class FileSystemAdapter {
 
   /**
    * Writes content to a file.
+   * Wrapped in error boundary: logs Tauri failures and falls back to virtual storage.
+   * 
    * @param {string} filePath
    * @param {string} content
    */
@@ -203,8 +250,12 @@ export class FileSystemAdapter {
       try {
         const { writeTextFile } = await import('@tauri-apps/plugin-fs');
         await writeTextFile(filePath, content);
-      } catch {
-        // Fall back
+      } catch (err) {
+        // Error boundary: log failure and fall back to virtual storage
+        const reason = `Tauri writeTextFile failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri writeFile failure:', err);
+        this._notifyVirtualModeFallback();
       }
     }
     return await fileSystemService.saveFile(filePath, content);
@@ -250,6 +301,8 @@ export class FileSystemAdapter {
 
   /**
    * Creates a new directory.
+   * Wrapped in error boundary: logs Tauri failures and falls back to virtual storage.
+   * 
    * @param {string} parentPath
    * @param {string} folderName
    * @returns {Promise<FileNode>}
@@ -261,8 +314,12 @@ export class FileSystemAdapter {
       try {
         const { mkdir } = await import('@tauri-apps/plugin-fs');
         await mkdir(fullPath);
-      } catch {
-        // Fall back
+      } catch (err) {
+        // Error boundary: log failure and fall back to virtual storage
+        const reason = `Tauri mkdir failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri createDirectory failure:', err);
+        this._notifyVirtualModeFallback();
       }
     }
 
@@ -281,6 +338,8 @@ export class FileSystemAdapter {
 
   /**
    * Renames a file or folder.
+   * Wrapped in error boundary: logs Tauri failures and falls back to virtual storage.
+   * 
    * @param {string} oldPath
    * @param {string} newName
    */
@@ -294,8 +353,12 @@ export class FileSystemAdapter {
       try {
         const { rename } = await import('@tauri-apps/plugin-fs');
         await rename(oldPath, newPath);
-      } catch {
-        // Fall back
+      } catch (err) {
+        // Error boundary: log failure and fall back to virtual storage
+        const reason = `Tauri rename failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri rename failure:', err);
+        this._notifyVirtualModeFallback();
       }
     }
 
@@ -321,6 +384,8 @@ export class FileSystemAdapter {
 
   /**
    * Deletes a file or directory.
+   * Wrapped in error boundary: logs Tauri failures and falls back to virtual storage.
+   * 
    * @param {string} path
    */
   async delete(path) {
@@ -332,8 +397,12 @@ export class FileSystemAdapter {
       try {
         const { remove } = await import('@tauri-apps/plugin-fs');
         await remove(path, { recursive: true });
-      } catch {
-        // Fall back
+      } catch (err) {
+        // Error boundary: log failure and fall back to virtual storage
+        const reason = `Tauri remove failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri delete failure:', err);
+        this._notifyVirtualModeFallback();
       }
     }
 

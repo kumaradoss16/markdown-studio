@@ -3,6 +3,7 @@ import { markdownService } from '../../services/markdown-service.js';
 import { qualityChecker } from '../../services/quality-checker.js';
 import { workspaceManager } from '../../core/workspace-manager.js';
 import { AppEvents, eventBus } from '../../app/events.js';
+import { fileSystemAdapter } from '../../services/filesystem-adapter.js';
 
 export class StatusBarComponent {
   constructor(container) {
@@ -31,6 +32,13 @@ export class StatusBarComponent {
       this.viewMode = mode;
       this.render();
     });
+
+    // Listen for virtual mode fallback notifications
+    eventBus.on(AppEvents.NOTIFICATION, (notification) => {
+      if (notification.type === 'warning' && notification.message.includes('File system unavailable')) {
+        this.render();
+      }
+    });
   }
 
   render() {
@@ -40,9 +48,20 @@ export class StatusBarComponent {
     const diags = activeDoc ? qualityChecker.check(activeDoc) : [];
     const diagSummary = qualityChecker.summarize(diags);
     const diagColor = diagSummary.errors > 0 ? 'var(--color-accent-rose)' : (diagSummary.warnings > 0 ? '#fbbf24' : 'var(--color-accent-emerald)');
+    
+    // Check if in virtual mode
+    const isVirtual = fileSystemAdapter.isVirtualMode();
+    const virtualModeIndicator = isVirtual 
+      ? `<span id="statusVirtualMode" title="File system unavailable. Using virtual storage. ${fileSystemAdapter.virtualModeReason}" style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: var(--color-accent-rose); font-weight: bold;">
+          <span>⚠️</span>
+          <strong>VIRTUAL</strong>
+        </span>
+        <span style="color: var(--color-border-default);">|</span>`
+      : '';
 
     this.container.innerHTML = `
       <div style="display: flex; align-items: center; gap: 14px;">
+        ${virtualModeIndicator}
         <span id="statusSidebarToggle" style="cursor: pointer; color: var(--color-text-secondary);">
           SIDEBAR: <strong style="color: var(--color-accent-cyan);">ON</strong> <span style="color: var(--color-text-muted);">(⌘B)</span>
         </span>
