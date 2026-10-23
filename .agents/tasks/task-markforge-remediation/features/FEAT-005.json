@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "fix",
   "description": "Fix async race condition in credential store initialization. Constructor doesn't await init(), causing multiple concurrent accesses before cryptoKey is ready. Replace with static async create() factory pattern and update all call sites.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Open src/services/credential-store.js",
     "Add a static async create() method that: (1) constructs a new CredentialStore, (2) calls await instance.init(), (3) returns the initialized instance",
@@ -26,5 +26,5 @@
     "Check browser console for no warnings or rejections"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Implementation complete. Changes include: (1) Static async CredentialStore.create() factory method that ensures init() completes before returning instance; (2) Initialization guards in all public methods throwing StudioError if not initialized; (3) Export of async getCredentialStore() helper for safe singleton access; (4) Bootstrap initialization of credential store before GitHub auth restore; (5) GitHubAuthService updated with _ensureStore() pattern to lazy-initialize store; (6) Test files updated to use CredentialStore.create(); (7) Concurrent access unit test added to verify no race conditions. Build passes, linting passes. All src/ code uses factory pattern; legacy export only for backwards compatibility with fail-closed semantics."
 }
