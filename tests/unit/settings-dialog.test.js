@@ -3,7 +3,7 @@ import { DialogsComponent } from '../../src/components/dialogs/dialogs.js';
 import { workspaceStore, DEFAULT_SETTINGS } from '../../src/services/workspace-store.js';
 import { accentService } from '../../src/services/accent-service.js';
 import { gitHubAuthService } from '../../src/services/github-auth-service.js';
-import { credentialStore } from '../../src/services/credential-store.js';
+import * as credentialStoreModule from '../../src/services/credential-store.js';
 import { AppEvents, eventBus } from '../../src/app/events.js';
 
 describe('Settings Dialog Functional Workflow', () => {
@@ -129,11 +129,14 @@ describe('Settings Dialog Functional Workflow', () => {
   });
 
   it('tests PAT token via Test Token button and shows validation feedback', async () => {
-    vi.spyOn(credentialStore, 'testCredential').mockResolvedValue({
-      valid: true,
-      user: 'octocat',
-      scopes: ['repo', 'read:user']
-    });
+    const mockStore = {
+      testCredential: vi.fn().mockResolvedValue({
+        valid: true,
+        user: 'octocat',
+        scopes: ['repo', 'read:user']
+      })
+    };
+    vi.spyOn(credentialStoreModule, 'getCredentialStore').mockResolvedValue(mockStore);
 
     dialogs.showSettingsDialog();
     const overlay = document.querySelector('.modal-overlay');
@@ -144,8 +147,8 @@ describe('Settings Dialog Functional Workflow', () => {
     patInput.value = 'ghp_mocktesttoken12345';
     testBtn.click();
 
-    // Wait a tick for async handler
-    await new Promise(r => setTimeout(r, 10));
+    // Wait for async handler to complete
+    await new Promise(r => setTimeout(r, 50));
 
     expect(feedback.style.display).toBe('block');
     expect(feedback.textContent).toContain('Token valid for @octocat');
