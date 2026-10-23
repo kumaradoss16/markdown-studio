@@ -72,6 +72,22 @@
   --color-border-accent: var(--color-accent);
   --color-border-active: var(--color-accent);
 
+  /* UI Component Colors (Toolbar, modals, code blocks) */
+  --color-toolbar-bg: #11161b;
+  --color-toolbar-border: #1e2630;
+  --color-toolbar-divider: #26323e;
+  --color-toolbar-bubble-bg: #131b24;
+  --color-toolbar-bubble-border: #25313c;
+  --color-code-block-header-bg: #16202b;
+  --color-code-copy-btn-idle: #94a3b8;
+  --color-code-copy-btn-hover: #f1f5f9;
+  --color-code-copy-btn-hover-bg: rgba(255, 255, 255, 0.08);
+  --color-code-copy-btn-copied: #10b981;
+  --color-code-block-border: #25313c;
+  --color-code-block-bg: #0e141b;
+  --color-modal-header-text: #cbd5e1;
+  --color-modal-danger-btn: #f87171;
+
   /* Typography Colors */
   --color-text-primary: #f1f5f9;
   --color-text-secondary: #94a3b8;
@@ -95,6 +111,16 @@
   --color-status-dirty: #f59e0b;
   --color-status-saving: #38bdf8;
   --color-status-error: #f43f5e;
+
+  /* Additional semantic colors for various UI states */
+  --color-success-bg: rgba(16, 185, 129, 0.1);
+  --color-success-border: rgba(16, 185, 129, 0.25);
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-warning-border: rgba(245, 158, 11, 0.25);
+  --color-error-bg: rgba(244, 63, 94, 0.1);
+  --color-error-border: rgba(244, 63, 94, 0.25);
+  --color-info-bg: rgba(56, 189, 248, 0.1);
+  --color-info-border: rgba(56, 189, 248, 0.25);
 
   /* Fonts & Typography Stack (Elevated Precision Hierarchy) */
   --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

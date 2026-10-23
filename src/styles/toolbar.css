@@ -6,8 +6,8 @@
   z-index: 2500;
   display: flex;
   align-items: center;
-  background: #131B24;
-  border: 1px solid #25313C;
+  background: var(--color-toolbar-bubble-bg, #131b24);
+  border: 1px solid var(--color-toolbar-bubble-border, #25313c);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   padding: 4px 6px;
@@ -33,7 +33,7 @@
 .floating-format-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: #9CA3AF;
+  color: var(--color-toolbar-text-resting, #9ca3af);
   font-size: 13px;
   font-weight: 500;
   padding: 3px 6px;
@@ -50,7 +50,7 @@
 
 .floating-format-btn:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: #F3F4F6;
+  color: var(--color-toolbar-text-hover, #f3f4f6);
 }
 
 .floating-format-btn.active {
@@ -69,7 +69,7 @@
 .floating-format-separator {
   width: 1px;
   height: 16px;
-  background-color: #26323E;
+  background-color: var(--color-toolbar-divider, #26323e);
   margin: 0 3px;
   flex-shrink: 0;
 }
@@ -83,8 +83,8 @@
 
 .floating-block-trigger {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #25313C;
-  color: #E5E7EB;
+  border: 1px solid var(--color-toolbar-bubble-border, #25313c);
+  color: var(--color-toolbar-text-hover, #e5e7eb);
   font-size: 12px;
   font-weight: 500;
   padding: 3px 8px;
@@ -107,8 +107,8 @@
   top: 100%;
   left: 0;
   margin-top: 4px;
-  background: #131B24;
-  border: 1px solid #25313C;
+  background: var(--color-toolbar-bubble-bg, #131b24);
+  border: 1px solid var(--color-toolbar-bubble-border, #25313c);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -122,7 +122,7 @@
 .floating-block-option {
   padding: 6px 12px;
   font-size: 12px;
-  color: #D1D5DB;
+  color: var(--color-text-secondary, #d1d5db);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -139,8 +139,8 @@
 .slash-command-menu {
   position: absolute;
   z-index: 2500;
-  background: #131B24;
-  border: 1px solid #25313C;
+  background: var(--color-toolbar-bubble-bg, #131b24);
+  border: 1px solid var(--color-toolbar-bubble-border, #25313c);
   border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
   width: 320px;
@@ -154,15 +154,15 @@
 
 .slash-search-container {
   padding: 8px 12px;
-  border-bottom: 1px solid #1E2630;
+  border-bottom: 1px solid var(--color-toolbar-border, #1e2630);
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #0E141B;
+  background: var(--color-code-block-bg, #0e141b);
 }
 
 .slash-search-container svg {
-  color: #64748B;
+  color: var(--color-text-muted, #64748b);
   flex-shrink: 0;
 }
 
@@ -184,7 +184,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #6B7280;
+  color: var(--color-text-dim, #6b7280);
   text-transform: uppercase;
   font-family: var(--font-toolbar-mono, monospace);
 }
@@ -200,15 +200,15 @@
 
 .slash-menu-item.active,
 .slash-menu-item:hover {
-  background: #1E2A38;
+  background: var(--color-surface-active, #1e2a38);
 }
 
 .slash-item-icon {
   width: 26px;
   height: 26px;
   border-radius: 4px;
-  background: #0E141B;
-  border: 1px solid #232D3F;
+  background: var(--color-code-block-bg, #0e141b);
+  border: 1px solid var(--color-border-default, #232d3f);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,7 +234,7 @@
 .slash-item-title {
   font-size: 12.5px;
   font-weight: 500;
-  color: #F3F4F6;
+  color: var(--color-toolbar-text-hover, #f3f4f6);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -242,7 +242,7 @@
 
 .slash-item-desc {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--color-toolbar-text-resting, #9ca3af);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -251,11 +251,11 @@
 .slash-item-shortcut {
   font-family: var(--font-toolbar-mono, monospace);
   font-size: 9.5px;
-  color: #64748B;
-  background: #16202B;
+  color: var(--color-text-muted, #64748b);
+  background: var(--color-surface-base, #16202b);
   padding: 1px 4px;
   border-radius: 3px;
-  border: 1px solid #233140;
+  border: 1px solid var(--color-border-default, #233140);
 }
 
 /* Color Picker Popover in Selection Toolbar */
@@ -276,7 +276,7 @@
 .color-underline-bar {
   width: 12px;
   height: 2.5px;
-  background: linear-gradient(90deg, #EF4444, #F59E0B, #10B981, #38BDF8, #818CF8);
+  background: linear-gradient(90deg, var(--color-accent-rose, #ef4444), var(--color-accent-amber, #f59e0b), var(--color-accent-emerald, #10b981), var(--color-accent-sky, #38bdf8), var(--color-accent-purple, #818cf8));
   border-radius: 1px;
   margin-top: 1px;
 }
@@ -287,8 +287,8 @@
   left: 50%;
   transform: translateX(-50%);
   margin-top: 6px;
-  background: #131B24;
-  border: 1px solid #25313C;
+  background: var(--color-toolbar-bubble-bg, #131b24);
+  border: 1px solid var(--color-toolbar-bubble-border, #25313c);
   border-radius: 6px;
   padding: 6px 8px;
   display: flex;
@@ -309,7 +309,7 @@
 
 .color-swatch:hover {
   transform: scale(1.2);
-  border-color: #FFFFFF;
+  border-color: var(--color-text-inverse, #ffffff);
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
 }
 
@@ -318,8 +318,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #16202B;
-  border: 1px solid #25313C;
+  background: var(--color-code-block-header-bg, #16202b);
+  border: 1px solid var(--color-code-block-border, #25313c);
   border-bottom: none;
   border-radius: 6px 6px 0 0;
   padding: 5px 12px;
@@ -346,7 +346,7 @@
 .cm-code-block-label {
   font-size: 11px;
   font-weight: 600;
-  color: #94A3B8;
+  color: var(--color-code-copy-btn-idle, #94a3b8);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -355,7 +355,7 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 4px;
-  color: #94A3B8;
+  color: var(--color-code-copy-btn-idle, #94a3b8);
   font-size: 11px;
   font-weight: 500;
   padding: 3px 8px;
@@ -367,32 +367,32 @@
 }
 
 .cm-code-block-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #F1F5F9;
+  background: var(--color-code-copy-btn-hover-bg, rgba(255, 255, 255, 0.08));
+  color: var(--color-code-copy-btn-hover, #f1f5f9);
   border-color: rgba(255, 255, 255, 0.18);
 }
 
 .cm-code-block-copy-btn.copied {
-  border-color: #10B981;
+  border-color: var(--color-code-copy-btn-copied, #10b981);
   background: rgba(16, 185, 129, 0.12);
-  color: #10B981;
+  color: var(--color-code-copy-btn-copied, #10b981);
 }
 
 /* Enhanced Code Blocks in Live Preview Pane */
 .fenced-code-container {
   margin: 18px 0;
-  border: 1px solid #25313C;
+  border: 1px solid var(--color-code-block-border, #25313c);
   border-radius: 6px;
   overflow: hidden;
-  background: #0E141B;
+  background: var(--color-code-block-bg, #0e141b);
 }
 
 .fenced-code-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #16202B;
-  border-bottom: 1px solid #25313C;
+  background: var(--color-code-block-header-bg, #16202b);
+  border-bottom: 1px solid var(--color-code-block-border, #25313c);
   padding: 6px 12px;
   user-select: none;
   -webkit-user-select: none;
@@ -416,7 +416,7 @@
 .fenced-code-label {
   font-size: 11px;
   font-weight: 600;
-  color: #94A3B8;
+  color: var(--color-code-copy-btn-idle, #94a3b8);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -425,7 +425,7 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 4px;
-  color: #94A3B8;
+  color: var(--color-code-copy-btn-idle, #94a3b8);
   font-size: 11px;
   font-weight: 500;
   padding: 3px 8px;
@@ -437,15 +437,15 @@
 }
 
 .fenced-code-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #F1F5F9;
+  background: var(--color-code-copy-btn-hover-bg, rgba(255, 255, 255, 0.08));
+  color: var(--color-code-copy-btn-hover, #f1f5f9);
   border-color: rgba(255, 255, 255, 0.18);
 }
 
 .fenced-code-copy-btn.copied {
-  border-color: #10B981;
+  border-color: var(--color-code-copy-btn-copied, #10b981);
   background: rgba(16, 185, 129, 0.12);
-  color: #10B981;
+  color: var(--color-code-copy-btn-copied, #10b981);
 }
 
 .fenced-code-container pre {
@@ -461,7 +461,7 @@
   background: transparent !important;
   padding: 0 !important;
   border: none !important;
-  color: #E2E8F0;
+  color: var(--color-text-primary, #e2e8f0);
   font-family: var(--font-editor, "JetBrains Mono", Consolas, monospace);
   font-size: 13px;
   line-height: 1.55;
