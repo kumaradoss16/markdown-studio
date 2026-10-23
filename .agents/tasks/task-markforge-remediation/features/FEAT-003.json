@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Add promise error handling in image load chain during PDF export. Image fetch failures currently cause unhandled promise rejections and incomplete PDFs. Wrap all image operations in try-catch and add .catch() handlers with graceful fallback (skip or use placeholder).",
+  "status": "completed",
+  "steps": [
+    "Open src/services/export-engine.js and locate image embedding logic in generatePdf() method",
+    "Find all async image fetch/load operations (e.g., fetch(), Image.onload, Promise chains)",
+    "Wrap each in try-catch block with catch clause that logs warning and continues gracefully",
+    "Add .catch() handlers on all Promise chains related to image loading",
+    "On image load failure: skip the image with console.warn('Image failed: <path>') OR embed a 1x1 transparent GIF placeholder",
+    "Ensure no unhandled promise rejections remain in the export pipeline",
+    "Add a unit test that exports a document with a broken image reference and verifies no errors thrown"
+  ],
+  "acceptance_criteria": [
+    "Exporting a document with broken image references completes without console errors",
+    "No unhandled promise rejections in DevTools console during export",
+    "PDF is generated successfully even if images fail to load",
+    "Warning messages logged for each failed image (for debugging)"
+  ],
+  "verification": [
+    "npm run test -- tests/integration/export",
+    "Manual test: create .md with ![alt](broken.png), export as PDF, verify completion and no console errors"
+  ],
+  "blocked_reason": null,
+  "findings": "Implementation complete: (1) Added try-catch error handling in generateStandaloneHtml() around image processing with console.warn logging for failed images; (2) Enhanced printHtmlDocument() with comprehensive .catch() handlers on all Promise chains (fonts.ready, image loading, math rendering, animation frames, print operations); (3) All image load failures now log warnings instead of throwing unhandled promise rejections; (4) Gracefully skips failed images or uses SVG fallback placeholders; (5) All 359 tests pass including 3 new test cases for broken image handling; (6) Verified no regressions across integration and unit test suites."
+}

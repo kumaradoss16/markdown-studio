@@ -1,0 +1,43 @@
+{
+  "id": "FEAT-007",
+  "type": "refactor",
+  "description": "Refactor accent color system to cover ~95% of UI. Currently 60+ hardcoded hex colors (#3b82f6, #10b981, #ef4444, #f59e0b, #a855f7, etc.) in CSS and inline styles are not bound to accent presets. Define comprehensive color tokens and replace all hardcoded colors with CSS variables.",
+  "status": "pending",
+  "steps": [
+    "Audit src/styles/tokens.css and define new CSS variables for all accent-dependent colors:",
+    "  - For each [data-accent='*'] block, add: --accent, --accent-hover, --accent-soft, --accent-glow, --accent-rgb",
+    "  - Add semantic color tokens: --color-status-clean (#10b981), --color-status-dirty (#f59e0b), --color-status-error (#ef4444), --color-status-saving (cyan variant)",
+    "  - Add UI component tokens: --color-badge-bg, --color-indicator, --color-gradient-*",
+    "Replace hardcoded hex colors in src/styles/components.css (60+ instances): replace inline #hex with var(--color-*) references",
+    "Replace hardcoded colors in src/styles/toolbar.css: status badges, gradient backgrounds, copy buttons",
+    "Replace hardcoded colors in src/styles/github.css: remote status badges (#10b981 green, #f59e0b amber), commit indicators",
+    "Replace hardcoded colors in src/styles/preview.css: live indicator dot, accent highlights",
+    "Remove inline style attributes from src/components/qa/project-qa-modal.js: convert hardcoded colors (#38bdf8, #f87171, etc.) to CSS classes or data attributes",
+    "Remove inline style attributes from src/components/dialogs/dialogs.js: accent swatch rendering can stay inline for preview, but modal backgrounds should use CSS vars",
+    "Update accent presets in src/styles/tokens.css to include all 9 presets (cyan, blue, sky, green, teal, orange, red, grey, violet) with full color derivation",
+    "Run npm run build and verify no CSS errors",
+    "Run npm run test and verify all tests pass",
+    "Manually switch between all 9 accent presets in UI and verify consistent color updates across all badges, indicators, modals, toolbars"
+  ],
+  "acceptance_criteria": [
+    "All status badges (clean, dirty, saving, error) update color when accent preset changes",
+    "All UI indicators (live dot, accent highlights, focus rings) use CSS variables",
+    "No hardcoded #hex colors remain in rendered HTML (except in user content, which is sanitized)",
+    "All 9 accent presets apply consistently across all UI components",
+    "Gradient backgrounds use CSS variables",
+    "Modal backgrounds and borders adapt to accent preset",
+    "Toolbar buttons and status text update with accent changes",
+    "npm run build succeeds with no warnings",
+    "npm run test passes 100%"
+  ],
+  "verification": [
+    "npm run build",
+    "npm run test",
+    "npm run dev: start dev server, manually switch between all 9 accent presets in settings, verify UI updates consistently",
+    "DevTools Elements: inspect computed styles and verify all accent-dependent colors use CSS variables (no hardcoded #hex)",
+    "grep 'color.*#[0-9a-f]' src/styles/ (should return only comments or font definitions, not active rules)",
+    "grep -E 'style=.*#[0-9a-f]' src/components/ (should return near-zero results; accent swatches in dialogs are acceptable)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

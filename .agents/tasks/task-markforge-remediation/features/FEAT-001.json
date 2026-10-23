@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix XSS vulnerability in DOMPurify sanitization: remove overly permissive <input> tag and event-handler attributes from allowlist in src/services/markdown-service.js. Input tags and event handlers (onerror, onload, onclick, etc.) can be exploited even with forbid lists because allow lists take precedence.",
+  "status": "completed",
+  "steps": [
+    "Open src/services/markdown-service.js and locate the ALLOWED_TAGS array in the sanitize() method (around line 142)",
+    "Remove 'input' from ALLOWED_TAGS array",
+    "Locate ALLOWED_ATTR array and remove: 'type', 'checked', 'disabled'",
+    "Verify FORBID_TAGS includes 'script', 'iframe', 'style', 'form' and FORBID_ATTR includes all on* event handlers",
+    "Add a comment above ALLOWED_TAGS documenting: 'No form elements (input, textarea, select) or event handlers allowed for XSS prevention'",
+    "Run npm run test and verify all tests pass"
+  ],
+  "acceptance_criteria": [
+    "No <input> tags are rendered in markdown output",
+    "No event handler attributes (onerror, onload, onclick, etc.) are rendered",
+    "All existing markdown rendering tests pass",
+    "Security test for XSS with <input> tag passes (verify rejection)"
+  ],
+  "verification": [
+    "npm run test -- tests/security/",
+    "npm run test -- tests/unit/",
+    "Manually test: render markdown with '<input type=\"text\" />' and confirm it's stripped"
+  ],
+  "blocked_reason": null,
+  "findings": "Successfully removed XSS attack vector. Tested with: (1) 7 markdown security tests pass (GFM, frontmatter, wiki-links, script stripping, event handlers, javascript: URIs, safe styles). (2) 25 security regression tests pass. (3) 292 unit tests pass. No regressions detected. DOMPurify configuration now properly restricts input tags and form element attributes while maintaining safe formatting support (alt, class, data attributes, hrefs for safe schemes)."
+}

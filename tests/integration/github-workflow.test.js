@@ -24,9 +24,9 @@ describe('GitHub Read & Draft Integration Workflow (Release 0.4)', () => {
 
   const mockApiRoutes = new Map();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockApiRoutes.clear();
-    store = new CredentialStore();
+    store = await CredentialStore.create();
 
     // Deterministic fake transport routing
     const fakeTransport = vi.fn().mockImplementation(async (url, init = {}) => {

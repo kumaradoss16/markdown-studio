@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-006",
+  "type": "fix",
+  "description": "Add error boundaries to virtual filesystem fallback. Tauri failures silently cascade with no way for UI to know it's in degraded mode. Wrap all Tauri calls in try-catch, expose isVirtualMode() method, emit app event, and show UI warning.",
+  "status": "pending",
+  "steps": [
+    "Open src/services/filesystem-adapter.js",
+    "Locate all Tauri API calls: readDir(), readFile(), writeFile(), stat(), etc. in the readTree(), readFile(), writeFile() methods",
+    "Wrap each Tauri call in try-catch block with catch that logs error, sets virtualModeReason, and falls back to virtual storage",
+    "Add public method isVirtualMode() that returns boolean indicating if using virtual storage",
+    "Add property virtualModeReason: string that explains why virtual mode is active (e.g., 'Tauri fs unavailable', 'readDir failed')",
+    "Emit an app-level event when falling back to virtual mode (or set a data attribute on document.documentElement, e.g., data-virtual-mode='true')",
+    "Update UI/status bar to show a visual warning when isVirtualMode() is true (e.g., badge or icon with tooltip)",
+    "Document the fallback chain in detailed JSDoc comments above each method",
+    "Add unit test that simulates Tauri failure and verifies fallback behavior"
+  ],
+  "acceptance_criteria": [
+    "All Tauri failures are caught and logged (no console errors)",
+    "isVirtualMode() accurately reflects current storage backend",
+    "UI shows clear warning/indicator when in virtual mode",
+    "File operations complete successfully even when Tauri unavailable",
+    "No unhandled promise rejections during filesystem operations"
+  ],
+  "verification": [
+    "npm run test -- tests/unit/filesystem-adapter",
+    "npm run test -- tests/integration/filesystem",
+    "Manual test: disable Tauri in dev (mock window.__TAURI_INTERNALS__ = undefined), verify UI shows virtual mode warning",
+    "Verify file operations work in virtual mode (create, read, list)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

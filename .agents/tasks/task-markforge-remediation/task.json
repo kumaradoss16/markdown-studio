@@ -1,0 +1,7 @@
+{
+  "task_id": "task-markforge-remediation",
+  "task_description": "Fix 7 critical/high-priority issues spanning XSS sanitization, PDF export layout, accent color system, async race conditions, filesystem error handling, and git hygiene. Target: health score 7.3/10 → 8.5/10.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005", "FEAT-006", "FEAT-007"],
+  "blocked_reason": null
+}

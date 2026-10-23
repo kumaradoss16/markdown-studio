@@ -1,4 +1,4 @@
-import { credentialStore } from './credential-store.js';
+import { getCredentialStore } from './credential-store.js';
 import { gitHubApiClient } from './github-api-client.js';
 import { AppEvents, eventBus } from '../app/events.js';
 import { ErrorCode, StudioError, redactSensitiveData } from './error-service.js';
@@ -23,11 +23,19 @@ export class GitHubAuthService {
    * @param {import('./github-api-client.js').GitHubApiClient} [deps.client]
    */
   constructor(deps = {}) {
-    this.store = deps.store || credentialStore;
+    this.store = deps.store || null;
+    this._storePromise = deps.store ? Promise.resolve(deps.store) : getCredentialStore();
     this.client = deps.client || gitHubApiClient;
     this.state = AuthState.SIGNED_OUT;
     this.currentUser = null;
     this.lastError = null;
+  }
+
+  async _ensureStore() {
+    if (!this.store) {
+      this.store = await this._storePromise;
+    }
+    return this.store;
   }
 
   /**
@@ -41,6 +49,7 @@ export class GitHubAuthService {
       throw new StudioError(ErrorCode.INVALID_INPUT, 'A valid non-empty authentication token is required.');
     }
 
+    const store = await this._ensureStore();
     const cleanToken = token.trim();
     this.state = AuthState.AUTHENTICATING;
     this.lastError = null;
@@ -55,7 +64,7 @@ export class GitHubAuthService {
       }
 
       // Store in operating-system-backed credential store
-      await this.store.storeCredential(cleanToken, user.login);
+      await store.storeCredential(cleanToken, user.login);
 
       this.currentUser = {
         id: user.id,
@@ -87,7 +96,8 @@ export class GitHubAuthService {
    * @returns {Promise<any | null>}
    */
   async restoreSession() {
-    const hasCred = await this.store.hasCredential();
+    const store = await this._ensureStore();
+    const hasCred = await store.hasCredential();
     if (!hasCred) {
       this.state = AuthState.SIGNED_OUT;
       this.currentUser = null;
@@ -95,7 +105,7 @@ export class GitHubAuthService {
     }
 
     try {
-      const token = await this.store.getCredential();
+      const token = await store.getCredential();
       if (!token) {
         this.state = AuthState.SIGNED_OUT;
         return null;
@@ -121,7 +131,7 @@ export class GitHubAuthService {
       } else {
         // Network unavailable or offline: preserve credentials, indicate offline/unavailable
         this.state = AuthState.AUTHENTICATED; // Retain cached identity offline
-        const status = this.store.getStatus();
+        const status = store.getStatus();
         if (status.username) {
           this.currentUser = { login: status.username, name: status.username };
         }
@@ -141,8 +151,9 @@ export class GitHubAuthService {
    * @returns {Promise<boolean>}
    */
   async disconnect() {
+    const store = await this._ensureStore();
     try {
-      await this.store.clearCredential();
+      await store.clearCredential();
     } catch (err) {
       throw new StudioError(
         ErrorCode.SECURE_STORE_UNAVAILABLE,
@@ -171,7 +182,8 @@ export class GitHubAuthService {
    */
   async getToken() {
     if (this.state === AuthState.SIGNED_OUT) return null;
-    return this.store.getCredential();
+    const store = await this._ensureStore();
+    return store.getCredential();
   }
 
   /**

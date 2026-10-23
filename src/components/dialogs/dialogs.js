@@ -12,7 +12,7 @@ import { graphModalComponent } from '../graph/graph-modal.js';
 import { accentService } from '../../services/accent-service.js';
 import { workspaceStore } from '../../services/workspace-store.js';
 import { recentFilesService } from '../../services/recent-files-service.js';
-import { credentialStore } from '../../services/credential-store.js';
+import { getCredentialStore } from '../../services/credential-store.js';
 import { gitHubAuthService } from '../../services/github-auth-service.js';
 import { fileSystemService } from '../../services/filesystem-service.js';
 
@@ -1222,7 +1222,8 @@ export class DialogsComponent {
 
     // Test Token Button
     overlay.querySelector('#settingsTestPatBtn')?.addEventListener('click', async () => {
-      const token = patInput.value.trim() || await credentialStore.getCredential();
+      const store = await getCredentialStore();
+      const token = patInput.value.trim() || await store.getCredential();
       if (!token) {
         feedbackEl.style.display = 'block';
         feedbackEl.style.color = 'var(--color-accent-rose)';
@@ -1232,7 +1233,7 @@ export class DialogsComponent {
       feedbackEl.style.display = 'block';
       feedbackEl.style.color = 'var(--color-accent-cyan)';
       feedbackEl.textContent = 'Testing token against GitHub API...';
-      const res = await credentialStore.testCredential(token);
+      const res = await store.testCredential(token);
       if (res.valid) {
         feedbackEl.style.color = 'var(--color-accent-emerald)';
         feedbackEl.textContent = `✅ Token valid for @${res.user} (Scopes: ${res.scopes?.join(', ') || 'none'})`;
@@ -1244,7 +1245,8 @@ export class DialogsComponent {
 
     // Purge Token Button
     overlay.querySelector('#settingsPurgePatBtn')?.addEventListener('click', async () => {
-      await credentialStore.purgeCredential();
+      const store = await getCredentialStore();
+      await store.purgeCredential();
       await gitHubAuthService.signOut();
       patInput.value = '';
       statusBadge.textContent = 'Purged / Not Connected';

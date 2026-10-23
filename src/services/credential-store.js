@@ -16,6 +16,18 @@ export class CredentialStore {
   }
 
   /**
+   * Static async factory method to create and initialize a CredentialStore instance.
+   * This prevents race conditions where multiple concurrent accesses might occur before init() completes.
+   * @param {Object} [options]
+   * @returns {Promise<CredentialStore>}
+   */
+  static async create(options = {}) {
+    const instance = new CredentialStore(options);
+    await instance.init();
+    return instance;
+  }
+
+  /**
    * Initializes encryption keys for the vault.
    * Derives a deterministic origin-bound AES-GCM key using PBKDF2 with an isolated device salt,
    * ensuring encrypted credentials survive page reloads and process restarts without exposing plaintext.
@@ -82,6 +94,9 @@ export class CredentialStore {
    * @returns {Promise<boolean>}
    */
   async storeCredential(token, username = 'github-user') {
+    if (!this.isInitialized) {
+      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
+    }
     if (!token || typeof token !== 'string') {
       throw new StudioError(ErrorCode.INVALID_INPUT, 'A valid non-empty authentication token is required.');
     }
@@ -141,6 +156,9 @@ export class CredentialStore {
    * @returns {Promise<string | null>}
    */
   async getCredential() {
+    if (!this.isInitialized) {
+      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
+    }
     await this.init();
 
     // If not in memory, attempt restoration from persistent encrypted storage
@@ -196,6 +214,9 @@ export class CredentialStore {
    * @returns {Promise<boolean>}
    */
   async clearCredential() {
+    if (!this.isInitialized) {
+      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
+    }
     if (this.memoryVault) {
       if (this.memoryVault.iv) this.memoryVault.iv.fill(0);
       if (this.memoryVault.ciphertext) this.memoryVault.ciphertext.fill(0);
@@ -220,6 +241,9 @@ export class CredentialStore {
    * @returns {Promise<boolean>}
    */
   async purgeCredential() {
+    if (!this.isInitialized) {
+      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
+    }
     return await this.clearCredential();
   }
 
@@ -229,6 +253,9 @@ export class CredentialStore {
    * @returns {Promise<{ valid: boolean, user?: string, scopes?: string[], error?: string }>}
    */
   async testCredential(token) {
+    if (!this.isInitialized) {
+      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
+    }
     if (!token || typeof token !== 'string') {
       return { valid: false, error: 'Token is required.' };
     }
@@ -280,4 +307,17 @@ export class CredentialStore {
   }
 }
 
+// Initialize and export singleton instance
+let credentialStoreInstance = null;
+
+export async function getCredentialStore() {
+  if (!credentialStoreInstance) {
+    credentialStoreInstance = await CredentialStore.create();
+  }
+  return credentialStoreInstance;
+}
+
+// Synchronous legacy export for backwards compatibility during transition
+// This will fail at runtime if used before the async store is initialized
 export const credentialStore = new CredentialStore();
+

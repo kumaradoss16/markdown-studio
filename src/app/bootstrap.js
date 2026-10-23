@@ -9,6 +9,7 @@ import { DialogsComponent } from '../components/dialogs/dialogs.js';
 import { fileSystemService } from '../services/filesystem-service.js';
 import { documentStateManager } from '../core/document-state-manager.js';
 import { saveCoordinator } from '../core/save-coordinator.js';
+import { getCredentialStore } from '../services/credential-store.js';
 import { gitHubAuthService } from '../services/github-auth-service.js';
 import { publicationCoordinator } from '../services/publication-coordinator.js';
 import { accentService } from '../services/accent-service.js';
@@ -32,6 +33,13 @@ export async function bootstrapApp(rootElement) {
     const sanitizedMsg = redactSensitiveData(event.reason?.message || String(event.reason || 'Unhandled promise rejection'));
     console.error('[STUDIO REJECTION BOUNDARY]', sanitizedMsg);
   });
+
+  // Initialize credential store first to prevent race conditions
+  try {
+    await getCredentialStore();
+  } catch (e) {
+    console.error('Failed to initialize credential store:', e);
+  }
 
   // Start continuous crash recovery snapshot journaling
   crashRecoveryManager.startPeriodicJournaling(3000);

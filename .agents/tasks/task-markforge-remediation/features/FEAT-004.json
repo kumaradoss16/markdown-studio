@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-004",
+  "type": "fix",
+  "description": "Add missing .gitignore patterns for secrets (.env*), certificates (*.pem, *.key), build artifacts (dist/, coverage/), OS files (.DS_Store, Thumbs.db), Vite cache, and Rust build artifacts. Prevents accidental commits of sensitive data.",
+  "status": "completed",
+  "steps": [
+    "Open .gitignore file at repository root",
+    "Add sections for: Environment & Secrets, Certificates & Keys, Build & Dist, Vite Cache, Rust Build, Node cache, OS-specific, IDE cache, Test coverage, Application temp",
+    "For Environment: add .env, .env.local, .env.*.local, .env.production, .secrets/",
+    "For Certificates: add *.pem, *.key, *.crt, *.p12, *.pfx",
+    "For Build: add dist/, dist-release/, coverage/, .turbo/",
+    "For Vite: add .vite/, .vitest/",
+    "For Rust: add target/, src-tauri/target/",
+    "For OS: add .DS_Store, Thumbs.db, Desktop.ini, ehthumbs.db",
+    "For IDE: add .vscode/ (but keep .vscode/extensions.json), .idea/, *.swp, *.swo, *~",
+    "For Node cache: add npm-debug.log*, yarn-*.log*, pnpm-debug.log*",
+    "For Test: add lcov.info",
+    "For Temp: add *.tmp, *.temp, tmp/",
+    "Verify patterns with: git check-ignore -v <test-file>"
+  ],
+  "acceptance_criteria": [
+    "All .env* files are ignored by git",
+    "All certificate files (*.pem, *.key) are ignored",
+    "dist/ and dist-release/ remain ignored (they already were)",
+    "OS-specific files (.DS_Store, Thumbs.db) are ignored",
+    "Vite cache directories are ignored",
+    "Rust build artifacts (target/) are ignored",
+    "git status shows no untracked sensitive files"
+  ],
+  "verification": [
+    "git check-ignore -v .env.local (should be ignored)",
+    "git check-ignore -v test-cert.pem (should be ignored)",
+    "git check-ignore -v .DS_Store (should be ignored)",
+    "git status (should show clean tree with no new files)",
+    "Create dummy .env.local and dummy .key files, verify they don't appear in git status"
+  ],
+  "blocked_reason": null,
+  "findings": "✓ All patterns verified with git check-ignore. Test files (.env.local, test.key) confirmed ignored. No sensitive files currently tracked. Comprehensive sections added: Environment & Secrets (5 patterns), Certificates & Keys (5 patterns), Build & Dist (4 patterns), Vite Cache (2), Rust Build (2), Node cache (3), OS-specific (4), IDE cache (5), Test coverage (1), Application temp (3). Commit f0a304d."
+}

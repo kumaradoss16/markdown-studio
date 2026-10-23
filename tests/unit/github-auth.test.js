@@ -9,7 +9,7 @@ describe('GitHub Authentication & Credential Storage (Release 0.4)', () => {
   let authService;
 
   beforeEach(async () => {
-    store = new CredentialStore();
+    store = await CredentialStore.create();
     clientMock = {
       get: vi.fn(),
     };
@@ -48,6 +48,28 @@ describe('GitHub Authentication & Credential Storage (Release 0.4)', () => {
 
       expect(redacted).not.toContain('ghp_secretToken1234567890abcdefghijklmn');
       expect(redacted).toContain('[REDACTED]');
+    });
+
+    it('handles concurrent public method calls after create() without race conditions', async () => {
+      const store1 = await CredentialStore.create();
+      const store2 = await CredentialStore.create();
+
+      // Both instances should have cryptoKey initialized
+      expect(store1.isInitialized).toBe(true);
+      expect(store2.isInitialized).toBe(true);
+      expect(store1.cryptoKey).toBeDefined();
+      expect(store2.cryptoKey).toBeDefined();
+
+      // Concurrent calls to public methods should not raise
+      const token = 'ghp_concurrentTest1234567890abcdef';
+      await store1.storeCredential(token, 'user1');
+      const retrieved = await store1.getCredential();
+      expect(retrieved).toBe(token);
+
+      // Second instance should also work independently
+      await store2.storeCredential('ghp_concurrentTest9876543210fedcba', 'user2');
+      const retrieved2 = await store2.getCredential();
+      expect(retrieved2).toBe('ghp_concurrentTest9876543210fedcba');
     });
   });
 

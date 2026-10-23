@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-005",
+  "type": "fix",
+  "description": "Fix async race condition in credential store initialization. Constructor doesn't await init(), causing multiple concurrent accesses before cryptoKey is ready. Replace with static async create() factory pattern and update all call sites.",
+  "status": "pending",
+  "steps": [
+    "Open src/services/credential-store.js",
+    "Add a static async create() method that: (1) constructs a new CredentialStore, (2) calls await instance.init(), (3) returns the initialized instance",
+    "Add an initialization guard check in all public methods: if (!this.isInitialized) { throw new Error('CredentialStore not initialized; use CredentialStore.create()') }",
+    "Find all places that instantiate CredentialStore: grep for 'new CredentialStore' in src/services/, src/app/, and src/components/",
+    "Update each to use: const store = await CredentialStore.create() (exact same API, but async)",
+    "Search for github-auth-service.js, publication-coordinator.js, and any GitHub integration points; update those call sites",
+    "Add a unit test that verifies concurrent calls to public methods after create() completes without race conditions",
+    "Run npm run test to verify all tests pass"
+  ],
+  "acceptance_criteria": [
+    "All credential store accesses are preceded by await CredentialStore.create() or use an instance from create()",
+    "No new CredentialStore() calls exist in production code",
+    "No unhandled promise rejections in console during GitHub auth flow",
+    "Concurrent access tests pass (verify cryptoKey is ready before use)"
+  ],
+  "verification": [
+    "npm run test -- tests/unit/credential-store",
+    "grep -r 'new CredentialStore' src/ (should return zero results)",
+    "Manual test: trigger GitHub auth flow, verify completion without errors",
+    "Check browser console for no warnings or rejections"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
