@@ -223,5 +223,65 @@ http://localhost:3000/report
       expect(res.html).toContain('break-after: avoid;');
     });
   });
+
+  describe('Image Error Handling & Promise Rejection Prevention', () => {
+    it('exports document with broken image reference without throwing unhandled promise rejection', async () => {
+      const docWithBrokenImage = {
+        id: 'doc-broken-img',
+        name: 'broken-image-doc.md',
+        content: '# Document with Broken Image\n\n![Missing](./missing-file-12345.png)\n\nContent continues here.',
+        revision: 1
+      };
+
+      // Should not throw or have unhandled promise rejections
+      const res = await engine.exportDocument(docWithBrokenImage, {
+        format: ExportFormat.HTML,
+        force: true
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.output).toContain('<!DOCTYPE html>');
+      expect(res.output).toContain('Document with Broken Image');
+    });
+
+    it('gracefully skips images that fail to load during asset embedding', async () => {
+      const docWithImage = {
+        id: 'doc-img-embed',
+        name: 'image-embed-test.md',
+        content: '# Report\n\n![Chart](chart.png)\n![Diagram](diagram.svg)\n',
+        revision: 1
+      };
+
+      // Empty assetMap means images won't be found and should be handled gracefully
+      const res = await engine.exportDocument(docWithImage, {
+        format: ExportFormat.HTML,
+        force: true,
+        assetMap: {}
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.output).toContain('<!DOCTYPE html>');
+      // SVG fallback should be present
+      expect(res.output).toContain('[SVG:');
+    });
+
+    it('handles PDF export with broken images when triggerPrint is false', async () => {
+      const docWithBrokenImage = {
+        id: 'doc-pdf-broken-img',
+        name: 'pdf-broken-image.md',
+        content: '# PDF with Broken Images\n\n![Broken](nonexistent.png)\n\n## Section\n\nText content.',
+        revision: 1
+      };
+
+      const res = await engine.exportToPdf(docWithBrokenImage, {
+        force: true,
+        triggerPrint: false
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.html).toContain('<!DOCTYPE html>');
+      expect(res.isPrintReady).toBe(true);
+    });
+  });
 });
 

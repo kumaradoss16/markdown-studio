@@ -58,17 +58,22 @@ export class ExportEngine {
     // If embedding assets, substitute local image sources with base64 data URIs or inline representations
     if (embedAssets) {
       bodyHtml = bodyHtml.replace(/<img([^>]+)src=["']([^"']+)["']([^>]*)>/g, (match, prefix, src, suffix) => {
-        const decodedSrc = decodeURIComponent(src);
-        if (assetMap[decodedSrc] || assetMap[src]) {
-          const base64Uri = assetMap[decodedSrc] || assetMap[src];
-          return `<img${prefix}src="${base64Uri}"${suffix}>`;
+        try {
+          const decodedSrc = decodeURIComponent(src);
+          if (assetMap[decodedSrc] || assetMap[src]) {
+            const base64Uri = assetMap[decodedSrc] || assetMap[src];
+            return `<img${prefix}src="${base64Uri}"${suffix}>`;
+          }
+          // Handle local SVG paths
+          if (src.endsWith('.svg') && !src.startsWith('http') && !src.startsWith('data:')) {
+            const safeSvg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='24'><rect width='100%' height='100%' fill='%23f1f5f9'/><text x='6' y='16' font-size='10' font-family='monospace' fill='%2364748b'>[SVG: ${encodeURIComponent(src)}]</text></svg>`;
+            return `<img${prefix}src="${safeSvg}"${suffix}>`;
+          }
+          return match;
+        } catch (err) {
+          console.warn(`Image processing failed for src="${src}": ${err.message}. Skipping image.`);
+          return '';
         }
-        // Handle local SVG paths
-        if (src.endsWith('.svg') && !src.startsWith('http') && !src.startsWith('data:')) {
-          const safeSvg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='24'><rect width='100%' height='100%' fill='%23f1f5f9'/><text x='6' y='16' font-size='10' font-family='monospace' fill='%2364748b'>[SVG: ${encodeURIComponent(src)}]</text></svg>`;
-          return `<img${prefix}src="${safeSvg}"${suffix}>`;
-        }
-        return match;
       });
     }
 
@@ -644,19 +649,39 @@ export class ExportEngine {
 
           // 1. Wait for web fonts if supported
           if (doc.fonts && doc.fonts.ready) {
-            await doc.fonts.ready.catch(() => {});
+            await doc.fonts.ready.catch((err) => {
+              console.warn(`Font loading warning: ${err.message}`);
+            });
           }
 
           // 2. Wait for all images to decode/load with bounded asset timeout
           const images = Array.from(doc.images || []);
-          await Promise.all(images.map(img => {
-            if (img.complete) return Promise.resolve();
-            return new Promise(r => {
-              const timer = setTimeout(r, 3000);
-              img.onload = () => { clearTimeout(timer); r(); };
-              img.onerror = () => { clearTimeout(timer); r(); };
+          const imageLoadPromises = images.map((img) => {
+            if (img.complete) {
+              return Promise.resolve();
+            }
+            return new Promise((imgResolve) => {
+              const timer = setTimeout(() => {
+                console.warn(`Image load timeout: ${img.src}`);
+                imgResolve();
+              }, 3000);
+
+              img.onload = () => {
+                clearTimeout(timer);
+                imgResolve();
+              };
+
+              img.onerror = () => {
+                clearTimeout(timer);
+                console.warn(`Image failed to load: ${img.src}`);
+                imgResolve();
+              };
             });
-          }));
+          });
+
+          await Promise.all(imageLoadPromises).catch((err) => {
+            console.warn(`Image batch processing error: ${err.message}`);
+          });
 
           // 3. Render KaTeX / Math typesetting if KaTeX is globally available
           if (typeof window.renderMathInElement === 'function') {
@@ -668,43 +693,74 @@ export class ExportEngine {
                 ],
                 throwOnError: false
               });
-            } catch (_) {}
+            } catch (mathErr) {
+              console.warn(`Math rendering warning: ${mathErr.message}`);
+            }
           }
 
           // 4. Wait for paint frame settling
           if (typeof requestAnimationFrame === 'function') {
-            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            await new Promise((frameResolve) => {
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  frameResolve();
+                });
+              });
+            }).catch((err) => {
+              console.warn(`Animation frame error: ${err.message}`);
+            });
           }
 
           // 5. Electron webContents.printToPDF or native window.print()
-          if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
-            await window.electronAPI.printToPDF({
-              marginsType: 0,
-              printBackground: true,
-              pageSize: 'A4'
-            });
-            cleanup();
-            resolve();
-          } else if (iframe.contentWindow && typeof iframe.contentWindow.print === 'function') {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            cleanup();
-            resolve();
-          } else {
+          try {
+            if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
+              await window.electronAPI.printToPDF({
+                marginsType: 0,
+                printBackground: true,
+                pageSize: 'A4'
+              }).catch((err) => {
+                console.warn(`Electron printToPDF error: ${err.message}`);
+              });
+              cleanup();
+              resolve();
+            } else if (iframe.contentWindow && typeof iframe.contentWindow.print === 'function') {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+              cleanup();
+              resolve();
+            } else {
+              cleanup();
+              resolve();
+            }
+          } catch (printErr) {
+            console.warn(`Print operation error: ${printErr.message}`);
             cleanup();
             resolve();
           }
         } catch (err) {
+          console.warn(`Export pipeline error: ${err.message}`);
           cleanup();
-          reject(err);
+          resolve();
         }
+      };
+
+      iframe.onerror = (err) => {
+        console.warn(`Iframe load error: ${err.message}`);
+        cleanup();
+        resolve();
       };
 
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (doc) {
-        doc.open();
-        doc.write(html);
-        doc.close();
+        try {
+          doc.open();
+          doc.write(html);
+          doc.close();
+        } catch (writeErr) {
+          console.warn(`Document write error: ${writeErr.message}`);
+          cleanup();
+          reject(writeErr);
+        }
       } else {
         cleanup();
         reject(new Error('Unable to access print frame context.'));
