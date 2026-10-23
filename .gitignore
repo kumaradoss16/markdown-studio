@@ -1,10 +1,60 @@
-node_modules/
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+.env.production
+.secrets/
+
+# Certificates & Keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Build & Dist
 dist/
 dist-release/
+coverage/
+.turbo/
+
+# Vite Cache
+.vite/
+.vitest/
+
+# Rust Build
 target/
 src-tauri/target/
+
+# Node cache
+node_modules/
+npm-debug.log*
+yarn-*.log*
+pnpm-debug.log*
+
+# OS-specific
+.DS_Store
+Desktop.ini
+Thumbs.db
+ehthumbs.db
+
+# IDE cache
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Test coverage
+lcov.info
+
+# Application temp
+*.tmp
+*.temp
+tmp/
+
+# Legacy VS
+.vs/
 *.log
 qa-report.json
-.DS_Store
-Thumbs.db
-.vs/
