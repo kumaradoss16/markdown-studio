@@ -991,7 +991,8 @@ export class DialogsComponent {
         const res = await exportEngine.exportToPdf(activeDoc, {
           force: true,
           embedAssets: embedImages,
-          triggerPrint: true
+          triggerPrint: true,
+          documentTitle: activeDoc?.name || 'Document'
         });
         if (!res.success) {
           this.showToast({ type: 'danger', message: res.error || 'Failed to prepare PDF.' });

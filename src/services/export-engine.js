@@ -339,6 +339,13 @@ export class ExportEngine {
       size: A4;
       margin: 15mm;
       padding: 0;
+      /* Disable all browser-generated headers/footers */
+      @top-left { content: none !important; }
+      @top-center { content: none !important; }
+      @top-right { content: none !important; }
+      @bottom-left { content: none !important; }
+      @bottom-center { content: none !important; }
+      @bottom-right { content: none !important; }
     }
 
     @media print {
@@ -574,7 +581,10 @@ export class ExportEngine {
 
     if (triggerPrint && isBrowserEnv && !isTestEnv) {
       try {
-        await this.printHtmlDocument(html, docSnapshot?.name || 'Document');
+        const firstH1 = this.pipeline.process(docSnapshot?.content || '').headings.find(h => h.level === 1);
+        const resolvedTitle = options.documentTitle || (firstH1 ? firstH1.text : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'Document'));
+        const safeTitle = this.pipeline.getPurify().sanitize(resolvedTitle).replace(/[\\/:*?"<>|]/g, '_').trim() || 'Document';
+        await this.printHtmlDocument(html, safeTitle);
       } catch (err) {
         return {
           success: false,
@@ -714,16 +724,29 @@ export class ExportEngine {
           // 5. Electron webContents.printToPDF or native window.print()
           try {
             if (window.electronAPI && typeof window.electronAPI.printToPDF === 'function') {
+              const fileName = title.replace(/[\\/:*?"<>|]/g, '_').trim() || 'document';
               await window.electronAPI.printToPDF({
                 marginsType: 0,
                 printBackground: true,
-                pageSize: 'A4'
+                pageSize: 'A4',
+                landscape: false,
+                headerTemplate: '',
+                footerTemplate: '',
+                preferCSSPageSize: true,
+              }).then((pdfBuffer) => {
+                this.savePdfToFile(pdfBuffer, fileName);
+                cleanup();
+                resolve();
               }).catch((err) => {
                 console.warn(`Electron printToPDF error: ${err.message}`);
+                cleanup();
+                reject(err);
               });
-              cleanup();
-              resolve();
+              return;
             } else if (iframe.contentWindow && typeof iframe.contentWindow.print === 'function') {
+              if (doc) {
+                doc.title = title;
+              }
               iframe.contentWindow.focus();
               iframe.contentWindow.print();
               cleanup();
@@ -766,6 +789,34 @@ export class ExportEngine {
         reject(new Error('Unable to access print frame context.'));
       }
     });
+  }
+  /**
+   * Saves PDF buffer/blob to file with proper filename derived from document title.
+   * @param {ArrayBuffer|Blob|Uint8Array} pdfData 
+   * @param {string} [title='document'] 
+   */
+  savePdfToFile(pdfData, title = 'document') {
+    const fileName = title.replace(/[\\/:*?"<>|]/g, '_').trim() || 'document';
+    
+    if (typeof window !== 'undefined' && window.electronAPI && typeof window.electronAPI.savePDF === 'function') {
+      return window.electronAPI.savePDF(pdfData, `${fileName}.pdf`);
+    }
+    
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const blob = pdfData instanceof Blob ? pdfData : new Blob([pdfData], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fileName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode) {
+          document.body.removeChild(a);
+        }
+        URL.revokeObjectURL(url);
+      }, 150);
+    }
   }
 }
 
