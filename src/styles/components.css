@@ -665,6 +665,7 @@
 .export-option-card:hover {
   background-color: var(--color-surface-hover) !important;
   border-color: var(--color-accent) !important;
+  box-shadow: 0 0 10px var(--color-accent-soft) !important;
   transform: translateY(-1px);
 }
 

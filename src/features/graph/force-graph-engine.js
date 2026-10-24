@@ -596,10 +596,12 @@ export class ForceGraphEngine {
 
     // Retrieve active theme accent color from DOM
     let accentColor = '#00e5ff';
+    let accentColorSoft = 'rgba(0, 229, 255, 0.4)';
     if (typeof window !== 'undefined' && window.getComputedStyle) {
       const computed = window.getComputedStyle(document.documentElement);
       accentColor = computed.getPropertyValue('--color-accent')?.trim() ||
                     computed.getPropertyValue('--color-accent-cyan')?.trim() || '#00e5ff';
+      accentColorSoft = computed.getPropertyValue('--color-accent-soft')?.trim() || 'rgba(0, 229, 255, 0.4)';
     }
 
     // Determine neighbor set if hovering
@@ -722,7 +724,7 @@ export class ForceGraphEngine {
         if (isActiveDoc) {
           ctx.fillStyle = accentColor;
         } else {
-          ctx.fillStyle = isHovered ? '#38bdf8' : '#22d3ee';
+          ctx.fillStyle = isHovered ? accentColor : (accentColorSoft || accentColor);
         }
         ctx.fill();
         ctx.strokeStyle = '#ffffff';

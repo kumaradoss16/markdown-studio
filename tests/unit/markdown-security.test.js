@@ -73,4 +73,12 @@ author: jt
     expect(html).toContain('class="metric-card"');
     expect(html).toContain('style="display: flex; gap: 12px;"');
   });
+  it('renders task list checkboxes safely using custom non-input elements', () => {
+    const raw = '- [ ] Pending task\n- [x] Completed task';
+    const { html } = markdownService.render(raw);
+
+    expect(html).not.toContain('<input');
+    expect(html).toContain('class="task-box"');
+    expect(html).toContain('class="task-box checked"');
+  });
 });

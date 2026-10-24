@@ -119,13 +119,28 @@ export class MarkdownService {
    * @param {string} rawMarkdown
    * @returns {{ html: string, frontmatter: Record<string, any> | null }}
    */
+  /**
+   * Preprocesses task list checkboxes safely into non-input custom HTML elements
+   * (e.g. <span class="task-box">☐</span>) so task lists render properly without
+   * exposing raw <input> elements to DOM injection or XSS vectors.
+   * @param {string} markdown
+   * @returns {string}
+   */
+  preprocessTaskLists(markdown) {
+    if (!markdown || typeof markdown !== 'string') return markdown;
+    return markdown
+      .replace(/^([ \t]*[-*+]\s+)\[[ ]\]\s+/gm, '$1<span class="task-box">☐</span> ')
+      .replace(/^([ \t]*[-*+]\s+)\[[xX]\]\s+/gm, '$1<span class="task-box checked">☑</span> ');
+  }
+
   render(rawMarkdown) {
     if (!rawMarkdown) {
       return { html: '', frontmatter: null };
     }
 
     const { frontmatter, content } = this.extractFrontmatter(rawMarkdown);
-    const preprocessed = this.preprocessWikiLinks(content);
+    const withTaskLists = this.preprocessTaskLists(content);
+    const preprocessed = this.preprocessWikiLinks(withTaskLists);
     
     // Parse using marked
     let rawHtml = '';

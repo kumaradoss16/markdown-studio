@@ -93,15 +93,47 @@ export class CredentialStore {
    * @param {string} username
    * @returns {Promise<boolean>}
    */
-  async storeCredential(token, username = 'github-user') {
-    if (!this.isInitialized) {
-      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
+  /**
+   * Internal guard ensuring initialization promise is settled before operations.
+   * @private
+   */
+  async _ensureInitialized() {
+    if (!this.isInitialized || !this.cryptoKey) {
+      if (!this._initPromise) {
+        this._initPromise = this.init();
+      }
+      await this._initPromise;
     }
+  }
+
+  /**
+   * Checks if credentials exist in the store.
+   * @returns {Promise<boolean>}
+   */
+  async hasCredential() {
+    const cred = await this.getCredential();
+    return Boolean(cred);
+  }
+
+  /**
+   * Alias for storeCredential.
+   */
+  async setCredential(token, username = 'github-user') {
+    return this.storeCredential(token, username);
+  }
+
+  /**
+   * Alias for clearCredential.
+   */
+  async removeCredential() {
+    return this.clearCredential();
+  }
+
+  async storeCredential(token, username = 'github-user') {
+    await this._ensureInitialized();
     if (!token || typeof token !== 'string') {
       throw new StudioError(ErrorCode.INVALID_INPUT, 'A valid non-empty authentication token is required.');
     }
-
-    await this.init();
 
     if (!this.cryptoKey) {
       throw new StudioError(
@@ -156,10 +188,7 @@ export class CredentialStore {
    * @returns {Promise<string | null>}
    */
   async getCredential() {
-    if (!this.isInitialized) {
-      throw new StudioError(ErrorCode.SECURE_STORE_UNAVAILABLE, 'CredentialStore not initialized; use CredentialStore.create()');
-    }
-    await this.init();
+    await this._ensureInitialized();
 
     // If not in memory, attempt restoration from persistent encrypted storage
     if (!this.memoryVault) {

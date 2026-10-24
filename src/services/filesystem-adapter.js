@@ -84,6 +84,27 @@ export class FileSystemAdapter {
    * @param {string} path
    * @returns {string}
    */
+  /**
+   * Normalizes a path string safely handling UNC, backslashes, and malformed segments.
+   * @param {string} p
+   * @returns {string}
+   */
+  normalizePath(p) {
+    if (!p || typeof p !== 'string') return '';
+    try {
+      let normalized = p.replace(/\\/g, '/').trim();
+      if (normalized.startsWith('//')) {
+        normalized = normalized.replace(/^\/+/, '/');
+      }
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        normalized = normalized.slice(0, -1);
+      }
+      return normalized;
+    } catch {
+      return '';
+    }
+  }
+
   getBaseName(path) {
     const normalized = path.replace(/\\/g, '/');
     const parts = normalized.split('/');

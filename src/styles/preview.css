@@ -228,7 +228,7 @@
 .metric-card .val {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-accent);
   display: flex;
   align-items: baseline;
   gap: 2px;
@@ -680,3 +680,17 @@
   }
 }
 
+
+/* Task List Non-Input Elements (SEC-001) */
+.task-box {
+  display: inline-block;
+  margin-right: 6px;
+  user-select: none;
+  font-family: monospace;
+  font-size: 1.05em;
+  line-height: 1;
+}
+
+.task-box.checked {
+  color: var(--color-accent);
+}
