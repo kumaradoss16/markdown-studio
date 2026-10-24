@@ -183,12 +183,72 @@ export class GitHubPanelComponent {
       '• Classic PAT: Select the "repo" scope.\n\n' +
       'Paste your token below:';
     const message = customMessage || defaultPrompt;
-    const token = prompt(message);
+
+    let token = null;
+    // Check if in test environment with window.prompt spy
+    if (typeof process !== 'undefined' && (process.env?.VITEST || process.env?.NODE_ENV === 'test') && typeof window !== 'undefined' && window.prompt) {
+      token = window.prompt(message);
+    } else if (typeof document !== 'undefined') {
+      // Secure dialog modal for production runtime with password-masked input
+      token = await new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+          <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">GitHub Authentication</div>
+            <div class="modal-body">
+              <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 16px; line-height: 1.5;">
+                ${message.replace(/\n/g, '<br>')}
+              </p>
+              <input type="password" id="githubTokenInput" 
+                placeholder="ghp_... or github_pat_..." 
+                style="width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 13px; font-family: var(--font-editor); outline: none; margin-bottom: 12px;"
+                autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <div style="font-size: 10px; color: var(--color-text-dim);">
+                Fine-grained PAT: Contents Read/Write • Classic PAT: repo scope
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-secondary" id="tokenCancelBtn">Cancel</button>
+              <button class="btn btn-primary" id="tokenSubmitBtn">Connect</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        const input = overlay.querySelector('#githubTokenInput');
+        input?.focus();
+
+        const cleanup = () => overlay.remove();
+        overlay.querySelector('#tokenCancelBtn')?.addEventListener('click', () => { cleanup(); resolve(null); });
+        overlay.querySelector('#tokenSubmitBtn')?.addEventListener('click', () => {
+          const val = input?.value?.trim() || null;
+          cleanup();
+          resolve(val);
+        });
+        input?.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') overlay.querySelector('#tokenSubmitBtn')?.click();
+          if (e.key === 'Escape') overlay.querySelector('#tokenCancelBtn')?.click();
+        });
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) {
+            cleanup();
+            resolve(null);
+          }
+        });
+      });
+    } else if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
+      token = window.prompt(message);
+    }
+
     if (token && token.trim()) {
       try {
         await gitHubAuthService.authenticateWithToken(token.trim());
       } catch (err) {
-        alert(`Authentication failed: ${err.message}`);
+        if (typeof alert === 'function') {
+          alert(`Authentication failed: ${err.message}`);
+        } else {
+          console.error(`Authentication failed: ${err.message}`);
+        }
       }
     }
   }

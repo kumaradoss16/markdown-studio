@@ -372,8 +372,22 @@ export class DialogsComponent {
       });
     });
 
+    search.addEventListener('input', () => {
+      const q = search.value.toLowerCase().trim();
+      overlay.querySelectorAll('#paletteItems .sidebar-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    });
+
     search.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') overlay.remove();
+      if (e.key === 'Enter') {
+        const firstVisible = overlay.querySelector('#paletteItems .sidebar-item:not([style*="display: none"])');
+        if (firstVisible) {
+          firstVisible.click();
+        }
+      }
     });
   }
 

@@ -108,7 +108,10 @@ export class MarkdownService {
     processed = processed.replace(/\[\[(.*?)(?:\|(.*?))?\]\]/g, (match, target, display) => {
       const cleanTarget = target.trim();
       const text = display ? display.trim() : cleanTarget;
-      return `<a class="wiki-link" href="#" data-wiki-target="${encodeURIComponent(cleanTarget)}">${text}</a>`;
+      const purify = this.getPurify();
+      const safeTarget = encodeURIComponent(purify.sanitize(cleanTarget));
+      const safeText = purify.sanitize(text);
+      return `<a class="wiki-link" href="#" data-wiki-target="${safeTarget}">${safeText}</a>`;
     });
 
     return processed;
