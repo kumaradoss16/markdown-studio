@@ -423,7 +423,10 @@
 /* Print & PDF Export Styling (Standardized to filesystem-lab specifications) */
 @page {
   size: A4 portrait;
-  margin: 0 !important;
+  margin-top: 20mm;
+  margin-bottom: 20mm;
+  margin-left: 15mm;
+  margin-right: 15mm;
   padding: 0;
   @bottom-left { content: none !important; }
   @bottom-center { content: none !important; }
@@ -434,6 +437,10 @@
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   /* Suppress browser/HTML headers, footers, and margins */
   html, body {
     background: #ffffff !important;
@@ -448,7 +455,8 @@
   }
 
   body {
-    padding: 16mm 20mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
     max-width: 100% !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

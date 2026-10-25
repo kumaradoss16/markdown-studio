@@ -2,6 +2,17 @@ import { markdownPipeline } from './markdown-pipeline.js';
 import { qualityChecker, DiagnosticSeverity } from './quality-checker.js';
 import { accentService } from './accent-service.js';
 
+/**
+ * Configurable default page margins for PDF and print export.
+ * Single source of truth applied on every page via CSS @page.
+ */
+export const DEFAULT_PDF_MARGINS = Object.freeze({
+  top: '20mm',
+  bottom: '20mm',
+  left: '15mm',
+  right: '15mm'
+});
+
 export const ExportFormat = {
   HTML: 'html',
   PDF: 'pdf',
@@ -86,6 +97,13 @@ export class ExportEngine {
       .replace(/<span[^>]*class=".*?badge.*?"[^>]*>[\s\S]*?<\/span>/gi, '')
       .replace(/\[Copy\]/gi, '')
       .replace(/http:\/\/localhost:\d+\//gi, '');
+
+    const margins = {
+      top: options.margins?.top || DEFAULT_PDF_MARGINS.top,
+      bottom: options.margins?.bottom || DEFAULT_PDF_MARGINS.bottom,
+      left: options.margins?.left || DEFAULT_PDF_MARGINS.left,
+      right: options.margins?.right || DEFAULT_PDF_MARGINS.right
+    };
 
     const firstH1 = pipelineResult.headings.find(h => h.level === 1);
     const title = firstH1
@@ -348,9 +366,18 @@ export class ExportEngine {
     }
 
     /* === PRINT STYLES === */
+    /* Exact color preservation across screen and print */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
     @page {
       size: A4 portrait;
-      margin: 0 !important;
+      margin-top: ${margins.top};
+      margin-bottom: ${margins.bottom};
+      margin-left: ${margins.left};
+      margin-right: ${margins.right};
       padding: 0;
       /* Disable all browser-generated headers/footers */
       @top-left { content: none !important; }
@@ -362,81 +389,86 @@ export class ExportEngine {
     }
 
     @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
       html, body {
         width: 100%;
         height: auto;
         margin: 0 !important;
         padding: 0 !important;
-        background: #ffffff !important;
+        background: transparent !important;
       }
 
       body {
-        padding: 16mm 20mm !important;
         max-width: 100% !important;
-        font-size: 10.5pt !important;
-        line-height: 1.55 !important;
-        color: #111827 !important;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        margin: 0 !important;
+        padding: 0 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
 
       p, li {
-        text-align: left !important;
+        text-align: left;
         orphans: 3;
         widows: 3;
       }
 
-      li {
+      /* Prevent page splits inside table rows, list items, images, and code blocks */
+      tr, tbody tr, table, th, td,
+      li,
+      img, figure, svg,
+      pre, blockquote,
+      .task-box, .task-item {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
 
       h1, h2, h3, h4, h5, h6 {
-        color: #000000 !important;
         page-break-after: avoid !important;
         break-after: avoid !important;
-        page-break-inside: avoid !important;
-      }
-
-      h1 {
-        margin-top: 0 !important;
-        margin-bottom: 0.8em !important;
-      }
-
-      h2, h3 {
-        margin-top: 1.2em !important;
-        margin-bottom: 0.6em !important;
-      }
-
-      pre, blockquote, table, img, figure {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
 
+      h1 {
+        margin-top: 0;
+        margin-bottom: 0.8em;
+      }
+
+      h2, h3 {
+        margin-top: 1.2em;
+        margin-bottom: 0.6em;
+      }
+
       pre {
-        background-color: #f8fafc !important;
-        color: #0f172a !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 4px !important;
-        padding: 10px 14px !important;
-        margin: 1em 0 !important;
-        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
-        font-size: 9pt !important;
-        line-height: 1.45 !important;
-        tab-size: 2 !important;
-        white-space: pre !important;
-        overflow: visible !important;
-        word-break: normal !important;
+        background-color: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 10px 14px;
+        margin: 1em 0;
+        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+        font-size: 9pt;
+        line-height: 1.45;
+        tab-size: 2;
+        white-space: pre-wrap;
+        overflow: visible;
+        word-break: normal;
       }
 
       code {
-        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
-        background-color: #f1f5f9 !important;
-        color: #0f172a !important;
-        padding: 2px 5px !important;
-        border: none !important;
-        border-radius: 3px !important;
-        font-size: 9pt !important;
+        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+        background-color: #f1f5f9;
+        color: #0f172a;
+        padding: 2px 5px;
+        border: none;
+        border-radius: 3px;
+        font-size: 9pt;
       }
 
       pre code {
@@ -450,35 +482,41 @@ export class ExportEngine {
       }
 
       kbd {
-        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
-        font-size: 8.5pt !important;
-        padding: 1px 4px !important;
-        background-color: #f8fafc !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 3px !important;
-        box-shadow: none !important;
+        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+        font-size: 8.5pt;
+        padding: 1px 4px;
+        background-color: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        border-radius: 3px;
+        box-shadow: none;
+      }
+
+      mark {
+        background-color: #fef08a;
+        color: #713f12;
+        padding: 1px 3px;
+        border-radius: 2px;
       }
 
       table {
-        border-collapse: collapse !important;
-        width: 100% !important;
-        border: 1px solid #cbd5e1 !important;
+        border-collapse: collapse;
+        width: 100%;
+        border: 1px solid #cbd5e1;
       }
 
       th {
-        background-color: #f8fafc !important;
-        border: 1px solid #cbd5e1 !important;
-        font-weight: 600 !important;
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        font-weight: 600;
       }
 
       td {
-        border: 1px solid #cbd5e1 !important;
+        border: 1px solid #cbd5e1;
       }
 
       a {
-        color: #000000 !important;
-        text-decoration: underline !important;
+        text-decoration: underline;
       }
 
       /* === REMOVE ALL CORNER TEXT & HEADERS/FOOTERS === */
@@ -514,7 +552,7 @@ export class ExportEngine {
   </style>
 </head>
 <body>
-  <article class="markdown-body">
+  <article class="markdown-body" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
     ${bodyHtml}
   </article>
 </body>

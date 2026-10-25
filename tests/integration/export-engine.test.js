@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ExportEngine, ExportFormat } from '../../src/services/export-engine.js';
+import { ExportEngine, ExportFormat, DEFAULT_PDF_MARGINS } from '../../src/services/export-engine.js';
 import { markdownPipeline } from '../../src/services/markdown-pipeline.js';
 import { qualityChecker } from '../../src/services/quality-checker.js';
 
@@ -102,8 +102,9 @@ describe('ExportEngine Integration', () => {
     expect(res.success).toBe(true);
     expect(res.output).toContain('--accent: #f59e0b;');
     expect(res.output).toContain('@page {');
-    expect(res.output).toContain('margin: 0 !important;');
-    expect(res.output).toContain('font-size: 10.5pt !important;');
+    expect(res.output).toContain('margin-top: 20mm;');
+    expect(res.output).toContain('margin-bottom: 20mm;');
+    expect(res.output).toContain('font-size: 10.5pt;');
     expect(res.output).toContain('.export-footer');
     expect(res.output).toContain('display: none !important;');
   });
@@ -283,5 +284,57 @@ http://localhost:3000/report
       expect(res.isPrintReady).toBe(true);
     });
   });
-});
+  it('exports DEFAULT_PDF_MARGINS constant and applies configurable top/bottom margins', async () => {
+    expect(DEFAULT_PDF_MARGINS).toBeDefined();
+    expect(DEFAULT_PDF_MARGINS.top).toBe('20mm');
+    expect(DEFAULT_PDF_MARGINS.bottom).toBe('20mm');
 
+    const doc = {
+      id: 'doc-margins',
+      name: 'margins.md',
+      content: '# Custom Margins Document\n\nTesting custom margins.',
+      revision: 1
+    };
+
+    // Test with default margins
+    const defaultRes = await engine.exportDocument(doc, { format: ExportFormat.HTML });
+    expect(defaultRes.output).toContain('margin-top: 20mm;');
+    expect(defaultRes.output).toContain('margin-bottom: 20mm;');
+
+    // Test with custom options.margins override
+    const customRes = await engine.exportDocument(doc, {
+      format: ExportFormat.HTML,
+      margins: { top: '25mm', bottom: '30mm', left: '10mm', right: '10mm' }
+    });
+    expect(customRes.output).toContain('margin-top: 25mm;');
+    expect(customRes.output).toContain('margin-bottom: 30mm;');
+    expect(customRes.output).toContain('margin-left: 10mm;');
+    expect(customRes.output).toContain('margin-right: 10mm;');
+  });
+
+  it('preserves user-applied inline colors, backgrounds, and exact print color adjustment', async () => {
+    const coloredDoc = {
+      id: 'doc-colors',
+      name: 'colors.md',
+      content: '# Color Test\n\n<span style="color: #e11d48">Red Alert</span>\n\n<p style="background-color: #fef08a">Highlighted note</p>\n\n<table style="background-color: #dbeafe"><tr style="background-color: #1d4ed8; color: #ffffff"><th>Header</th></tr></table>\n\n<svg width="50" height="50"><circle cx="25" cy="25" r="20" fill="#10b981"/></svg>',
+      revision: 1
+    };
+
+    const res = await engine.exportToPdf(coloredDoc, { force: true, triggerPrint: false });
+    expect(res.success).toBe(true);
+
+    // Exact color preservation rules
+    expect(res.html).toContain('-webkit-print-color-adjust: exact');
+    expect(res.html).toContain('print-color-adjust: exact');
+
+    // User colors intact in rendered markup
+    expect(res.html).toContain('style="color: #e11d48"');
+    expect(res.html).toContain('style="background-color: #fef08a"');
+    expect(res.html).toContain('style="background-color: #dbeafe"');
+    expect(res.html).toContain('fill="#10b981"');
+
+    // Page-break avoidance rules
+    expect(res.html).toContain('break-inside: avoid !important;');
+    expect(res.html).toContain('page-break-inside: avoid !important;');
+  });
+});
