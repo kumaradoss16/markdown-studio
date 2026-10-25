@@ -58,3 +58,22 @@ tmp/
 .vs/
 *.log
 qa-report.json
+
+# C++ / Visual Studio build artifacts
+x64/
+x86/
+Debug/
+Release/
+*.obj
+*.exe
+*.pdb
+*.res
+*.lib
+*.exp
+*.ilk
+*.idb
+*.tlog
+*.lastbuildstate
+src-win32/packages/
+src-win32/build/
+installer/Output/
