@@ -188,7 +188,20 @@ export class ExportEngine {
 
     p {
       margin: 0.8em 0;
-      text-align: justify;
+      text-align: left;
+    }
+
+    /* === KBD === */
+    kbd {
+      font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+      font-size: 0.85em;
+      padding: 2px 5px;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      border-radius: 3px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+      white-space: nowrap;
     }
 
     /* === LINKS === */
@@ -264,7 +277,7 @@ export class ExportEngine {
 
     li {
       margin: 0.4em 0;
-      text-align: justify;
+      text-align: left;
     }
 
     li + li {
@@ -336,8 +349,8 @@ export class ExportEngine {
 
     /* === PRINT STYLES === */
     @page {
-      size: A4;
-      margin: 15mm;
+      size: A4 portrait;
+      margin: 0 !important;
       padding: 0;
       /* Disable all browser-generated headers/footers */
       @top-left { content: none !important; }
@@ -352,18 +365,30 @@ export class ExportEngine {
       html, body {
         width: 100%;
         height: auto;
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
       }
 
       body {
+        padding: 16mm 20mm !important;
         max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 11pt !important;
-        line-height: 1.5 !important;
-        color: #000000 !important;
-        background: #ffffff !important;
+        font-size: 10.5pt !important;
+        line-height: 1.55 !important;
+        color: #111827 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      p, li {
+        text-align: left !important;
+        orphans: 3;
+        widows: 3;
+      }
+
+      li {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
 
       h1, h2, h3, h4, h5, h6 {
@@ -383,15 +408,72 @@ export class ExportEngine {
         margin-bottom: 0.6em !important;
       }
 
-      p {
-        margin: 0.6em 0 !important;
-        orphans: 2;
-        widows: 2;
-      }
-
       pre, blockquote, table, img, figure {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
+      }
+
+      pre {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 4px !important;
+        padding: 10px 14px !important;
+        margin: 1em 0 !important;
+        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
+        font-size: 9pt !important;
+        line-height: 1.45 !important;
+        tab-size: 2 !important;
+        white-space: pre !important;
+        overflow: visible !important;
+        word-break: normal !important;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
+        background-color: #f1f5f9 !important;
+        color: #0f172a !important;
+        padding: 2px 5px !important;
+        border: none !important;
+        border-radius: 3px !important;
+        font-size: 9pt !important;
+      }
+
+      pre code {
+        background-color: transparent !important;
+        color: inherit !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-size: inherit !important;
+        white-space: pre !important;
+      }
+
+      kbd {
+        font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
+        font-size: 8.5pt !important;
+        padding: 1px 4px !important;
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 3px !important;
+        box-shadow: none !important;
+      }
+
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+
+      th {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        font-weight: 600 !important;
+      }
+
+      td {
+        border: 1px solid #cbd5e1 !important;
       }
 
       a {
@@ -399,37 +481,8 @@ export class ExportEngine {
         text-decoration: underline !important;
       }
 
-      code {
-        background-color: #f1f5f9 !important;
-        color: #0f172a !important;
-        padding: 2px 5px !important;
-        border: none !important;
-        border-radius: 3px !important;
-      }
-
-      pre code {
-        background-color: transparent !important;
-        color: inherit !important;
-      }
-
-      table {
-        border: 1px solid #cbd5e1 !important;
-      }
-
-      th {
-        background-color: #f8fafc !important;
-        border: 1px solid #cbd5e1 !important;
-      }
-
-      td {
-        border: 1px solid #cbd5e1 !important;
-      }
-
       /* === REMOVE ALL CORNER TEXT & HEADERS/FOOTERS === */
-      header, footer {
-        display: none !important;
-      }
-
+      header, footer,
       .export-footer,
       .page-header,
       .page-footer,
@@ -438,36 +491,19 @@ export class ExportEngine {
       .timestamp,
       .url-display,
       .copy-button,
+      .copy-btn,
       .fenced-code-header,
       .fenced-code-copy-btn,
       button {
         display: none !important;
       }
 
-      /* === NO PAGE NUMBERS, URLS, OR TIMESTAMPS === */
-      @bottom-left {
-        content: none !important;
-      }
-
-      @bottom-center {
-        content: none !important;
-      }
-
-      @bottom-right {
-        content: none !important;
-      }
-
-      @top-left {
-        content: none !important;
-      }
-
-      @top-center {
-        content: none !important;
-      }
-
-      @top-right {
-        content: none !important;
-      }
+      @bottom-left { content: none !important; }
+      @bottom-center { content: none !important; }
+      @bottom-right { content: none !important; }
+      @top-left { content: none !important; }
+      @top-center { content: none !important; }
+      @top-right { content: none !important; }
     }
 
     /* === PREVENT WIDOWS & ORPHANS === */
@@ -745,7 +781,7 @@ export class ExportEngine {
               return;
             } else if (iframe.contentWindow && typeof iframe.contentWindow.print === 'function') {
               if (doc) {
-                doc.title = title;
+                doc.title = ''; // Suppress document title in browser print header
               }
               iframe.contentWindow.focus();
               iframe.contentWindow.print();

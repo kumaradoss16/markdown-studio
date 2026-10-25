@@ -64,7 +64,7 @@
 5. Add unit test to verify a broken image reference doesn't crash the export
 
 **Verify:**
-- Create a test document with a broken image reference (e.g., `![alt](broken.png)`)
+- Create a test document with a broken image reference (e.g., `[image: broken.png]`)
 - Export as PDF — should complete without errors in the console
 - Run `npm run test` to confirm all tests pass
 

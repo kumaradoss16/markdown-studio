@@ -162,7 +162,7 @@ export class MarkdownService {
       ALLOWED_TAGS: [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'p', 'a', 'b', 'i', 'strong', 'em', 'strike', 's', 'del',
-        'code', 'pre', 'blockquote',
+        'code', 'pre', 'blockquote', 'kbd', 'sub', 'sup', 'mark',
         'ul', 'ol', 'li', 'hr', 'br',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
         'img', 'span', 'div',

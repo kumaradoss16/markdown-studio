@@ -352,7 +352,7 @@ export class MarkdownPipeline {
       ALLOWED_TAGS: [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'p', 'a', 'b', 'i', 'strong', 'em', 'strike', 's', 'del', 'u',
-        'code', 'pre', 'blockquote',
+        'code', 'pre', 'blockquote', 'kbd', 'sub', 'sup', 'mark',
         'ul', 'ol', 'li', 'hr', 'br',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
         'img', 'span', 'div', 'article', 'section',

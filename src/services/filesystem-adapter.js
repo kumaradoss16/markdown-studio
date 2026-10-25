@@ -34,6 +34,7 @@ export class FileSystemAdapter {
   constructor() {
     this.runtime = this.detectRuntime();
     this.virtualModeReason = null; // Reason string if using virtual storage
+    this._hasNotifiedVirtualMode = false;
   }
 
   detectRuntime() {
@@ -59,6 +60,8 @@ export class FileSystemAdapter {
    * @private
    */
   _notifyVirtualModeFallback() {
+    if (this._hasNotifiedVirtualMode) return;
+    this._hasNotifiedVirtualMode = true;
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-virtual-mode', 'true');
     }
@@ -132,7 +135,8 @@ export class FileSystemAdapter {
       children: [],
     };
 
-    if (this.runtime === 'tauri') {
+    const isVirtualFixture = (rootPath === 'ExampleVault' || rootPath === 'virtual:') && typeof window !== 'undefined' && Boolean(window.__TAURI_INTERNALS__);
+    if (this.runtime === 'tauri' && !this.isVirtualMode() && !isVirtualFixture) {
       try {
         const { readDir } = await import('@tauri-apps/plugin-fs');
         const entries = await readDir(rootPath);

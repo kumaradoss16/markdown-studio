@@ -86,7 +86,7 @@ describe('ExportEngine Integration', () => {
     expect(doc.revision).toBe(5);
   });
 
-  it('syncs selected accent color with export output and enforces 15mm print margins', async () => {
+  it('syncs selected accent color with export output and enforces clean print margins', async () => {
     const doc = {
       id: 'doc-accent-test',
       name: 'accent-report.md',
@@ -102,8 +102,8 @@ describe('ExportEngine Integration', () => {
     expect(res.success).toBe(true);
     expect(res.output).toContain('--accent: #f59e0b;');
     expect(res.output).toContain('@page {');
-    expect(res.output).toContain('margin: 15mm;');
-    expect(res.output).toContain('font-size: 11pt !important;');
+    expect(res.output).toContain('margin: 0 !important;');
+    expect(res.output).toContain('font-size: 10.5pt !important;');
     expect(res.output).toContain('.export-footer');
     expect(res.output).toContain('display: none !important;');
   });
@@ -124,7 +124,7 @@ describe('ExportEngine Integration', () => {
     expect(res.success).toBe(true);
     expect(res.html).toContain('<!DOCTYPE html>');
     expect(res.html).toContain('@page {');
-    expect(res.html).toContain('margin: 15mm;');
+    expect(res.html).toContain('margin: 0 !important;');
     expect(res.html).toContain('break-inside: avoid');
     expect(res.html).toContain('Lab Report');
   });
@@ -191,11 +191,11 @@ http://localhost:3000/report
       expect(res.html).toContain('execute_lab');
     });
 
-    it('enforces 15mm margins, A4 size, and suppresses corner boxes in print layout', async () => {
+    it('enforces clean margins, A4 size, and suppresses corner boxes in print layout', async () => {
       const res = await engine.exportToPdf(sampleDoc, { force: true, triggerPrint: false });
 
-      expect(res.html).toContain('size: A4;');
-      expect(res.html).toContain('margin: 15mm;');
+      expect(res.html).toContain('size: A4 portrait;');
+      expect(res.html).toContain('margin: 0 !important;');
       expect(res.html).toContain('@bottom-left {');
       expect(res.html).toContain('content: none !important;');
       expect(res.html).toContain('@top-right {');

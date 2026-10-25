@@ -422,8 +422,8 @@
 
 /* Print & PDF Export Styling (Standardized to filesystem-lab specifications) */
 @page {
-  size: A4;
-  margin: 15mm;
+  size: A4 portrait;
+  margin: 0 !important;
   padding: 0;
   @bottom-left { content: none !important; }
   @bottom-center { content: none !important; }
@@ -439,12 +439,17 @@
     background: #ffffff !important;
     color: #000000 !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-    font-size: 11pt !important;
-    line-height: 1.5 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.55 !important;
     height: auto !important;
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  body {
+    padding: 16mm 20mm !important;
+    max-width: 100% !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -567,6 +572,9 @@
   .preview-content p,
   .preview-content ul,
   .preview-content ol {
+    text-align: left !important;
+    orphans: 3 !important;
+    widows: 3 !important;
     color: #1e293b !important;
     margin: 10px 0 !important;
     font-size: 11pt !important;
@@ -680,6 +688,19 @@
   }
 }
 
+
+/* Keyboard Shortcuts (KBD) */
+kbd {
+  font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+  font-size: 0.85em;
+  padding: 2px 5px;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+}
 
 /* Task List Non-Input Elements (SEC-001) */
 .task-box {

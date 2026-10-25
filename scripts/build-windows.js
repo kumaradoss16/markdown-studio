@@ -45,27 +45,51 @@ try {
   process.exit(1);
 }
 
+// Ensure ~/.cargo/bin is in PATH
+const cargoHomeBin = path.join(process.env.USERPROFILE || process.env.HOME || '', '.cargo', 'bin');
+if (fs.existsSync(cargoHomeBin) && !process.env.PATH.includes(cargoHomeBin)) {
+  process.env.PATH = `${cargoHomeBin}${path.delimiter}${process.env.PATH}`;
+}
+
 // 3. Check for Rust and MSVC compiler availability
 console.log('🔧 Step 2: Checking native toolchain availability...');
 let hasCargo = false;
 try {
-  execSync('cargo --version', { stdio: 'pipe' });
+  execSync('cargo --version', { stdio: 'pipe', env: process.env });
   hasCargo = true;
 } catch {
   hasCargo = false;
 }
+
+// Detect Visual Studio C++ toolchain (vcvars64.bat)
+const vcvarsCandidates = [
+  'C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat',
+  'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat',
+  'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat',
+  'C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat',
+  'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat'
+];
+const vcvarsBat = vcvarsCandidates.find(p => fs.existsSync(p));
 
 let nativeBuildSuccess = false;
 
 if (hasCargo) {
   console.log('✓ Cargo compiler detected. Executing Tauri native Windows build...');
   try {
-    // Run Tauri build
-    execSync('npx tauri build', { cwd: ROOT_DIR, stdio: 'inherit' });
+    if (vcvarsBat) {
+      console.log(`✓ MSVC Environment detected: ${vcvarsBat}`);
+      execSync(`cmd.exe /s /c "\"${vcvarsBat}\" && npx tauri build"`, {
+        cwd: ROOT_DIR,
+        stdio: 'inherit',
+        env: process.env
+      });
+    } else {
+      execSync('npx tauri build', { cwd: ROOT_DIR, stdio: 'inherit', env: process.env });
+    }
     nativeBuildSuccess = true;
     console.log('✓ Native Windows build completed successfully.\n');
   } catch (err) {
-    console.warn('⚠️ Native Tauri compilation encountered an error (likely missing MSVC C++ link.exe on local machine).');
+    console.warn('⚠️ Native Tauri compilation encountered an error:', err.message);
     console.warn('   Note: GitHub Actions windows-latest runner comes with full MSVC Build Tools pre-installed.\n');
   }
 } else {
@@ -109,7 +133,6 @@ for (const cand of standaloneCandidates) {
 // If local machine lacks MSVC linker (developer preview mode), create verifiable packaging stubs for local testing
 if (!foundInstaller || !foundPortable) {
   console.log('ℹ️ Generating verification executable packages for local release testing...');
-  const iconPath = path.join(ROOT_DIR, 'src-tauri', 'icons', 'icon.ico');
   const iconBuffer = fs.existsSync(iconPath) ? fs.readFileSync(iconPath) : Buffer.from('EXE_HEADER');
 
   if (!foundInstaller) {
