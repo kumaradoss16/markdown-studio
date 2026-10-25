@@ -1,6 +1,6 @@
 [package]
 name = "markforge-markdown-studio"
-version = "1.0.0"
+version = "1.0.1"
 description = "MarkForge Markdown Studio - A lightweight, local-first Markdown documentation workspace for desktop"
 authors = ["MarkForge Team"]
 edition = "2021"
