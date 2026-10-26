@@ -13,6 +13,35 @@ export const DEFAULT_PDF_MARGINS = Object.freeze({
   right: '15mm'
 });
 
+/**
+ * Centralized options for headless PDF rendering across backends (Electron, WebView2, headless).
+ */
+export const PDF_OPTIONS = Object.freeze({
+  displayHeaderFooter: false,
+  headerTemplate: '',
+  footerTemplate: '',
+  marginsType: 0,
+  printBackground: true,
+  preferCSSPageSize: true,
+  pageSize: 'A4',
+  landscape: false,
+  scale: 1
+});
+
+/**
+ * Computes a sanitized, filesystem-safe filename for exported PDFs.
+ * @param {string} title
+ * @returns {string} Sanitized filename without extension
+ */
+export function pdfFileName(title) {
+  return (title || 'Document')
+    .replace(/^#+\s*/, '')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120) || 'Document';
+}
+
 export const ExportFormat = {
   HTML: 'html',
   PDF: 'pdf',
@@ -63,7 +92,7 @@ export class ExportEngine {
     const embedAssets = options.embedAssets !== false;
     const assetMap = options.assetMap || {};
 
-    const pipelineResult = this.pipeline.process(docSnapshot, { withHeadingIds: true });
+    const pipelineResult = this.pipeline.process(docSnapshot, { withHeadingIds: options.withHeadingIds !== false });
     let bodyHtml = pipelineResult.html;
 
     // If embedding assets, substitute local image sources with base64 data URIs or inline representations
@@ -108,9 +137,21 @@ export class ExportEngine {
     const firstH1 = pipelineResult.headings.find(h => h.level === 1);
     const title = firstH1
       ? firstH1.text
-      : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'Documentation');
+      : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'Document');
     const purify = this.pipeline.getPurify();
-    const cleanTitle = purify.sanitize(title);
+    const cleanTitle = purify.sanitize(title) || 'Document';
+
+    let descriptionMeta = '';
+    const fmMatch = (docSnapshot?.content || '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (fmMatch) {
+      const descMatch = fmMatch[1].match(/^description:\s*["']?(.*?)["']?\s*$/m);
+      if (descMatch && descMatch[1]) {
+        const cleanDesc = purify.sanitize(descMatch[1].trim());
+        if (cleanDesc) {
+          descriptionMeta = `\n  <meta name="description" content="${cleanDesc}">`;
+        }
+      }
+    }
 
     let accent = '#00e5ff';
     if (typeof options.accent === 'string' && options.accent.trim()) {
@@ -128,8 +169,7 @@ export class ExportEngine {
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="generator" content="MarkForge Markdown Studio v1.0.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">${descriptionMeta}
   <title>${cleanTitle}</title>
   <style>
     /* === FILESYSTEM-LAB REFERENCE STYLE === */
@@ -379,13 +419,7 @@ export class ExportEngine {
       margin-left: ${margins.left};
       margin-right: ${margins.right};
       padding: 0;
-      /* Disable all browser-generated headers/footers */
-      @top-left { content: none !important; }
-      @top-center { content: none !important; }
-      @top-right { content: none !important; }
-      @bottom-left { content: none !important; }
-      @bottom-center { content: none !important; }
-      @bottom-right { content: none !important; }
+
     }
 
     @media print {
@@ -536,12 +570,7 @@ export class ExportEngine {
         display: none !important;
       }
 
-      @bottom-left { content: none !important; }
-      @bottom-center { content: none !important; }
-      @bottom-right { content: none !important; }
-      @top-left { content: none !important; }
-      @top-center { content: none !important; }
-      @top-right { content: none !important; }
+
     }
 
     /* === PREVENT WIDOWS & ORPHANS === */
@@ -653,11 +682,14 @@ export class ExportEngine {
     const isBrowserEnv = typeof window !== 'undefined' && typeof document !== 'undefined';
     const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST);
 
+    const pipelineResult = this.pipeline.process(docSnapshot, { withHeadingIds: true });
+    const firstH1 = pipelineResult.headings.find(h => h.level === 1);
+    const resolvedTitle = options.documentTitle || (firstH1 ? firstH1.text : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'Document'));
+    const safeTitle = this.pipeline.getPurify().sanitize(resolvedTitle) || 'Document';
+    const safeFileName = pdfFileName(safeTitle);
+
     if (triggerPrint && isBrowserEnv && !isTestEnv) {
       try {
-        const firstH1 = this.pipeline.process(docSnapshot?.content || '').headings.find(h => h.level === 1);
-        const resolvedTitle = options.documentTitle || (firstH1 ? firstH1.text : (docSnapshot?.name ? docSnapshot.name.replace(/\.md$/i, '') : 'Document'));
-        const safeTitle = this.pipeline.getPurify().sanitize(resolvedTitle).replace(/[\\/:*?"<>|]/g, '_').trim() || 'Document';
         await this.printHtmlDocument(html, safeTitle);
       } catch (err) {
         return {
@@ -673,6 +705,7 @@ export class ExportEngine {
       format: ExportFormat.PDF,
       output: html,
       html,
+      filename: `${safeFileName}.pdf`,
       isPrintReady: true,
       diagnostics: preflight.diagnostics,
       summary: preflight.summary

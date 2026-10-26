@@ -19,7 +19,7 @@ describe('Release 0.2 Export Engine & Standalone HTML Generation', () => {
     expect(standaloneHtml).toContain('<title>Habitat Design</title>');
     expect(standaloneHtml).toContain('<style>');
     expect(standaloneHtml).toContain('class="markdown-body"');
-    expect(standaloneHtml).toContain('<h1>Habitat Design</h1>');
+    expect(standaloneHtml).toMatch(/<h1[^>]*>Habitat Design<\/h1>/);
     expect(standaloneHtml).toContain('<strong>Module Mass:</strong> 18.4t');
     expect(standaloneHtml).toContain('Telemetry Online');
 
@@ -33,7 +33,7 @@ describe('Release 0.2 Export Engine & Standalone HTML Generation', () => {
     const html = markdownService.generateStandaloneHtml(emptyDoc);
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<title>MarkForge Document</title>');
+    expect(html).toContain('<title>Document</title>');
   });
 
   it('correctly toggles and sorts workspace knowledge base', () => {

@@ -4,7 +4,7 @@ import { workspaceManager } from '../../core/workspace-manager.js';
 import { markdownService } from '../../services/markdown-service.js';
 import { qualityChecker, DiagnosticSeverity } from '../../services/quality-checker.js';
 import { tocGenerator } from '../../services/toc-generator.js';
-import { exportEngine, ExportFormat } from '../../services/export-engine.js';
+import { exportEngine, ExportFormat, pdfFileName } from '../../services/export-engine.js';
 import { TEMPLATES } from '../../data/templates.js';
 import { AppEvents, eventBus } from '../../app/events.js';
 import { projectQaModalComponent } from '../qa/project-qa-modal.js';
@@ -1002,13 +1002,33 @@ export class DialogsComponent {
       overlay.remove();
       this.showToast({ type: 'info', message: 'Generating clean, print-optimized document...' });
       try {
+        const firstH1 = (activeDoc?.content || '').match(/^#\s+(.+)$/m);
+        const resolvedTitle = firstH1 ? firstH1[1].trim() : (activeDoc?.name ? activeDoc.name.replace(/\.md$/i, '') : 'Document');
+        const expectedFilename = `${pdfFileName(resolvedTitle)}.pdf`;
+
+        // One-time hint for browser print chrome
+        const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+        if (!isElectron && typeof localStorage !== 'undefined') {
+          const hintShown = localStorage.getItem('devspirehub:pdf_print_hint_shown');
+          if (!hintShown) {
+            this.showToast({
+              type: 'info',
+              message: 'Tip: In the print dialog, set Margins to None/Default and uncheck "Headers and footers".',
+              duration: 6000
+            });
+            localStorage.setItem('devspirehub:pdf_print_hint_shown', 'true');
+          }
+        }
+
         const res = await exportEngine.exportToPdf(activeDoc, {
           force: true,
           embedAssets: embedImages,
           triggerPrint: true,
-          documentTitle: activeDoc?.name || 'Document'
+          documentTitle: resolvedTitle
         });
-        if (!res.success) {
+        if (res.success) {
+          this.showToast({ type: 'success', message: `PDF ready: ${res.filename || expectedFilename}` });
+        } else {
           this.showToast({ type: 'danger', message: res.error || 'Failed to prepare PDF.' });
         }
       } catch (err) {

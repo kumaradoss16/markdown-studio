@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ExportEngine, ExportFormat, DEFAULT_PDF_MARGINS } from '../../src/services/export-engine.js';
+import { ExportEngine, ExportFormat, DEFAULT_PDF_MARGINS, PDF_OPTIONS, pdfFileName } from '../../src/services/export-engine.js';
 import { markdownPipeline } from '../../src/services/markdown-pipeline.js';
 import { qualityChecker } from '../../src/services/quality-checker.js';
 
@@ -149,6 +149,37 @@ describe('ExportEngine Integration', () => {
   });
 
   describe('filesystem-lab.pdf Format & Clean Alignment Verification', () => {
+    it('centralizes PDF print options and contracts (Slice 1)', () => {
+      expect(PDF_OPTIONS.displayHeaderFooter).toBe(false);
+      expect(PDF_OPTIONS.headerTemplate).toBe('');
+      expect(PDF_OPTIONS.footerTemplate).toBe('');
+      expect(PDF_OPTIONS.preferCSSPageSize).toBe(true);
+
+      expect(pdfFileName('# Rich Paste Notes')).toBe('Rich Paste Notes');
+      expect(pdfFileName('Doc/With:Illegal*Chars?')).toBe('Doc With Illegal Chars');
+      expect(pdfFileName('')).toBe('Document');
+      expect(pdfFileName(null)).toBe('Document');
+    });
+
+    it('derives HTML title and filename from first H1 heading without fallback to app name', async () => {
+      const docWithH1 = {
+        id: 'doc-h1',
+        name: 'notes.md',
+        content: '# Rich Paste Notes\n\nSome introductory text.',
+        revision: 1
+      };
+      const res = await engine.exportToPdf(docWithH1, { force: true, triggerPrint: false });
+      expect(res.html).toContain('<title>Rich Paste Notes</title>');
+      expect(res.filename).toBe('Rich Paste Notes.pdf');
+      expect(res.html).not.toContain('MarkForge — Markdown Studio');
+      expect(res.html).not.toContain('<meta name="generator"');
+
+      // Unsaved / untitled doc
+      const unsavedDoc = { id: 'doc-unsaved', name: '', content: 'Just paragraphs without heading.' };
+      const resUnsaved = await engine.exportToPdf(unsavedDoc, { force: true, triggerPrint: false });
+      expect(resUnsaved.html).toContain('<title>Document</title>');
+      expect(resUnsaved.filename).toBe('Document.pdf');
+    });
     const sampleDoc = {
       id: 'doc-fs-lab',
       name: 'filesystem-lab.md',
@@ -197,9 +228,9 @@ http://localhost:3000/report
 
       expect(res.html).toContain('size: A4 portrait;');
       expect(res.html).toContain('margin: 0 !important;');
-      expect(res.html).toContain('@bottom-left {');
-      expect(res.html).toContain('content: none !important;');
-      expect(res.html).toContain('@top-right {');
+      expect(res.html).not.toContain('<meta name="generator"');
+      expect(res.html).not.toContain('@bottom-left {');
+      expect(res.html).not.toContain('@top-right {');
       expect(res.html).toContain('.export-footer,');
       expect(res.html).toContain('button, input, select, textarea {');
     });
