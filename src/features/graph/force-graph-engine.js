@@ -808,7 +808,10 @@ export class ForceGraphEngine {
         const fontUi = (typeof window !== 'undefined' && window.getComputedStyle)
           ? (window.getComputedStyle(document.documentElement).getPropertyValue('--font-graph')?.trim() || window.getComputedStyle(document.documentElement).getPropertyValue('--font-ui')?.trim() || '-apple-system, sans-serif')
           : '-apple-system, sans-serif';
-        const fontSize = Math.max(9, Math.min(13, 11 / Math.sqrt(this.transform.k)));
+        const baseGraphSize = (typeof window !== 'undefined' && window.getComputedStyle)
+          ? (parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--font-size-graph')) || 11)
+          : 11;
+        const fontSize = Math.max(9, Math.min(15, baseGraphSize / Math.sqrt(this.transform.k)));
         ctx.font = `${isHovered || isActiveDoc || isSelected ? '600' : '500'} ${fontSize}px ${fontUi}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';

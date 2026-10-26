@@ -11,12 +11,31 @@ export const DEFAULT_SETTINGS = {
   accent: DEFAULT_ACCENT,
   fontSize: '13px',
   fontFamily: 'JetBrains Mono',
+  editorFontFamily: 'JetBrains Mono',
+  editorFontSize: '13px',
+  editorFontColor: '', // '' = inherit theme
+  editorLineHeight: 1.6,
+  previewFontFamily: 'Inter',
+  previewFontSize: '13.5px',
+  previewFontColor: '',
+  previewLineHeight: 1.65,
+  graphFontFamily: '', // '' = inherit UI font
+  graphFontSize: 11,
   tabSize: 2,
   wordWrap: true,
   showLineNumbers: true,
   syncScroll: false,
   splitRatio: 50,
-  viewMode: 'DUAL SPLIT'
+  viewMode: 'DUAL SPLIT',
+  graph: {
+    showGhostNotes: true,
+    showOrphanNotes: true,
+    showTags: true,
+    onlyNeighbours: false,
+    repulsion: 220,
+    linkDistance: 75,
+    gravity: 0.04,
+  }
 };
 
 /**
@@ -100,6 +119,18 @@ export class WorkspaceStore {
   saveSettings(partialSettings = {}) {
     const current = this.getSettings();
     const updated = { ...current, ...partialSettings };
+    if (partialSettings.fontSize !== undefined && partialSettings.editorFontSize === undefined) {
+      updated.editorFontSize = partialSettings.fontSize;
+    }
+    if (partialSettings.editorFontSize !== undefined && partialSettings.fontSize === undefined) {
+      updated.fontSize = partialSettings.editorFontSize;
+    }
+    if (partialSettings.fontFamily !== undefined && partialSettings.editorFontFamily === undefined) {
+      updated.editorFontFamily = partialSettings.fontFamily;
+    }
+    if (partialSettings.editorFontFamily !== undefined && partialSettings.fontFamily === undefined) {
+      updated.fontFamily = partialSettings.editorFontFamily;
+    }
     try {
       this.setItem(SETTINGS_KEY, JSON.stringify(updated));
     } catch (e) {

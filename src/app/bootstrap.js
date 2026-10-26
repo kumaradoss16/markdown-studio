@@ -22,6 +22,68 @@ import '../components/github/publish-modal.js';
 import '../components/history/history-panel.js';
 import '../components/history/history-diff-modal.js';
 import { AppEvents, eventBus } from './events.js';
+import { FONT_STACKS, isValidHexColor, clampFontSize } from '../data/fonts.js';
+
+export function applyTypographySettings(settings) {
+  if (!settings || typeof document === 'undefined') return;
+  const root = document.documentElement;
+
+  // Editor Typography
+  const editorFamily = settings.editorFontFamily || settings.fontFamily;
+  if (editorFamily) {
+    const stack = FONT_STACKS[editorFamily] || editorFamily;
+    root.style.setProperty('--font-editor', stack);
+  }
+  const editorSize = settings.editorFontSize || settings.fontSize;
+  if (editorSize) {
+    root.style.setProperty('--font-size-editor', clampFontSize(editorSize, '14.5px'));
+  }
+  if (settings.editorFontColor && isValidHexColor(settings.editorFontColor)) {
+    root.style.setProperty('--color-editor-text', settings.editorFontColor);
+  } else if (settings.editorFontColor === '') {
+    root.style.removeProperty('--color-editor-text');
+  }
+  if (settings.editorLineHeight) {
+    root.style.setProperty('--line-height-editor', String(settings.editorLineHeight));
+  }
+
+  // Preview Typography
+  const previewFamily = settings.previewFontFamily;
+  if (previewFamily) {
+    const stack = FONT_STACKS[previewFamily] || previewFamily;
+    root.style.setProperty('--font-preview', stack);
+  }
+  const previewSize = settings.previewFontSize;
+  if (previewSize) {
+    root.style.setProperty('--font-size-preview', clampFontSize(previewSize, '13.5px'));
+  }
+  if (settings.previewFontColor && isValidHexColor(settings.previewFontColor)) {
+    root.style.setProperty('--color-preview-text', settings.previewFontColor);
+  } else if (settings.previewFontColor === '') {
+    root.style.removeProperty('--color-preview-text');
+  }
+  if (settings.previewLineHeight) {
+    root.style.setProperty('--line-height-preview', String(settings.previewLineHeight));
+  }
+
+  // Graph Typography
+  const graphFamily = settings.graphFontFamily;
+  if (graphFamily) {
+    const stack = FONT_STACKS[graphFamily] || graphFamily;
+    root.style.setProperty('--font-graph', stack);
+  } else if (graphFamily === '') {
+    root.style.removeProperty('--font-graph');
+  }
+  if (settings.graphFontSize) {
+    const clampedGraphSize = Math.max(9, Math.min(18, parseFloat(settings.graphFontSize) || 11));
+    root.style.setProperty('--font-size-graph', `${clampedGraphSize}px`);
+  }
+
+  // Tab size
+  if (settings.tabSize) {
+    root.style.setProperty('--editor-tab-size', String(settings.tabSize));
+  }
+}
 
 export async function bootstrapApp(rootElement) {
   // Global error boundary & sanitized diagnostic capture
@@ -58,22 +120,16 @@ export async function bootstrapApp(rootElement) {
     // Restore accent color
     accentService.applyAccent(settings.accent || accentService.getAccent());
 
-    const savedFontSize = localStorage.getItem('devspirehub:fontSize') || settings.fontSize;
-    if (savedFontSize) {
-      document.documentElement.style.setProperty('--font-size-editor', savedFontSize);
-    }
-    if (settings.tabSize) {
-      document.documentElement.style.setProperty('--editor-tab-size', String(settings.tabSize));
-    }
-    if (settings.fontFamily) {
-      document.documentElement.style.setProperty('--font-editor', settings.fontFamily);
-    }
+    applyTypographySettings(settings);
   } catch (e) {
     console.warn('LocalStorage unavailable for preferences restoration:', e);
   }
 
   // Initialize auto sync for workspace state and settings
   workspaceStore.initAutoSync();
+  eventBus.on(AppEvents.SETTINGS_CHANGED, (settings) => {
+    applyTypographySettings(settings);
+  });
 
   // 1. Mount App Shell
   const appShell = new AppShellComponent(rootElement);

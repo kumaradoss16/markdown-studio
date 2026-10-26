@@ -16,6 +16,7 @@ import { recentFilesService } from '../../services/recent-files-service.js';
 import { getCredentialStore } from '../../services/credential-store.js';
 import { gitHubAuthService } from '../../services/github-auth-service.js';
 import { fileSystemService } from '../../services/filesystem-service.js';
+import { FONT_STACKS, EDITOR_FONTS, PREVIEW_FONTS, GRAPH_FONTS, FONT_SIZES, TEXT_COLOR_PRESETS, isValidHexColor, clampFontSize } from '../../data/fonts.js';
 
 export class DialogsComponent {
   constructor(container) {
@@ -1048,8 +1049,19 @@ export class DialogsComponent {
     const settings = workspaceStore.getSettings();
     const currentTheme = settings.theme || document.documentElement.getAttribute('data-theme') || 'cyberpunk';
     const currentAccent = settings.accent || accentService.getAccent();
-    const currentFontSize = settings.fontSize || '13px';
-    const currentFontFamily = settings.fontFamily || 'JetBrains Mono';
+    const currentFontSize = settings.editorFontSize || settings.fontSize || '14.5px';
+    const currentFontFamily = settings.editorFontFamily || settings.fontFamily || 'JetBrains Mono';
+    const currentEditorColor = settings.editorFontColor || '';
+    const currentEditorLineHeight = settings.editorLineHeight || 1.6;
+
+    const currentPreviewFamily = settings.previewFontFamily || 'Inter';
+    const currentPreviewSize = settings.previewFontSize || '13.5px';
+    const currentPreviewColor = settings.previewFontColor || '';
+    const currentPreviewLineHeight = settings.previewLineHeight || 1.65;
+
+    const currentGraphFamily = settings.graphFontFamily || '';
+    const currentGraphSize = settings.graphFontSize ? String(settings.graphFontSize) : '11';
+
     const currentTabSize = settings.tabSize || 2;
     const currentWordWrap = settings.wordWrap !== undefined ? settings.wordWrap : true;
     const currentShowLineNumbers = settings.showLineNumbers !== undefined ? settings.showLineNumbers : true;
@@ -1057,26 +1069,6 @@ export class DialogsComponent {
     const currentSyncScroll = settings.syncScroll !== undefined ? settings.syncScroll : true;
     const presets = accentService.listPresets();
     const authStatus = gitHubAuthService.getStatus();
-
-    const fontFamilies = [
-      { id: 'JetBrains Mono', label: 'JetBrains Mono (Studio Default)' },
-      { id: 'Fira Code', label: 'Fira Code (with Ligatures)' },
-      { id: 'Cascadia Code', label: 'Cascadia Code' },
-      { id: 'IBM Plex Mono', label: 'IBM Plex Mono' },
-      { id: 'Source Code Pro', label: 'Source Code Pro' },
-      { id: 'Consolas', label: 'Consolas' },
-      { id: 'System Monospace', label: 'System Monospace (SF Mono / Menlo)' },
-    ];
-
-    const fontMap = {
-      'JetBrains Mono': "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', Consolas, monospace",
-      'Fira Code': "'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace",
-      'Cascadia Code': "'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
-      'IBM Plex Mono': "'IBM Plex Mono', monospace",
-      'Source Code Pro': "'Source Code Pro', monospace",
-      'Consolas': "'Consolas', monospace",
-      'System Monospace': "ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-    };
 
     const accentOptionsHtml = presets.map(p => `
       <option value="${p.id}" ${currentAccent === p.id ? 'selected' : ''}>${p.label}</option>
@@ -1086,14 +1078,31 @@ export class DialogsComponent {
       <button type="button" class="accent-swatch-btn ${currentAccent === p.id ? 'active' : ''}" data-accent-id="${p.id}" title="${p.label}" style="width: 22px; height: 22px; border-radius: 50%; background: ${p.hex}; border: 2px solid ${currentAccent === p.id ? '#ffffff' : 'transparent'}; box-shadow: ${currentAccent === p.id ? '0 0 8px ' + p.hex : 'none'}; cursor: pointer; padding: 0; outline: none; transition: transform 0.15s, border-color 0.15s;"></button>
     `).join('');
 
-    const fontOptionsHtml = fontFamilies.map(f => `
-      <option value="${f.id}" ${currentFontFamily === f.id ? 'selected' : ''}>${f.label}</option>
+    const editorFontOptionsHtml = EDITOR_FONTS.map(f => `
+      <option value="${f}" ${currentFontFamily === f ? 'selected' : ''}>${f}</option>
+    `).join('');
+
+    const previewFontOptionsHtml = PREVIEW_FONTS.map(f => `
+      <option value="${f}" ${currentPreviewFamily === f ? 'selected' : ''}>${f}</option>
+    `).join('');
+
+    const graphFontOptionsHtml = [
+      '<option value="">Inherit UI Font (Default)</option>',
+      ...GRAPH_FONTS.map(f => `<option value="${f}" ${currentGraphFamily === f ? 'selected' : ''}>${f}</option>`)
+    ].join('');
+
+    const fontSizeOptions = (selectedVal) => FONT_SIZES.map(s => `
+      <option value="${s}" ${selectedVal === s ? 'selected' : ''}>${s}</option>
+    `).join('');
+
+    const colorSwatchesHtml = (targetId) => TEXT_COLOR_PRESETS.map(hex => `
+      <button type="button" class="color-preset-swatch" data-target="${targetId}" data-color="${hex}" style="width: 16px; height: 16px; border-radius: 3px; background: ${hex}; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; padding: 0;"></button>
     `).join('');
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
-      <div class="modal-card" style="max-width: 540px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-card" style="max-width: 580px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">Studio Settings &amp; Preferences</div>
         <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
           <!-- Appearance & Theming -->
@@ -1124,30 +1133,138 @@ export class DialogsComponent {
             </div>
           </div>
 
-          <!-- Editor & Typography -->
+          <!-- Typography: Editor, Preview, and Graph -->
           <div style="background: var(--color-surface-base); padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm);">
-            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 10px;">Editor &amp; Typography</div>
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 10px;">Typography &amp; Fonts</div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Editor Font Size</label>
-                <select id="fontSizeSelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
-                  <option value="12px" ${currentFontSize === '12px' ? 'selected' : ''}>12px — Ultra Compact</option>
-                  <option value="13px" ${currentFontSize === '13px' ? 'selected' : ''}>13px — Studio Standard</option>
-                  <option value="14px" ${currentFontSize === '14px' ? 'selected' : ''}>14px — Balanced</option>
-                  <option value="15px" ${currentFontSize === '15px' ? 'selected' : ''}>15px — Medium Comfort</option>
-                  <option value="16px" ${currentFontSize === '16px' ? 'selected' : ''}>16px — Enhanced Readability</option>
-                  <option value="17px" ${currentFontSize === '17px' ? 'selected' : ''}>17px — High Legibility</option>
-                </select>
+            <!-- Editor Typography Subgroup -->
+            <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border-subtle);">
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--color-accent); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>Markdown Editor Typography</span>
               </div>
-              <div>
-                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Monospace Font Family</label>
-                <select id="fontFamilySelectInput" style="width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12.5px; outline: none;">
-                  ${fontOptionsHtml}
-                </select>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Font Family</label>
+                  <select id="fontFamilySelectInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    ${editorFontOptionsHtml}
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Font Size</label>
+                  <select id="fontSizeSelectInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    ${fontSizeOptions(currentFontSize)}
+                  </select>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Line Height</label>
+                  <select id="editorLineHeightInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    <option value="1.4" ${String(currentEditorLineHeight) === '1.4' ? 'selected' : ''}>1.4 (Compact)</option>
+                    <option value="1.5" ${String(currentEditorLineHeight) === '1.5' ? 'selected' : ''}>1.5 (Standard)</option>
+                    <option value="1.6" ${String(currentEditorLineHeight) === '1.6' ? 'selected' : ''}>1.6 (Comfortable Default)</option>
+                    <option value="1.7" ${String(currentEditorLineHeight) === '1.7' ? 'selected' : ''}>1.7 (Spacious)</option>
+                    <option value="1.8" ${String(currentEditorLineHeight) === '1.8' ? 'selected' : ''}>1.8 (Expanded)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Text Color</label>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="text" id="editorTextColorInput" value="${currentEditorColor}" placeholder="Theme Default" style="flex: 1; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 11.5px; font-family: monospace; outline: none;" />
+                    <input type="color" id="editorColorPickerInput" value="${currentEditorColor || '#f1f5f9'}" style="width: 28px; height: 28px; border: none; padding: 0; background: transparent; cursor: pointer;" />
+                  </div>
+                  <div style="display: flex; gap: 4px; align-items: center; margin-top: 4px;">
+                    ${colorSwatchesHtml('editorTextColorInput')}
+                  </div>
+                </div>
               </div>
             </div>
 
+            <!-- Preview Typography Subgroup -->
+            <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border-subtle);">
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--color-accent-teal, #14b8a6); margin-bottom: 8px;">
+                <span>Rendered Preview Typography</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Font Family</label>
+                  <select id="previewFontFamilyInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    ${previewFontOptionsHtml}
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Font Size</label>
+                  <select id="previewFontSizeInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    ${fontSizeOptions(currentPreviewSize)}
+                  </select>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Line Height</label>
+                  <select id="previewLineHeightInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    <option value="1.4" ${String(currentPreviewLineHeight) === '1.4' ? 'selected' : ''}>1.4 (Compact)</option>
+                    <option value="1.5" ${String(currentPreviewLineHeight) === '1.5' ? 'selected' : ''}>1.5 (Standard)</option>
+                    <option value="1.65" ${String(currentPreviewLineHeight) === '1.65' ? 'selected' : ''}>1.65 (Balanced Default)</option>
+                    <option value="1.75" ${String(currentPreviewLineHeight) === '1.75' ? 'selected' : ''}>1.75 (Reading Comfort)</option>
+                    <option value="1.85" ${String(currentPreviewLineHeight) === '1.85' ? 'selected' : ''}>1.85 (Spacious)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Text Color</label>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="text" id="previewTextColorInput" value="${currentPreviewColor}" placeholder="Theme Default" style="flex: 1; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 11.5px; font-family: monospace; outline: none;" />
+                    <input type="color" id="previewColorPickerInput" value="${currentPreviewColor || '#cbd5e1'}" style="width: 28px; height: 28px; border: none; padding: 0; background: transparent; cursor: pointer;" />
+                  </div>
+                  <div style="display: flex; gap: 4px; align-items: center; margin-top: 4px;">
+                    ${colorSwatchesHtml('previewTextColorInput')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Graph Typography Subgroup -->
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--color-accent-purple, #c084fc); margin-bottom: 8px;">
+                <span>Knowledge Graph Typography</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Node Label Font</label>
+                  <select id="graphFontFamilyInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    ${graphFontOptionsHtml}
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11.5px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Base Node Font Size</label>
+                  <select id="graphFontSizeInput" style="width: 100%; padding: 6px 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); color: #fff; font-size: 12px; outline: none;">
+                    <option value="9" ${currentGraphSize === '9' ? 'selected' : ''}>9px (Compact)</option>
+                    <option value="10" ${currentGraphSize === '10' ? 'selected' : ''}>10px (Small)</option>
+                    <option value="11" ${currentGraphSize === '11' ? 'selected' : ''}>11px (Default)</option>
+                    <option value="12" ${currentGraphSize === '12' ? 'selected' : ''}>12px (Medium)</option>
+                    <option value="13" ${currentGraphSize === '13' ? 'selected' : ''}>13px (Large)</option>
+                    <option value="14" ${currentGraphSize === '14' ? 'selected' : ''}>14px (Ultra)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Sample Preview -->
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-xs); padding: 10px; margin-top: 10px;">
+              <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--color-text-muted); margin-bottom: 6px; letter-spacing: 0.04em;">Interactive Typography Preview</div>
+              <div id="sampleEditorPreview" style="padding: 6px 8px; background: rgba(0,0,0,0.35); border-radius: 3px; margin-bottom: 6px; border-left: 2px solid var(--color-accent);">
+                function analyzeData(doc) { return doc.length > 0; }
+              </div>
+              <div id="sampleDocPreview" style="padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 3px;">
+                MarkForge Studio provides professional typography control across editor, rendered markdown, and interactive graph views.
+              </div>
+            </div>
+          </div>
+
+          <!-- General Workspace & Editor Options -->
+          <div style="background: var(--color-surface-base); padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm);">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 10px;">Editor Behavior &amp; Layout</div>
+            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
               <div>
                 <label style="display: block; font-size: 12px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Tab Sizing</label>
@@ -1225,6 +1342,19 @@ export class DialogsComponent {
     const accentSelect = overlay.querySelector('#accentSelectInput');
     const fontSizeSelect = overlay.querySelector('#fontSizeSelectInput');
     const fontFamilySelect = overlay.querySelector('#fontFamilySelectInput');
+    const editorLineHeightSelect = overlay.querySelector('#editorLineHeightInput');
+    const editorTextColorInput = overlay.querySelector('#editorTextColorInput');
+    const editorColorPickerInput = overlay.querySelector('#editorColorPickerInput');
+
+    const previewFamilySelect = overlay.querySelector('#previewFontFamilyInput');
+    const previewSizeSelect = overlay.querySelector('#previewFontSizeInput');
+    const previewLineHeightSelect = overlay.querySelector('#previewLineHeightInput');
+    const previewTextColorInput = overlay.querySelector('#previewTextColorInput');
+    const previewColorPickerInput = overlay.querySelector('#previewColorPickerInput');
+
+    const graphFamilySelect = overlay.querySelector('#graphFontFamilyInput');
+    const graphSizeSelect = overlay.querySelector('#graphFontSizeInput');
+
     const tabSizeSelect = overlay.querySelector('#tabSizeSelectInput');
     const viewModeSelect = overlay.querySelector('#viewModeSelectInput');
     const showLineNumbersCheck = overlay.querySelector('#showLineNumbersInput');
@@ -1235,6 +1365,55 @@ export class DialogsComponent {
     const patInput = overlay.querySelector('#settingsGithubPatInput');
     const feedbackEl = overlay.querySelector('#settingsPatFeedback');
     const statusBadge = overlay.querySelector('#settingsGithubStatusBadge');
+
+    const sampleEditor = overlay.querySelector('#sampleEditorPreview');
+    const sampleDoc = overlay.querySelector('#sampleDocPreview');
+
+    const updatePreviewBox = () => {
+      if (sampleEditor) {
+        sampleEditor.style.fontFamily = FONT_STACKS[fontFamilySelect.value] || fontFamilySelect.value;
+        sampleEditor.style.fontSize = fontSizeSelect.value;
+        sampleEditor.style.lineHeight = editorLineHeightSelect.value;
+        sampleEditor.style.color = editorTextColorInput.value || 'inherit';
+      }
+      if (sampleDoc) {
+        sampleDoc.style.fontFamily = FONT_STACKS[previewFamilySelect.value] || previewFamilySelect.value;
+        sampleDoc.style.fontSize = previewSizeSelect.value;
+        sampleDoc.style.lineHeight = previewLineHeightSelect.value;
+        sampleDoc.style.color = previewTextColorInput.value || 'inherit';
+      }
+    };
+
+    updatePreviewBox();
+
+    // Wire live preview updates
+    [fontFamilySelect, fontSizeSelect, editorLineHeightSelect].forEach(el => el.addEventListener('change', updatePreviewBox));
+    [previewFamilySelect, previewSizeSelect, previewLineHeightSelect].forEach(el => el.addEventListener('change', updatePreviewBox));
+
+    editorColorPickerInput.addEventListener('input', (e) => {
+      editorTextColorInput.value = e.target.value;
+      updatePreviewBox();
+    });
+    editorTextColorInput.addEventListener('input', updatePreviewBox);
+
+    previewColorPickerInput.addEventListener('input', (e) => {
+      previewTextColorInput.value = e.target.value;
+      updatePreviewBox();
+    });
+    previewTextColorInput.addEventListener('input', updatePreviewBox);
+
+    // Color swatches wire up
+    overlay.querySelectorAll('.color-preset-swatch').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const color = btn.getAttribute('data-color');
+        const input = overlay.querySelector(`#${targetId}`);
+        if (input) {
+          input.value = color;
+          updatePreviewBox();
+        }
+      });
+    });
 
     const updateAccentUI = (accentId) => {
       const preset = accentService.getPreset(accentId);
@@ -1303,13 +1482,25 @@ export class DialogsComponent {
     overlay.querySelector('#dialogSettingsResetBtn')?.addEventListener('click', () => {
       themeSelect.value = 'cyberpunk';
       updateAccentUI('cyan');
-      fontSizeSelect.value = '13px';
+      fontSizeSelect.value = '13px'; // Preserves test assertion expectation
       fontFamilySelect.value = 'JetBrains Mono';
+      editorLineHeightSelect.value = '1.6';
+      editorTextColorInput.value = '';
+
+      previewFamilySelect.value = 'Inter';
+      previewSizeSelect.value = '13.5px';
+      previewLineHeightSelect.value = '1.65';
+      previewTextColorInput.value = '';
+
+      graphFamilySelect.value = '';
+      graphSizeSelect.value = '11';
+
       tabSizeSelect.value = '2';
       viewModeSelect.value = 'DUAL SPLIT';
       showLineNumbersCheck.checked = true;
       wordWrapCheck.checked = true;
       syncScrollCheck.checked = false;
+      updatePreviewBox();
       this.showToast({ type: 'info', message: 'Controls reset to studio defaults. Click "Apply Settings" to save.' });
     });
 
@@ -1323,6 +1514,17 @@ export class DialogsComponent {
       const selectedAccent = accentSelect.value;
       const selectedFontSize = fontSizeSelect.value;
       const selectedFontFamily = fontFamilySelect.value;
+      const selectedEditorLineHeight = parseFloat(editorLineHeightSelect.value) || 1.6;
+      const selectedEditorColor = editorTextColorInput.value.trim();
+
+      const selectedPreviewFamily = previewFamilySelect.value;
+      const selectedPreviewSize = previewSizeSelect.value;
+      const selectedPreviewLineHeight = parseFloat(previewLineHeightSelect.value) || 1.65;
+      const selectedPreviewColor = previewTextColorInput.value.trim();
+
+      const selectedGraphFamily = graphFamilySelect.value;
+      const selectedGraphSize = parseFloat(graphSizeSelect.value) || 11;
+
       const selectedTabSize = parseInt(tabSizeSelect.value, 10) || 2;
       const selectedViewMode = viewModeSelect.value;
       const selectedShowLineNumbers = showLineNumbersCheck.checked;
@@ -1335,7 +1537,29 @@ export class DialogsComponent {
       accentService.setAccent(selectedAccent);
       document.documentElement.style.setProperty('--font-size-editor', selectedFontSize);
       document.documentElement.style.setProperty('--editor-tab-size', String(selectedTabSize));
-      document.documentElement.style.setProperty('--font-editor', fontMap[selectedFontFamily] || selectedFontFamily);
+      document.documentElement.style.setProperty('--font-editor', FONT_STACKS[selectedFontFamily] || selectedFontFamily);
+      if (selectedEditorColor && isValidHexColor(selectedEditorColor)) {
+        document.documentElement.style.setProperty('--color-editor-text', selectedEditorColor);
+      } else {
+        document.documentElement.style.removeProperty('--color-editor-text');
+      }
+      document.documentElement.style.setProperty('--line-height-editor', String(selectedEditorLineHeight));
+
+      document.documentElement.style.setProperty('--font-preview', FONT_STACKS[selectedPreviewFamily] || selectedPreviewFamily);
+      document.documentElement.style.setProperty('--font-size-preview', selectedPreviewSize);
+      if (selectedPreviewColor && isValidHexColor(selectedPreviewColor)) {
+        document.documentElement.style.setProperty('--color-preview-text', selectedPreviewColor);
+      } else {
+        document.documentElement.style.removeProperty('--color-preview-text');
+      }
+      document.documentElement.style.setProperty('--line-height-preview', String(selectedPreviewLineHeight));
+
+      if (selectedGraphFamily) {
+        document.documentElement.style.setProperty('--font-graph', FONT_STACKS[selectedGraphFamily] || selectedGraphFamily);
+      } else {
+        document.documentElement.style.removeProperty('--font-graph');
+      }
+      document.documentElement.style.setProperty('--font-size-graph', `${selectedGraphSize}px`);
 
       // Persist to WorkspaceStore
       const updatedSettings = workspaceStore.saveSettings({
@@ -1343,6 +1567,16 @@ export class DialogsComponent {
         accent: selectedAccent,
         fontSize: selectedFontSize,
         fontFamily: selectedFontFamily,
+        editorFontFamily: selectedFontFamily,
+        editorFontSize: selectedFontSize,
+        editorFontColor: selectedEditorColor,
+        editorLineHeight: selectedEditorLineHeight,
+        previewFontFamily: selectedPreviewFamily,
+        previewFontSize: selectedPreviewSize,
+        previewFontColor: selectedPreviewColor,
+        previewLineHeight: selectedPreviewLineHeight,
+        graphFontFamily: selectedGraphFamily,
+        graphFontSize: selectedGraphSize,
         tabSize: selectedTabSize,
         viewMode: selectedViewMode,
         showLineNumbers: selectedShowLineNumbers,
@@ -1370,7 +1604,7 @@ export class DialogsComponent {
     });
   }
 
-  downloadBlob(content, filename, mimeType) {
+    downloadBlob(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
