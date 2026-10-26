@@ -201,10 +201,11 @@ export class MarkdownPipeline {
       }
 
       // Link and image detection
+      const textForLinks = lineText.replace(/`[^`]*`/g, (m) => ' '.repeat(m.length));
       // Standard markdown image: ![alt](url)
       const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
       let imgMatch;
-      while ((imgMatch = imageRegex.exec(lineText)) !== null) {
+      while ((imgMatch = imageRegex.exec(textForLinks)) !== null) {
         const alt = imgMatch[1];
         const src = imgMatch[2].trim();
         images.push({
@@ -219,7 +220,7 @@ export class MarkdownPipeline {
       // Wiki image: ![[image.png]]
       const wikiImgRegex = /!\[\[(.*?)\]\]/g;
       let wikiImgMatch;
-      while ((wikiImgMatch = wikiImgRegex.exec(lineText)) !== null) {
+      while ((wikiImgMatch = wikiImgRegex.exec(textForLinks)) !== null) {
         const src = wikiImgMatch[1].trim();
         images.push({
           alt: src,
@@ -234,7 +235,7 @@ export class MarkdownPipeline {
       // Standard markdown link: [text](url) (exclude if preceded by !)
       const linkRegex = /(^|[^!])\[(.*?)\]\((.*?)\)/g;
       let lMatch;
-      while ((lMatch = linkRegex.exec(lineText)) !== null) {
+      while ((lMatch = linkRegex.exec(textForLinks)) !== null) {
         const text = lMatch[2];
         const href = lMatch[3].trim();
         const isAnchor = href.startsWith('#');
@@ -254,7 +255,7 @@ export class MarkdownPipeline {
       // Wiki link: [[Target|Text]] or [[Target]]
       const wikiLinkRegex = /\[\[(.*?)(?:\|(.*?))?\]\]/g;
       let wMatch;
-      while ((wMatch = wikiLinkRegex.exec(lineText)) !== null) {
+      while ((wMatch = wikiLinkRegex.exec(textForLinks)) !== null) {
         const target = wMatch[1].trim();
         const text = wMatch[2] ? wMatch[2].trim() : target;
         links.push({
