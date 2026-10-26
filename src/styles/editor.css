@@ -134,6 +134,7 @@
   min-height: 0;
   overflow: hidden;
   position: relative;
+  font-family: var(--font-mono);
   font-family: var(--font-editor, var(--font-mono));
   font-size: var(--font-size-editor, 14.5px);
   color: var(--color-editor-text, var(--color-text-primary));
