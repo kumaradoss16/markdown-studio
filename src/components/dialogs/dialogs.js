@@ -1,3 +1,4 @@
+import { richPasteModalComponent } from '../import/rich-paste-modal.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { saveCoordinator } from '../../core/save-coordinator.js';
 import { workspaceManager } from '../../core/workspace-manager.js';
@@ -57,6 +58,8 @@ export class DialogsComponent {
       projectQaModalComponent.show();
     } else if (payload.type === 'graph' || payload.type === 'knowledge-graph') {
       graphModalComponent.show();
+    } else if (payload.type === 'rich-paste') {
+      richPasteModalComponent.show(payload);
     }
   }
 
@@ -339,6 +342,7 @@ export class DialogsComponent {
         </div>
         <div id="paletteItems" style="max-height: 320px; overflow-y: auto; padding: 6px 0;">
           <div class="sidebar-item" data-action="new-doc"><strong>New Document</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⌘N</span></div>
+          <div class="sidebar-item" data-action="rich-paste"><strong>Rich Paste &amp; Visual Import...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">⇧⌘V</span></div>
           <div class="sidebar-item" data-action="recent-files"><strong>Recent Files &amp; Workspace History...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Recents</span></div>
           <div class="sidebar-item" data-action="templates"><strong>Technical Documentation Templates...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Templates</span></div>
           <div class="sidebar-item" data-action="manage-toc"><strong>Insert / Update Table of Contents (TOC)</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">📑 TOC</span></div>
@@ -396,6 +400,9 @@ export class DialogsComponent {
     switch (action) {
       case 'new-doc':
         eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'new-file' });
+        break;
+      case 'rich-paste':
+        this.showDialog({ type: 'rich-paste' });
         break;
       case 'recent-files':
         this.showRecentFilesPalette();

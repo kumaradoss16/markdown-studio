@@ -158,6 +158,9 @@ export async function bootstrapApp(rootElement) {
       if (active) {
         eventBus.emit(AppEvents.HISTORY_OPEN_REQUESTED, { docId: active.id, filePath: active.path });
       }
+    } else if (isMod && e.shiftKey && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'rich-paste' });
     } else if (isMod && e.key.toLowerCase() === 'g') {
       e.preventDefault();
       eventBus.emit(AppEvents.GRAPH_OPEN_REQUESTED);

@@ -30,7 +30,10 @@
     "@tauri-apps/plugin-fs": "^2.2.0",
     "codemirror": "^6.0.1",
     "dompurify": "^3.2.4",
-    "marked": "^15.0.7"
+    "marked": "^15.0.7",
+    "mermaid": "^12.2.0",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.2.7",

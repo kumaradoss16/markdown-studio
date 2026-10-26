@@ -151,6 +151,12 @@ export class EditorComponent {
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
             </svg>
           </button>
+          <button class="tool-btn" id="toolRichPaste" title="Rich Paste & Visual Import (⇧⌘V)" aria-label="Rich Paste">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+          </button>
           <div class="tool-separator"></div>
           <button class="tool-btn tool-pill toc" id="toolTOC" title="Insert / Manage Table of Contents" aria-label="Table of Contents">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -250,6 +256,13 @@ export class EditorComponent {
           run: () => {
             const active = documentStateManager.getActiveDocument();
             if (active) saveCoordinator.save(active.id);
+            return true;
+          },
+        },
+        {
+          key: 'Mod-Shift-v',
+          run: (view) => {
+            eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'rich-paste', view });
             return true;
           },
         },
@@ -496,6 +509,9 @@ export class EditorComponent {
     });
     this.container.querySelector('#toolWiki')?.addEventListener('click', () => this.insertText('[[', ']]'));
     this.container.querySelector('#toolAttach')?.addEventListener('click', () => this.insertText('![[', ']]'));
+    this.container.querySelector('#toolRichPaste')?.addEventListener('click', () => {
+      eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'rich-paste', view: this.view });
+    });
 
     this.container.querySelector('#toolTOC')?.addEventListener('click', () => {
       eventBus.emit(AppEvents.DIALOG_OPEN, { type: 'toc' });

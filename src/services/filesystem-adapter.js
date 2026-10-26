@@ -287,6 +287,79 @@ export class FileSystemAdapter {
   }
 
   /**
+   * Writes binary data (images, assets) to disk or virtual storage.
+   * @param {string} filePath
+   * @param {Uint8Array} uint8array
+   */
+  async writeBinaryFile(filePath, uint8array) {
+    if (this.runtime === 'tauri') {
+      try {
+        const { writeFile } = await import('@tauri-apps/plugin-fs');
+        await writeFile(filePath, uint8array);
+      } catch (err) {
+        const reason = `Tauri writeFile failed: ${err.message || 'unknown error'}`;
+        this.virtualModeReason = reason;
+        console.error('[FileSystemAdapter] Tauri writeBinaryFile failure:', err);
+        this._notifyVirtualModeFallback();
+      }
+    } else if (this.runtime === 'electron' && typeof window !== 'undefined' && window.electronAPI?.writeBinaryFile) {
+      try {
+        await window.electronAPI.writeBinaryFile(filePath, uint8array);
+      } catch (err) {
+        console.error('[FileSystemAdapter] Electron writeBinaryFile failure:', err);
+      }
+    }
+    return await fileSystemService.saveBinaryFile(filePath, uint8array);
+  }
+
+  /**
+   * Checks whether a file exists at the given path.
+   * @param {string} filePath
+   * @returns {Promise<boolean>}
+   */
+  async fileExists(filePath) {
+    if (!filePath || typeof filePath !== 'string') return false;
+    if (this.runtime === 'tauri') {
+      try {
+        const { exists } = await import('@tauri-apps/plugin-fs');
+        return await exists(filePath);
+      } catch {
+        // fallback to service
+      }
+    } else if (this.runtime === 'electron' && typeof window !== 'undefined' && window.electronAPI?.fileExists) {
+      try {
+        return Boolean(await window.electronAPI.fileExists(filePath));
+      } catch {
+        // fallback
+      }
+    }
+    return await fileSystemService.fileExists(filePath);
+  }
+
+  /**
+   * Ensures that a directory exists, creating parent directories if needed.
+   * @param {string} dirPath
+   * @returns {Promise<boolean>}
+   */
+  async ensureDirectory(dirPath) {
+    if (!dirPath || typeof dirPath !== 'string') return false;
+    if (this.runtime === 'tauri') {
+      try {
+        const { mkdir, exists } = await import('@tauri-apps/plugin-fs');
+        const dirExists = await exists(dirPath);
+        if (!dirExists) {
+          await mkdir(dirPath, { recursive: true });
+        }
+        return true;
+      } catch (err) {
+        console.error('[FileSystemAdapter] Tauri ensureDirectory failure:', err);
+      }
+    }
+    fileSystemService.virtualStorage.set(`${dirPath}/.keep`, '');
+    return true;
+  }
+
+  /**
    * Sanitizes item name to prevent path traversal or separator injections.
    * @param {string} name
    * @returns {string}

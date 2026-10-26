@@ -1,3 +1,4 @@
+import { svgSanitizer } from '../../services/svg-sanitizer.js';
 import { markdownPipeline } from '../../services/markdown-pipeline.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { AppEvents, eventBus } from '../../app/events.js';
@@ -9,6 +10,7 @@ export class PreviewComponent {
     this.container = container;
     this.renderTimer = null;
     this.syncScroll = workspaceStore.getSettings().syncScroll === true;
+    this.currentRenderPass = 0;
     this.setupListeners();
   }
 
@@ -208,6 +210,9 @@ export class PreviewComponent {
     });
 
     // Attach fenced code block copy button listeners
+    this.currentRenderPass += 1;
+    this.renderMermaidDiagrams(scrollArea, this.currentRenderPass);
+
     scrollArea.querySelectorAll('.fenced-code-copy-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -252,5 +257,69 @@ export class PreviewComponent {
         }
       });
     });
+  }
+
+  async renderMermaidDiagrams(scrollArea, passToken) {
+    const mermaidNodes = scrollArea.querySelectorAll('pre code.language-mermaid, pre.mermaid, div.mermaid, code.language-mermaid');
+    if (!mermaidNodes || mermaidNodes.length === 0) return;
+
+    try {
+      const { default: mermaid } = await import('mermaid');
+      if (passToken !== this.currentRenderPass) return;
+
+      const theme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light') ? 'default' : 'dark';
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme,
+      });
+
+      for (let i = 0; i < mermaidNodes.length; i++) {
+        if (passToken !== this.currentRenderPass) return;
+        const node = mermaidNodes[i];
+        const container = node.closest('.fenced-code-container') || node.parentElement;
+        const source = (node.textContent || '').trim();
+        if (!source) continue;
+
+        const uniqueId = `mermaid-render-${Date.now()}-${i}`;
+        try {
+          const { svg } = await mermaid.render(uniqueId, source);
+          if (passToken !== this.currentRenderPass) return;
+
+          const { success, sanitized, error } = svgSanitizer.sanitize(svg);
+          if (success) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mermaid-rendered-container';
+            wrapper.setAttribute('data-source', source);
+            wrapper.innerHTML = `
+              <div class="mermaid-diagram">${sanitized}</div>
+              <details class="mermaid-source-details" style="margin-top: 8px; font-size: 11px; opacity: 0.8;">
+                <summary style="cursor: pointer; color: var(--color-text-muted);">View Diagram Source</summary>
+                <pre style="margin-top: 4px; padding: 6px; background: var(--color-surface-sunken); border-radius: 4px;"><code>${source.replace(/</g, '&lt;')}</code></pre>
+              </details>
+            `;
+            if (container && container.parentNode) {
+              container.parentNode.replaceChild(wrapper, container);
+            }
+          } else {
+            this.markMermaidError(container, error || 'SVG sanitization rejected rendered diagram');
+          }
+        } catch (err) {
+          console.warn('[Mermaid] render failed for diagram:', err);
+          this.markMermaidError(container, err.message || 'Diagram syntax error');
+        }
+      }
+    } catch (err) {
+      console.warn('[Mermaid] lazy import failed:', err);
+    }
+  }
+
+  markMermaidError(container, errorMsg) {
+    if (!container || container.querySelector('.mermaid-error-badge')) return;
+    const badge = document.createElement('div');
+    badge.className = 'mermaid-error-badge';
+    badge.style.cssText = 'color: var(--color-accent-rose, #f43f5e); font-size: 11px; padding: 6px 10px; background: rgba(244, 63, 94, 0.1); border-left: 3px solid #f43f5e; margin: 4px 0; border-radius: 2px;';
+    badge.innerHTML = `⚠️ Diagram render fallback: ${errorMsg}`;
+    container.prepend(badge);
   }
 }
