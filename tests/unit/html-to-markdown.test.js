@@ -102,4 +102,93 @@ describe('HtmlToMarkdownService (Slice 2)', () => {
     const malformedRes = htmlToMarkdownService.convert(malformed);
     expect(malformedRes.markdown).toContain('Unclosed paragraph **bold**');
   });
+
+  // ChatGPT & Claude Dark-Mode Enhanced Conversion Tests
+  it('converts ChatGPT dark-mode roadmap with blockquote, structured list, and bold labels', () => {
+    const sampleHtml = `
+<div class="markdown prose w-full break-words dark:prose-invert dark">
+  <h1>Applied AI Engineering Master Roadmap</h1>
+  <p>Foundations → Core Modeling → LLM Engineering → Autonomous Agent Systems</p>
+  <p>This master roadmap is designed for <span class="font-semibold">software engineers</span> transitioning into <span class="font-bold">production AI engineering</span>. Follow the phases sequentially to build <strong>deep technical competence</strong>.</p>
+  
+  <div class="border border-token-border-light rounded-xl p-4 bg-token-main-surface-secondary my-4">
+    <div class="font-bold text-lg mb-2">Roadmap at a glance</div>
+    <p><strong>Phase 1: Foundations (Months 1–3)</strong> — Master Python, PyTorch, Linear Algebra, and Transformer mechanics.</p>
+    <p><strong>Phase 2: RAG &amp; Vector Databases (Months 4–6)</strong> — Advanced chunking, hybrid search, re-ranking, and evals.</p>
+    <p><strong>Phase 3: Fine-Tuning &amp; Quantization (Months 7–9)</strong> — LoRA, QLoRA, DPO, and vLLM high-throughput serving.</p>
+    <p><strong>Phase 4: Autonomous Agents (Months 10–12)</strong> — LangGraph, multi-agent orchestration, tool calling, and human-in-the-loop.</p>
+  </div>
+
+  <h2>Phase 1: Foundations (Months 1–3)</h2>
+  <p>Detailed breakdown of foundations...</p>
+</div>
+`;
+    const res = htmlToMarkdownService.convert(sampleHtml);
+    expect(res.markdown).toContain('# Applied AI Engineering Master Roadmap');
+    expect(res.markdown).toContain('Foundations → Core Modeling → LLM Engineering → Autonomous Agent Systems');
+    expect(res.markdown).toContain('**software engineers**');
+    expect(res.markdown).toContain('**production AI engineering**');
+    expect(res.markdown).toContain('**deep technical competence**');
+    expect(res.markdown).toMatch(/>\s*###\s*Roadmap at a glance/);
+    expect(res.markdown).toMatch(/>\s*-\s+\*\*Phase 1: Foundations \(Months 1–3\)\*\*\s+—\s+Master Python/);
+    expect(res.markdown).toMatch(/>\s*-\s+\*\*Phase 4: Autonomous Agents \(Months 10–12\)\*\*\s+—\s+LangGraph/);
+    expect(res.markdown).toContain('## Phase 1: Foundations (Months 1–3)');
+  });
+
+  it('preserves bold inside paragraphs with utility classes, styles, and edge whitespace', () => {
+    const html = '<p>Master <span class="font-semibold">core fundamentals </span>before diving into <span style="font-weight: 700;">production LLMs</span> and <strong>agent architectures</strong>.</p>';
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toContain('**core fundamentals**');
+    expect(res.markdown).toContain('**production LLMs**');
+    expect(res.markdown).toContain('**agent architectures**');
+    expect(res.markdown).not.toContain('** core fundamentals **');
+    expect(res.markdown).not.toContain('**core fundamentals **');
+  });
+
+  it('preserves Unicode arrows, en-dashes, and em-dashes without ASCII replacement', () => {
+    const html = '<p>Phase 1 → Phase 2 → Phase 3</p><p>Timeline: Jan 2026 – Dec 2026 — Full Year</p>';
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toContain('Phase 1 → Phase 2 → Phase 3');
+    expect(res.markdown).toContain('Timeline: Jan 2026 – Dec 2026 — Full Year');
+    expect(res.markdown).not.toContain('Phase 1 -> Phase 2');
+    expect(res.markdown).not.toContain('Timeline: Jan 2026 - Dec 2026 -- Full Year');
+  });
+
+  it('converts icon + title + description rows into clean list markdown', () => {
+    const html = `
+<div class="card border rounded-lg p-4">
+  <div class="font-bold mb-2">Key Milestones</div>
+  <div class="row">
+    <span>🚀</span>
+    <strong>Milestone 1</strong>: Deploy first local model.
+  </div>
+  <div class="row">
+    <span>⚡</span>
+    <strong>Milestone 2</strong>: Scale to multi-agent swarm.
+  </div>
+</div>
+`;
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toMatch(/>\s*-\s+🚀\s+\*\*Milestone 1\*\*\s*:\s*Deploy first local model\./);
+    expect(res.markdown).toMatch(/>\s*-\s+⚡\s+\*\*Milestone 2\*\*\s*:\s*Scale to multi-agent swarm\./);
+  });
+
+  it('converts stacked title and description div pairs into list items', () => {
+    const html = `
+<div class="border rounded-md p-3">
+  <div class="font-semibold mb-2">Core Phases</div>
+  <div class="phase-item">
+    <div class="font-bold">Phase 1: Foundations</div>
+    <div class="text-sm">Python, PyTorch, and linear algebra.</div>
+  </div>
+  <div class="phase-item">
+    <div class="font-bold">Phase 2: RAG Systems</div>
+    <div class="text-sm">Embeddings, vector stores, and rerankers.</div>
+  </div>
+</div>
+`;
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toMatch(/>\s*-\s+\*\*Phase 1: Foundations\*\*\s+—\s+Python, PyTorch, and linear algebra\./);
+    expect(res.markdown).toMatch(/>\s*-\s+\*\*Phase 2: RAG Systems\*\*\s+—\s+Embeddings, vector stores, and rerankers\./);
+  });
 });
