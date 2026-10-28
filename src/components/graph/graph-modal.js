@@ -2,7 +2,8 @@ import { AppEvents, eventBus } from '../../app/events.js';
 import { graphIndexService } from '../../services/graph-index-service.js';
 import { documentStateManager } from '../../core/document-state-manager.js';
 import { fileSystemService } from '../../services/filesystem-service.js';
-import { ForceGraphEngine } from '../../features/graph/force-graph-engine.js';
+import { workspaceStore } from '../../services/workspace-store.js';
+import { ForceGraphEngine, FOLDER_PALETTE } from '../../features/graph/force-graph-engine.js';
 
 export class GraphModalComponent {
   constructor() {
@@ -10,6 +11,9 @@ export class GraphModalComponent {
     this.engine = null;
     this.canvas = null;
     this.resizeObserver = null;
+    this.contextMenuEl = null;
+    this.boundOnGlobalKeyDown = this.onGlobalKeyDown.bind(this);
+    this.boundOnSettingsChanged = this.onSettingsChanged.bind(this);
     this.setupListeners();
   }
 
@@ -24,49 +28,72 @@ export class GraphModalComponent {
         this.updateStats();
       }
     });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isOpen()) {
-        this.close();
-      }
-    });
   }
 
   isOpen() {
     return Boolean(this.modalEl && this.modalEl.parentElement);
   }
 
+  onGlobalKeyDown(e) {
+    if (!this.isOpen()) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (this.contextMenuEl) {
+        this.hideContextMenu();
+      } else {
+        this.close();
+      }
+    } else if (e.key === '+' || e.key === '=') {
+      if (document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        this.engine?.zoomIn();
+      }
+    } else if (e.key === '-' || e.key === '_') {
+      if (document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        this.engine?.zoomOut();
+      }
+    } else if (e.key === '0') {
+      if (document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        this.engine?.fitView(70);
+      }
+    }
+  }
+
+  onSettingsChanged() {
+    if (this.isOpen() && this.engine) {
+      this.engine.requestRender();
+    }
+  }
+
   async show() {
     this.close();
 
+    // Read persisted graph settings
+    const currentSettings = workspaceStore.getSettings() || {};
+    const graphSettings = currentSettings.graph || {
+      showGhostNotes: true,
+      showOrphanNotes: true,
+      showTags: true,
+      onlyNeighbours: false,
+      repulsion: 220,
+      linkDistance: 75,
+      gravity: 0.04,
+    };
+
     const overlay = document.createElement('div');
     overlay.className = 'graph-modal-backdrop';
-    overlay.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(10, 15, 26, 0.85);
-      backdrop-filter: blur(8px);
-      z-index: 9998;
-      display: flex;
-      flex-direction: column;
-      animation: fadeIn 0.15s ease-out;
-    `;
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', 'Workspace Knowledge Graph');
+    overlay.setAttribute('tabindex', '-1');
 
     overlay.innerHTML = `
       <!-- Graph View Header Bar -->
-      <div class="graph-modal-header" style="
-        height: 48px;
-        background: var(--color-bg-panel, #111827);
-        border-bottom: 1px solid var(--color-border-subtle, #1f2937);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 16px;
-        z-index: 10;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      ">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent, #00e5ff)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="graph-modal-header" role="toolbar" aria-label="Graph View Toolbar">
+        <div class="graph-header-title-group">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent, #38bdf8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="6" cy="6" r="3"/>
             <circle cx="18" cy="6" r="3"/>
             <circle cx="12" cy="18" r="3"/>
@@ -74,30 +101,33 @@ export class GraphModalComponent {
             <line x1="15.5" y1="7.5" x2="13.5" y2="15.5"/>
             <line x1="9" y1="6" x2="15" y2="6"/>
           </svg>
-          <span style="font-weight: 700; font-size: 14px; color: #f8fafc; letter-spacing: -0.01em;">
-            Workspace Knowledge Graph
-          </span>
-          <span id="graphStatsBadge" style="
-            font-size: 11px;
-            color: var(--color-text-muted, #94a3b8);
-            background: rgba(255, 255, 255, 0.06);
-            padding: 2px 8px;
-            border-radius: 12px;
-            margin-left: 6px;
-          ">Indexing...</span>
+          <span class="graph-title-text">Workspace Knowledge Graph</span>
+          <span id="graphStatsBadge" class="graph-stats-badge" aria-live="polite">Indexing...</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button id="graphFitBtn" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; display: flex; align-items: center; gap: 4px;" title="Fit entire graph in viewport">
+        <div class="graph-header-actions">
+          <button id="graphFocusActiveBtn" class="graph-tool-btn" title="Focus Active Document" aria-label="Focus Active Document">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Focus Active</span>
+          </button>
+          <button id="graphZoomInBtn" class="graph-tool-btn" title="Zoom In (+)" aria-label="Zoom In">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <span>+</span>
+          </button>
+          <button id="graphZoomOutBtn" class="graph-tool-btn" title="Zoom Out (-)" aria-label="Zoom Out">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <span>-</span>
+          </button>
+          <button id="graphFitBtn" class="graph-tool-btn" title="Fit Entire Graph (0)" aria-label="Fit View">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-            Fit View
+            <span>Fit (0)</span>
           </button>
-          <button id="graphReheatBtn" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; display: flex; align-items: center; gap: 4px;" title="Reheat physics simulation">
+          <button id="graphReheatBtn" class="graph-tool-btn" title="Reheat Physics Simulation" aria-label="Reheat Simulation">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-            Reheat
+            <span>Reheat</span>
           </button>
-          <button id="graphCloseBtn" class="header-btn" style="padding: 6px;" title="Close (Esc)" aria-label="Close Graph View">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <button id="graphCloseBtn" class="graph-tool-btn" style="padding: 5px 8px; margin-left: 4px;" title="Close (Esc)" aria-label="Close Graph View">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </div>
@@ -106,77 +136,81 @@ export class GraphModalComponent {
       <div style="position: relative; flex: 1; width: 100%; overflow: hidden; background: radial-gradient(circle at 50% 50%, #172033 0%, #0d121f 100%);">
         
         <!-- Floating Controls Panel -->
-        <div class="graph-floating-controls" style="
-          position: absolute;
-          top: 16px;
-          left: 16px;
-          z-index: 20;
-          background: rgba(17, 24, 39, 0.88);
-          backdrop-filter: blur(10px);
-          border: 1px solid var(--color-border-subtle, #374151);
-          border-radius: 8px;
-          padding: 12px 14px;
-          width: 260px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          color: #e2e8f0;
-          font-size: 11px;
-        ">
+        <div class="graph-floating-controls" role="region" aria-label="Graph Controls and Filters">
           <!-- Search / Filter -->
-          <div style="display: flex; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid var(--color-border-subtle, #4b5563); border-radius: 4px; padding: 4px 8px; gap: 6px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="graphSearchInput" placeholder="Filter nodes..." style="background: transparent; border: none; outline: none; color: #fff; font-size: 11px; width: 100%;" />
+          <div class="graph-search-container">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="graphSearchInput" class="graph-search-input" placeholder="Filter notes..." aria-label="Filter notes" />
           </div>
 
           <!-- Filter Toggles -->
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="display: flex; align-items: center; gap: 7px; cursor: pointer;">
-              <input type="checkbox" id="toggleGhostNotes" checked style="accent-color: var(--color-accent, #00e5ff);" />
+          <div class="graph-filter-list">
+            <label class="graph-filter-item">
+              <input type="checkbox" id="toggleGhostNotes" ${graphSettings.showGhostNotes ? 'checked' : ''} />
               <span>Show Ghost Notes (Unresolved)</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 7px; cursor: pointer;">
-              <input type="checkbox" id="toggleOrphanNotes" checked style="accent-color: var(--color-accent, #00e5ff);" />
+            <label class="graph-filter-item">
+              <input type="checkbox" id="toggleOrphanNotes" ${graphSettings.showOrphanNotes ? 'checked' : ''} />
               <span>Show Orphan Notes (0 links)</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 7px; cursor: pointer;">
-              <input type="checkbox" id="toggleTags" checked style="accent-color: #a855f7;" />
+            <label class="graph-filter-item">
+              <input type="checkbox" id="toggleTags" ${graphSettings.showTags ? 'checked' : ''} />
               <span>Show Tags (#tag)</span>
             </label>
+            <label class="graph-filter-item">
+              <input type="checkbox" id="toggleOnlyNeighbours" ${graphSettings.onlyNeighbours ? 'checked' : ''} />
+              <span style="color: var(--color-accent, #38bdf8);">Only Neighbours of Selection</span>
+            </label>
+          </div>
+
+          <button id="graphClearFiltersBtn" class="graph-tool-btn" style="width: 100%; justify-content: center; font-size: 10.5px; padding: 4px;" title="Reset all search queries and filter toggles">
+            Clear Filters
+          </button>
+
+          <!-- Interactive Legend -->
+          <div class="graph-legend-container">
+            <div class="graph-legend-title">Legend</div>
+            <div class="graph-legend-grid">
+              <div class="graph-legend-item"><span class="graph-legend-line solid"></span><span>Wikilink</span></div>
+              <div class="graph-legend-item"><span class="graph-legend-line dashed"></span><span>Markdown</span></div>
+              <div class="graph-legend-item"><span class="graph-legend-line dotted"></span><span>Tag Link</span></div>
+              <div class="graph-legend-item"><span class="graph-legend-swatch" style="background: var(--color-accent, #38bdf8); box-shadow: 0 0 4px var(--color-accent);"></span><span>Active Note</span></div>
+              <div class="graph-legend-item"><span class="graph-legend-swatch" style="background: #a855f7;"></span><span>Tag Node</span></div>
+              <div class="graph-legend-item"><span class="graph-legend-swatch" style="border: 1px dashed #94a3b8; background: transparent;"></span><span>Ghost Note</span></div>
+            </div>
           </div>
 
           <!-- Collapsible Physics Tuning -->
           <details style="margin-top: 2px;">
-            <summary style="cursor: pointer; font-weight: 600; color: var(--color-accent, #00e5ff); user-select: none;">Physics Forces</summary>
+            <summary style="cursor: pointer; font-weight: 600; color: var(--color-accent, #38bdf8); user-select: none;">Physics Forces</summary>
             <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
               <div>
                 <div style="display: flex; justify-content: space-between;">
                   <span>Repulsion</span>
-                  <span id="repulsionVal">-220</span>
+                  <span id="repulsionVal">-${graphSettings.repulsion || 220}</span>
                 </div>
-                <input type="range" id="sliderRepulsion" min="50" max="600" value="220" style="width: 100%;" />
+                <input type="range" id="sliderRepulsion" min="50" max="600" value="${graphSettings.repulsion || 220}" style="width: 100%;" />
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between;">
                   <span>Link Distance</span>
-                  <span id="linkDistVal">75</span>
+                  <span id="linkDistVal">${graphSettings.linkDistance || 75}</span>
                 </div>
-                <input type="range" id="sliderLinkDist" min="30" max="180" value="75" style="width: 100%;" />
+                <input type="range" id="sliderLinkDist" min="30" max="180" value="${graphSettings.linkDistance || 75}" style="width: 100%;" />
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between;">
                   <span>Center Gravity</span>
-                  <span id="gravityVal">0.04</span>
+                  <span id="gravityVal">${(graphSettings.gravity || 0.04).toFixed(2)}</span>
                 </div>
-                <input type="range" id="sliderGravity" min="1" max="15" value="4" style="width: 100%;" />
+                <input type="range" id="sliderGravity" min="1" max="15" value="${Math.round((graphSettings.gravity || 0.04) * 100)}" style="width: 100%;" />
               </div>
             </div>
           </details>
         </div>
 
         <!-- Canvas Element -->
-        <canvas id="graphViewCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+        <canvas id="graphViewCanvas" style="width: 100%; height: 100%; display: block;" aria-label="Knowledge Graph Visualization"></canvas>
       </div>
     `;
 
@@ -184,11 +218,21 @@ export class GraphModalComponent {
     this.modalEl = overlay;
     this.canvas = overlay.querySelector('#graphViewCanvas');
 
-    // Initialize Engine
+    // Initialize ForceGraphEngine
     this.engine = new ForceGraphEngine(this.canvas, {
       tooltipContainer: overlay,
       onNodeClick: (node) => this.handleNodeClick(node),
+      onNodeContextMenu: (node, e) => this.showContextMenu(node, e.clientX, e.clientY),
     });
+
+    // Apply initial settings
+    this.engine.showGhostNotes = Boolean(graphSettings.showGhostNotes);
+    this.engine.showOrphanNotes = Boolean(graphSettings.showOrphanNotes);
+    this.engine.showTags = Boolean(graphSettings.showTags);
+    this.engine.onlyNeighbours = Boolean(graphSettings.onlyNeighbours);
+    if (graphSettings.repulsion) this.engine.charge = -graphSettings.repulsion;
+    if (graphSettings.linkDistance) this.engine.linkDistance = graphSettings.linkDistance;
+    if (graphSettings.gravity) this.engine.gravity = graphSettings.gravity;
 
     // Sync active document highlight
     const activeDoc = documentStateManager.getActiveDocument();
@@ -196,8 +240,10 @@ export class GraphModalComponent {
       this.engine.setActiveNode(activeDoc.path || activeDoc.id);
     }
 
-    // Attach Dialog Event Listeners
+    // Attach listeners
     this.attachModalEvents(overlay);
+    document.addEventListener('keydown', this.boundOnGlobalKeyDown);
+    eventBus.on(AppEvents.SETTINGS_CHANGED, this.boundOnSettingsChanged);
 
     // Build or fetch latest graph data
     const data = await graphIndexService.buildGraph({ includeTags: true });
@@ -210,7 +256,7 @@ export class GraphModalComponent {
     }, 120);
 
     // Resize handling
-    if (typeof ResizeObserver !== 'undefined') {
+    if (typeof ResizeObserver !== 'undefined' && this.canvas.parentElement) {
       this.resizeObserver = new ResizeObserver(() => {
         if (this.engine) this.engine.resize();
       });
@@ -222,6 +268,9 @@ export class GraphModalComponent {
     overlay.querySelector('#graphCloseBtn')?.addEventListener('click', () => this.close());
     overlay.querySelector('#graphFitBtn')?.addEventListener('click', () => this.engine?.fitView(70));
     overlay.querySelector('#graphReheatBtn')?.addEventListener('click', () => this.engine?.reheat(0.85));
+    overlay.querySelector('#graphZoomInBtn')?.addEventListener('click', () => this.engine?.zoomIn());
+    overlay.querySelector('#graphZoomOutBtn')?.addEventListener('click', () => this.engine?.zoomOut());
+    overlay.querySelector('#graphFocusActiveBtn')?.addEventListener('click', () => this.engine?.focusActiveDoc());
 
     // Search filter
     const searchInput = overlay.querySelector('#graphSearchInput');
@@ -233,6 +282,32 @@ export class GraphModalComponent {
       }
     });
 
+    // Clear filters
+    overlay.querySelector('#graphClearFiltersBtn')?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      const toggleGhost = overlay.querySelector('#toggleGhostNotes');
+      const toggleOrphan = overlay.querySelector('#toggleOrphanNotes');
+      const toggleTags = overlay.querySelector('#toggleTags');
+      const toggleNeighbours = overlay.querySelector('#toggleOnlyNeighbours');
+
+      if (toggleGhost) toggleGhost.checked = true;
+      if (toggleOrphan) toggleOrphan.checked = true;
+      if (toggleTags) toggleTags.checked = true;
+      if (toggleNeighbours) toggleNeighbours.checked = false;
+
+      if (this.engine) {
+        this.engine.searchQuery = '';
+        this.engine.showGhostNotes = true;
+        this.engine.showOrphanNotes = true;
+        this.engine.showTags = true;
+        this.engine.onlyNeighbours = false;
+        this.engine.selectedNode = null;
+        this.engine.requestRender();
+        this.updateStats();
+        this.saveGraphSettings();
+      }
+    });
+
     // Toggles
     const toggleGhost = overlay.querySelector('#toggleGhostNotes');
     toggleGhost?.addEventListener('change', (e) => {
@@ -240,6 +315,7 @@ export class GraphModalComponent {
         this.engine.showGhostNotes = e.target.checked;
         this.engine.requestRender();
         this.updateStats();
+        this.saveGraphSettings();
       }
     });
 
@@ -249,6 +325,7 @@ export class GraphModalComponent {
         this.engine.showOrphanNotes = e.target.checked;
         this.engine.requestRender();
         this.updateStats();
+        this.saveGraphSettings();
       }
     });
 
@@ -258,6 +335,17 @@ export class GraphModalComponent {
         this.engine.showTags = e.target.checked;
         this.engine.requestRender();
         this.updateStats();
+        this.saveGraphSettings();
+      }
+    });
+
+    const toggleNeighbours = overlay.querySelector('#toggleOnlyNeighbours');
+    toggleNeighbours?.addEventListener('change', (e) => {
+      if (this.engine) {
+        this.engine.onlyNeighbours = e.target.checked;
+        this.engine.requestRender();
+        this.updateStats();
+        this.saveGraphSettings();
       }
     });
 
@@ -270,6 +358,7 @@ export class GraphModalComponent {
       if (this.engine) {
         this.engine.charge = -val;
         this.engine.reheat(0.4);
+        this.saveGraphSettings();
       }
     });
 
@@ -281,6 +370,7 @@ export class GraphModalComponent {
       if (this.engine) {
         this.engine.linkDistance = val;
         this.engine.reheat(0.4);
+        this.saveGraphSettings();
       }
     });
 
@@ -292,8 +382,28 @@ export class GraphModalComponent {
       if (this.engine) {
         this.engine.gravity = val;
         this.engine.reheat(0.4);
+        this.saveGraphSettings();
       }
     });
+
+    // Dismiss context menu on click outside
+    overlay.addEventListener('click', () => {
+      this.hideContextMenu();
+    });
+  }
+
+  saveGraphSettings() {
+    if (!this.engine) return;
+    const settings = {
+      showGhostNotes: this.engine.showGhostNotes,
+      showOrphanNotes: this.engine.showOrphanNotes,
+      showTags: this.engine.showTags,
+      onlyNeighbours: this.engine.onlyNeighbours,
+      repulsion: Math.abs(this.engine.charge),
+      linkDistance: this.engine.linkDistance,
+      gravity: this.engine.gravity,
+    };
+    workspaceStore.saveSettings({ graph: settings });
   }
 
   updateStats() {
@@ -303,14 +413,87 @@ export class GraphModalComponent {
 
     const visibleNodes = this.engine.getVisibleNodes();
     const visibleEdges = this.engine.getVisibleEdges(visibleNodes);
-    badge.textContent = `${visibleNodes.length} Nodes • ${visibleEdges.length} Links`;
+
+    const ghosts = visibleNodes.filter(n => n.isGhost).length;
+    const tags = visibleNodes.filter(n => n.isTag).length;
+    const notes = visibleNodes.length - ghosts - tags;
+
+    badge.textContent = `${visibleNodes.length} Nodes (${notes} notes, ${ghosts} ghosts, ${tags} tags) • ${visibleEdges.length} Links`;
+  }
+
+  showContextMenu(node, clientX, clientY) {
+    this.hideContextMenu();
+    if (!node || !this.modalEl) return;
+
+    const menu = document.createElement('div');
+    menu.className = 'graph-context-menu';
+    menu.style.left = `${clientX + 2}px`;
+    menu.style.top = `${clientY + 2}px`;
+
+    const isGhost = node.isGhost;
+    menu.innerHTML = `
+      <div class="graph-context-item" data-action="open">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+        <span>${isGhost ? 'Create & Open Note' : 'Open Note'}</span>
+      </div>
+      <div class="graph-context-item" data-action="copy-path">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copy Path</span>
+      </div>
+      <div class="graph-context-item" data-action="filter-neighbours">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+        <span>Filter Neighbours</span>
+      </div>
+    `;
+
+    menu.querySelector('[data-action="open"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.hideContextMenu();
+      this.handleNodeClick(node);
+    });
+
+    menu.querySelector('[data-action="copy-path"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.hideContextMenu();
+      const pathText = node.path || node.id;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(pathText);
+      }
+      eventBus.emit(AppEvents.NOTIFICATION, {
+        type: 'info',
+        message: `Copied path: ${pathText}`,
+      });
+    });
+
+    menu.querySelector('[data-action="filter-neighbours"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.hideContextMenu();
+      if (this.engine) {
+        this.engine.selectedNode = node;
+        this.engine.onlyNeighbours = true;
+        const toggle = this.modalEl?.querySelector('#toggleOnlyNeighbours');
+        if (toggle) toggle.checked = true;
+        this.engine.requestRender();
+        this.updateStats();
+        this.saveGraphSettings();
+      }
+    });
+
+    this.modalEl.appendChild(menu);
+    this.contextMenuEl = menu;
+  }
+
+  hideContextMenu() {
+    if (this.contextMenuEl) {
+      this.contextMenuEl.remove();
+      this.contextMenuEl = null;
+    }
   }
 
   async handleNodeClick(node) {
     if (!node) return;
 
     if (node.isTag) {
-      // Filter graph by tag
       const searchInput = this.modalEl?.querySelector('#graphSearchInput');
       if (searchInput) {
         searchInput.value = node.label.replace(/^#/, '');
@@ -322,7 +505,6 @@ export class GraphModalComponent {
     }
 
     if (node.isGhost) {
-      // Prompt/create ghost note and open
       const rawTarget = node.id.replace(/^ghost:/, '');
       const notePath = rawTarget.endsWith('.md') ? rawTarget : `${rawTarget}.md`;
       const noteTitle = rawTarget.split('/').pop().replace(/\.md$/i, '');
@@ -338,7 +520,6 @@ export class GraphModalComponent {
         });
         this.close();
       } catch (err) {
-        // Fallback in-memory doc
         documentStateManager.createDocument(noteTitle, initialContent, notePath);
         this.close();
       }
@@ -365,6 +546,11 @@ export class GraphModalComponent {
   }
 
   close() {
+    this.hideContextMenu();
+
+    document.removeEventListener('keydown', this.boundOnGlobalKeyDown);
+    eventBus.off(AppEvents.SETTINGS_CHANGED, this.boundOnSettingsChanged);
+
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;

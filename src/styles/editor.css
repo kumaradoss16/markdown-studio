@@ -135,21 +135,24 @@
   overflow: hidden;
   position: relative;
   font-family: var(--font-mono);
-  font-size: var(--font-size-editor, 13px);
+  font-family: var(--font-editor, var(--font-mono));
+  font-size: var(--font-size-editor, 14.5px);
+  color: var(--color-editor-text, var(--color-text-primary));
 }
 
 .cm-editor {
   height: 100% !important;
   background-color: var(--color-editor-background) !important;
-  color: var(--color-text-primary) !important;
+  color: var(--color-editor-text, var(--color-text-primary)) !important;
   tab-size: var(--editor-tab-size, 2) !important;
   -moz-tab-size: var(--editor-tab-size, 2) !important;
 }
 
 .cm-scroller {
-  font-family: var(--font-mono) !important;
-  font-size: var(--font-size-editor, 13px) !important;
-  line-height: var(--line-height-editor, 1.5) !important;
+  font-family: var(--font-editor, var(--font-mono)) !important;
+  font-size: var(--font-size-editor, 14.5px) !important;
+  line-height: var(--line-height-editor, 1.6) !important;
+  color: var(--color-editor-text, var(--color-text-primary)) !important;
   font-variant-ligatures: var(--font-ligatures, normal) !important;
   font-feature-settings: var(--font-features-mono, "liga" 1, "calt" 1) !important;
   tab-size: var(--editor-tab-size, 2) !important;
@@ -208,4 +211,10 @@
   border: 1px solid var(--color-toolbar-active-border, rgba(56, 189, 248, 0.4));
   color: var(--color-toolbar-active-color, var(--color-accent));
   box-shadow: var(--shadow-accent-glow);
+}
+
+
+.cm-content {
+  color: var(--color-editor-text, var(--color-text-primary));
+  line-height: var(--line-height-editor, 1.6);
 }

@@ -248,6 +248,53 @@ Calculations for 2.4 RPM rotational gravity and centrifugal station keeping.
   }
 
   /**
+   * Checks whether a file exists in native or virtual storage.
+   * @param {string} filePath
+   * @returns {Promise<boolean>}
+   */
+  async fileExists(filePath) {
+    if (!filePath || typeof filePath !== 'string') return false;
+    if (this.isTauri) {
+      try {
+        const { exists } = await import('@tauri-apps/plugin-fs');
+        return await exists(filePath);
+      } catch {
+        return this.virtualStorage.has(filePath);
+      }
+    }
+    return this.virtualStorage.has(filePath);
+  }
+
+  /**
+   * Safely writes binary data to disk or virtual storage.
+   * @param {string} filePath
+   * @param {Uint8Array | ArrayBuffer} data
+   * @returns {Promise<{ success: boolean, path: string, size: number, mtime: number }>}
+   */
+  async saveBinaryFile(filePath, data) {
+    if (!filePath || typeof filePath !== 'string') {
+      throw new StudioError(ErrorCode.INVALID_INPUT, 'Target file path must be specified.');
+    }
+    if (filePath.includes('..')) {
+      throw new StudioError(ErrorCode.PATH_NOT_ALLOWED, 'Path traversal is strictly prohibited.');
+    }
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    const now = Date.now();
+    this.virtualStorage.set(filePath, bytes);
+    this.fileMetadata.set(filePath, {
+      mtime: now,
+      hash: this.computeSimpleHash(String.fromCharCode.apply(null, bytes.slice(0, 1024))),
+      version: 1,
+    });
+    return {
+      success: true,
+      path: filePath,
+      size: bytes.byteLength,
+      mtime: now,
+    };
+  }
+
+  /**
    * Lists files in the active workspace.
    * @param {string} [rootPath='ExampleVault']
    * @returns {Promise<Array<{ path: string, name: string, isDir: boolean, ext: string }>>}

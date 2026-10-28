@@ -1,3 +1,35 @@
+
+export const FOLDER_PALETTE = [
+  '#38bdf8', // sky
+  '#818cf8', // indigo
+  '#a78bfa', // purple
+  '#f472b6', // pink
+  '#fb7185', // rose
+  '#f97316', // orange
+  '#fbbf24', // amber
+  '#34d399', // emerald
+  '#2dd4bf', // teal
+  '#60a5fa', // blue
+];
+
+export function getGroupColor(group, accentColor = '#38bdf8') {
+  if (!group || group === 'root' || group === 'Document' || group === 'default') {
+    return accentColor;
+  }
+  let hash = 0;
+  for (let i = 0; i < group.length; i++) {
+    hash = (hash << 5) - hash + group.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % FOLDER_PALETTE.length;
+  return FOLDER_PALETTE[idx];
+}
+
+export function truncateLabel(label, maxChars = 18) {
+  if (!label || typeof label !== 'string') return '';
+  return label.length > maxChars ? label.slice(0, maxChars - 1) + '…' : label;
+}
+
 /**
  * ForceGraphEngine
  * Zero-dependency HTML5 Canvas 2D Force-Directed Graph Engine.
@@ -25,6 +57,9 @@ export class ForceGraphEngine {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.onNodeClick = options.onNodeClick || null;
+    this.onNodeContextMenu = options.onNodeContextMenu || null;
+    this.selectedNode = null;
+    this.onlyNeighbours = false;
     this.tooltipContainer = options.tooltipContainer || document.body;
 
     // Dimensions & Scale
@@ -47,7 +82,7 @@ export class ForceGraphEngine {
     this.gravity = 0.04; // Center pull
     this.damping = 0.86; // Velocity friction
     this.alpha = 1.0; // Current temperature
-    this.alphaDecay = 0.985; // Cooling factor
+    this.alphaDecay = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0.92 : 0.985; // Cooling factor
     this.alphaMin = 0.005; // Sleep threshold
     this.isSleeping = false;
     this.animFrameId = null;
@@ -76,6 +111,9 @@ export class ForceGraphEngine {
     this.boundOnMouseUp = this.onMouseUp.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnResize = this.resize.bind(this);
+    this.boundOnDblClick = this.onDblClick.bind(this);
+    this.boundOnContextMenu = this.onContextMenu.bind(this);
+    this.boundOnKeyDown = this.onKeyDown.bind(this);
 
     this.attachEventListeners();
     this.resize();
@@ -110,6 +148,10 @@ export class ForceGraphEngine {
     window.addEventListener('mouseup', this.boundOnMouseUp);
     this.canvas.addEventListener('wheel', this.boundOnWheel, { passive: false });
     window.addEventListener('resize', this.boundOnResize);
+    this.canvas.addEventListener('dblclick', this.boundOnDblClick);
+    this.canvas.addEventListener('contextmenu', this.boundOnContextMenu);
+    this.canvas.setAttribute('tabindex', '0');
+    this.canvas.addEventListener('keydown', this.boundOnKeyDown);
   }
 
   destroy() {
@@ -122,6 +164,9 @@ export class ForceGraphEngine {
     window.removeEventListener('mouseup', this.boundOnMouseUp);
     this.canvas.removeEventListener('wheel', this.boundOnWheel);
     window.removeEventListener('resize', this.boundOnResize);
+    this.canvas.removeEventListener('dblclick', this.boundOnDblClick);
+    this.canvas.removeEventListener('contextmenu', this.boundOnContextMenu);
+    this.canvas.removeEventListener('keydown', this.boundOnKeyDown);
     if (this.tooltipEl && this.tooltipEl.parentNode) {
       this.tooltipEl.parentNode.removeChild(this.tooltipEl);
     }
@@ -200,7 +245,7 @@ export class ForceGraphEngine {
   // Filter Getters
   getVisibleNodes() {
     const q = this.searchQuery.trim().toLowerCase();
-    return this.nodes.filter(node => {
+    let list = this.nodes.filter(node => {
       if (!this.showGhostNotes && node.isGhost) return false;
       if (!this.showTags && node.isTag) return false;
       if (!this.showOrphanNotes && !node.isTag && node.degree === 0) return false;
@@ -212,6 +257,13 @@ export class ForceGraphEngine {
       }
       return true;
     });
+
+    if (this.onlyNeighbours && this.selectedNode) {
+      const neighbours = this.adjacency.get(this.selectedNode.id) || new Set();
+      list = list.filter(node => node.id === this.selectedNode.id || neighbours.has(node.id));
+    }
+
+    return list;
   }
 
   getVisibleEdges(visibleNodes) {
@@ -485,6 +537,7 @@ export class ForceGraphEngine {
     const dy = e.clientY - this.mouseDownPos.y;
     if (dx * dx + dy * dy < 25) {
       const clickedNode = this.getNodeAt(e.clientX, e.clientY);
+      if (clickedNode) { this.selectedNode = clickedNode; }
       if (clickedNode && this.onNodeClick) {
         this.onNodeClick(clickedNode);
       }
@@ -640,8 +693,13 @@ export class ForceGraphEngine {
         } else if (edge.type === 'tag') {
           ctx.strokeStyle = 'rgba(192, 132, 252, 0.35)';
           ctx.setLineDash([1.5, 3]);
+        } else if (edge.type === 'markdown') {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+          ctx.setLineDash([4, 4]);
         } else {
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+          // wikilink default
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+          ctx.setLineDash([]);
         }
         ctx.lineWidth = 1.0 / this.transform.k;
         ctx.globalAlpha = 0.75;
@@ -702,6 +760,17 @@ export class ForceGraphEngine {
         ctx.globalAlpha = isDimmed ? 0.15 : 1.0;
       }
 
+      const isSelected = this.selectedNode && this.selectedNode.id === node.id;
+
+      // Selection or Active Doc Ring
+      if (isSelected || isActiveDoc) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, r + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2.0 / this.transform.k;
+        ctx.stroke();
+      }
+
       // Base Node Fill & Stroke
       ctx.beginPath();
       ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
@@ -720,23 +789,30 @@ export class ForceGraphEngine {
         ctx.lineWidth = 1.2 / this.transform.k;
         ctx.stroke();
       } else {
-        // Real Note
-        if (isActiveDoc) {
+        // Real Note with folder/group color
+        const groupColor = getGroupColor(node.group, accentColor);
+        if (isActiveDoc || isSelected) {
           ctx.fillStyle = accentColor;
         } else {
-          ctx.fillStyle = isHovered ? accentColor : (accentColorSoft || accentColor);
+          ctx.fillStyle = isHovered ? accentColor : groupColor;
         }
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.lineWidth = 1.2 / this.transform.k;
         ctx.stroke();
       }
 
       // 3. Node Labels
-      const shouldDrawLabel = isHovered || isNeighbor || isActiveDoc || (node.degree > 1 && this.transform.k > 0.65) || this.transform.k > 1.1;
+      const shouldDrawLabel = isHovered || isNeighbor || isActiveDoc || isSelected || (node.degree > 1 && this.transform.k > 0.6) || this.transform.k > 1.05;
       if (shouldDrawLabel) {
-        const fontSize = Math.max(9, Math.min(13, 11 / Math.sqrt(this.transform.k)));
-        ctx.font = `${isHovered || isActiveDoc ? '600' : '500'} ${fontSize}px var(--font-ui, -apple-system, sans-serif)`;
+        const fontUi = (typeof window !== 'undefined' && window.getComputedStyle)
+          ? (window.getComputedStyle(document.documentElement).getPropertyValue('--font-graph')?.trim() || window.getComputedStyle(document.documentElement).getPropertyValue('--font-ui')?.trim() || '-apple-system, sans-serif')
+          : '-apple-system, sans-serif';
+        const baseGraphSize = (typeof window !== 'undefined' && window.getComputedStyle)
+          ? (parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--font-size-graph')) || 11)
+          : 11;
+        const fontSize = Math.max(9, Math.min(15, baseGraphSize / Math.sqrt(this.transform.k)));
+        ctx.font = `${isHovered || isActiveDoc || isSelected ? '600' : '500'} ${fontSize}px ${fontUi}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
 
@@ -744,13 +820,14 @@ export class ForceGraphEngine {
           ctx.fillStyle = '#94a3b8';
         } else if (node.isTag) {
           ctx.fillStyle = '#e9d5ff';
-        } else if (isHovered || isActiveDoc) {
+        } else if (isHovered || isActiveDoc || isSelected) {
           ctx.fillStyle = '#ffffff';
         } else {
           ctx.fillStyle = '#cbd5e1';
         }
 
-        ctx.fillText(node.label, node.x, node.y + r + 4);
+        const displayLabel = truncateLabel(node.label, 18);
+        ctx.fillText(displayLabel, node.x, node.y + r + 4);
       }
 
       ctx.restore();
@@ -758,4 +835,94 @@ export class ForceGraphEngine {
 
     ctx.restore();
   }
+
+  zoomIn() {
+    const cx = this.width / 2;
+    const cy = this.height / 2;
+    const newK = Math.min(4.5, this.transform.k * 1.25);
+    this.transform.x = cx - (cx - this.transform.x) * (newK / this.transform.k);
+    this.transform.y = cy - (cy - this.transform.y) * (newK / this.transform.k);
+    this.transform.k = newK;
+    this.requestRender();
+  }
+
+  zoomOut() {
+    const cx = this.width / 2;
+    const cy = this.height / 2;
+    const newK = Math.max(0.15, this.transform.k * 0.8);
+    this.transform.x = cx - (cx - this.transform.x) * (newK / this.transform.k);
+    this.transform.y = cy - (cy - this.transform.y) * (newK / this.transform.k);
+    this.transform.k = newK;
+    this.requestRender();
+  }
+
+  resetView() {
+    this.fitView(70);
+  }
+
+  focusActiveDoc() {
+    const targetId = this.activeNodeId;
+    if (!targetId) return;
+    const node = this.nodeMap.get(targetId) || this.nodes.find(n => n.path === targetId || n.id === targetId);
+    if (!node) return;
+
+    this.selectedNode = node;
+    const targetK = 1.3;
+    this.transform.k = targetK;
+    this.transform.x = this.width / 2 - node.x * targetK;
+    this.transform.y = this.height / 2 - node.y * targetK;
+    this.requestRender();
+  }
+
+  onDblClick(e) {
+    const node = this.getNodeAt(e.clientX, e.clientY);
+    if (!node) {
+      this.fitView(70);
+    }
+  }
+
+  onContextMenu(e) {
+    const node = this.getNodeAt(e.clientX, e.clientY);
+    if (this.onNodeContextMenu) {
+      e.preventDefault();
+      this.selectedNode = node || null;
+      this.onNodeContextMenu(node, e);
+      this.requestRender();
+    }
+  }
+
+  onKeyDown(e) {
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      this.zoomIn();
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      this.zoomOut();
+    } else if (e.key === '0') {
+      e.preventDefault();
+      this.resetView();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      this.transform.x += 40;
+      this.requestRender();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      this.transform.x -= 40;
+      this.requestRender();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.transform.y += 40;
+      this.requestRender();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.transform.y -= 40;
+      this.requestRender();
+    } else if (e.key === 'Enter') {
+      if (this.selectedNode && this.onNodeClick) {
+        e.preventDefault();
+        this.onNodeClick(this.selectedNode);
+      }
+    }
+  }
+
 }
