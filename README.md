@@ -110,7 +110,7 @@ markforge-markdown-studio/
 ## Getting Started
 
 ### Prerequisites
-- **Node.js:** v18+ (tested on v24.20)
+- **Node.js:** v22.19+ (tested on v24.20)
 - **Visual Studio 2022 or 2026:** with the "Desktop development with C++" workload (for native Win32 builds)
 - **Microsoft Edge WebView2 Runtime:** (pre-installed on Windows 11 and modern Windows 10)
 - **Rust Toolchain (optional):** 1.77+ (if building the Tauri 2 target)
