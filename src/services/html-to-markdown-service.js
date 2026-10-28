@@ -67,7 +67,56 @@ export class HtmlToMarkdownService {
   preprocessDom(doc) {
     if (!doc || !doc.body) return;
 
-    // 1. Promote spans with bold / italic styling to semantic strong / em
+    // 1. Remove interactive UI buttons, feedback controls, and non-inline SVGs (ChatGPT & Claude copy bars)
+    doc.body.querySelectorAll('button, [role="button"]').forEach((btn) => btn.remove());
+    doc.body.querySelectorAll('svg').forEach((svg) => {
+      if (!svg.closest('p, span, li')) {
+        svg.remove();
+      }
+    });
+
+    // 2. Clean up code block language headers and prevent duplicate text above code fences
+    doc.body.querySelectorAll('pre').forEach((pre) => {
+      let container = pre.parentElement;
+      if (container && container.tagName === 'DIV' && container.children.length === 1) {
+        container = container.parentElement;
+      }
+      if (container) {
+        const header = container.querySelector('.code-block__header, [class*="bg-token-main-surface-secondary"], [class*="rounded-t-"]');
+        if (header && header !== pre && !header.contains(pre)) {
+          const headerText = header.textContent.trim().toLowerCase();
+          if (headerText.length > 0 && headerText.length < 30) {
+            const code = pre.querySelector('code');
+            if (code && !code.className.includes('language-')) {
+              code.className = `language-${headerText} ${code.className}`.trim();
+            }
+          }
+          header.remove();
+        }
+      }
+    });
+
+    // 3. KaTeX and MathML formula preservation into $math$ or $$math$$
+    doc.body.querySelectorAll('.katex, .math, math').forEach((mathEl) => {
+      const annotation = mathEl.querySelector('annotation[encoding="application/x-tex"], annotation[encoding="tex"]');
+      const isDisplay = mathEl.classList.contains('katex-display') || mathEl.closest('.katex-display') || mathEl.getAttribute('display') === 'block';
+      let tex = '';
+      if (annotation) {
+        tex = (annotation.textContent || '').trim();
+      } else {
+        tex = mathEl.getAttribute('data-tex') || mathEl.getAttribute('data-latex') || '';
+      }
+
+      if (tex) {
+        const delimiter = isDisplay ? '$$' : '$';
+        const replacement = doc.createTextNode(isDisplay ? `\n\n${delimiter}\n${tex}\n${delimiter}\n\n` : `${delimiter}${tex}${delimiter}`);
+        const displayWrapper = mathEl.closest('.katex-display');
+        const target = (isDisplay && displayWrapper) ? displayWrapper : mathEl;
+        target.parentNode?.replaceChild(replacement, target);
+      }
+    });
+
+    // 4. Promote spans with bold / italic styling to semantic strong / em
     doc.body.querySelectorAll('span').forEach((el) => {
       if (isBoldElement(el)) {
         const strong = doc.createElement('strong');
@@ -84,13 +133,17 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // 2. Identify and transform summary cards / callout containers into <blockquote>
+    // 5. Identify and transform summary cards / callout containers into <blockquote>
     const isSummaryCard = (el) => {
       if (!el || !['DIV', 'SECTION', 'ASIDE'].includes(el.tagName)) return false;
       const cls = (el.className || '').toLowerCase();
       // Ignore root content containers
       if (cls.includes('prose') || cls.includes('markdown') || el.id === 'app' || el.tagName === 'BODY') return false;
       if (el.closest('blockquote')) return false;
+
+      // Do not convert if element primarily wraps code block or table without text
+      if (el.querySelector('pre') && !el.querySelector('p, h1, h2, h3, h4, h5, h6, ul, ol')) return false;
+      if (el.querySelector('table') && !el.querySelector('p, h1, h2, h3, h4, h5, h6, ul, ol')) return false;
 
       const style = (el.getAttribute('style') || '').toLowerCase();
       const hasBorderClass = /(?:^|\s)(?:border|border-[\w-]+|rounded|rounded-[\w-]+|card|callout|summary-box|admonition)(?:\s|$)/.test(cls);
@@ -113,7 +166,7 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // 3. Identify and transform labeled rows into clean <ul><li>...</li></ul> FIRST
+    // 6. Identify and transform labeled rows into clean <ul> / <ol> lists
     const parseLabeledRow = (node) => {
       if (!node || node.nodeType !== 1) return null;
       if (!['P', 'DIV'].includes(node.tagName)) return null;
@@ -125,36 +178,57 @@ export class HtmlToMarkdownService {
         const titleText = (children[0].textContent || '').trim();
         const descText = (children[1].textContent || '').trim();
         if (titleText && descText && (isBoldElement(children[0]) || children[0].querySelector('strong, b'))) {
-          return `<strong>${titleText}</strong> — ${descText}`;
+          return { html: `<strong>${titleText}</strong> — ${descText}`, number: null };
         }
       }
 
       // Check if node contains strong/b
       const strong = node.querySelector('strong, b');
       if (strong) {
-        const strongText = (strong.textContent || '').trim();
+        let rawStrongText = (strong.textContent || '').trim();
         const fullText = (node.textContent || '').trim();
-        const strongIndex = fullText.indexOf(strongText);
+        const strongIndex = fullText.indexOf(rawStrongText);
 
-        if (strongIndex >= 0 && strongText.length > 0 && strongText.length < 120) {
+        if (strongIndex >= 0 && rawStrongText.length > 0 && rawStrongText.length < 120) {
           const before = fullText.substring(0, strongIndex).trim();
           // Allowed prefix: empty or icon/emoji/bullet/number
-          const isIconOrShort = !before || before.length <= 6 || /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s•\-\d.]+$/u.test(before);
+          const isIconOrShort = !before || before.length <= 6 || /^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s•·⁃◦‣\-\d.]+$/u.test(before);
 
           if (isIconOrShort) {
-            let after = fullText.substring(strongIndex + strongText.length).trim();
+            let number = null;
+            let cleanBefore = before.replace(/[•·⁃◦‣*\-–—]/g, '').trim();
+            const beforeNumMatch = cleanBefore.match(/^(\d+)[\.\)]$/);
+            if (beforeNumMatch) {
+              number = parseInt(beforeNumMatch[1], 10);
+              cleanBefore = '';
+            }
+
+            let cleanStrongText = rawStrongText;
+            const strongNumMatch = cleanStrongText.match(/^(\d+)[\.\)]\s*(.*)$/);
+            if (strongNumMatch) {
+              number = parseInt(strongNumMatch[1], 10);
+              cleanStrongText = strongNumMatch[2];
+            }
+
+            // Strip trailing colon from strong text
+            cleanStrongText = cleanStrongText.replace(/[:：]\s*$/, '').trim();
+
+            let after = fullText.substring(strongIndex + rawStrongText.length).trim();
             let sep = '—';
             if (/^[—–\-]\s*/.test(after)) {
               after = after.replace(/^[—–\-]\s*/, '').trim();
               sep = '—';
-            } else if (/^:\s*/.test(after)) {
-              after = after.replace(/^:\s*/, '').trim();
+            } else if (/^[:：]\s*/.test(after)) {
+              after = after.replace(/^[:：]\s*/, '').trim();
               sep = ':';
             }
 
             if (after.length > 0) {
-              const prefix = before ? `${before} ` : '';
-              return `${prefix}<strong>${strongText}</strong> ${sep} ${after}`;
+              const prefix = cleanBefore ? `${cleanBefore} ` : '';
+              return {
+                html: `${prefix}<strong>${cleanStrongText}</strong> ${sep} ${after}`,
+                number,
+              };
             }
           }
         }
@@ -170,13 +244,14 @@ export class HtmlToMarkdownService {
       const flushGroup = () => {
         const minRows = parent.tagName === 'BLOCKQUOTE' ? 1 : 2;
         if (currentGroup.length >= minRows) {
-          const ul = doc.createElement('ul');
+          const isOrdered = currentGroup.length >= 2 && currentGroup.every((item, i) => item.number === (i + 1));
+          const listEl = doc.createElement(isOrdered ? 'ol' : 'ul');
           for (const item of currentGroup) {
             const li = doc.createElement('li');
             li.innerHTML = item.html;
-            ul.appendChild(li);
+            listEl.appendChild(li);
           }
-          parent.insertBefore(ul, currentGroup[0].node);
+          parent.insertBefore(listEl, currentGroup[0].node);
           for (const item of currentGroup) {
             parent.removeChild(item.node);
           }
@@ -185,9 +260,9 @@ export class HtmlToMarkdownService {
       };
 
       for (const child of children) {
-        const rowHtml = parseLabeledRow(child);
-        if (rowHtml) {
-          currentGroup.push({ node: child, html: rowHtml });
+        const rowData = parseLabeledRow(child);
+        if (rowData) {
+          currentGroup.push({ node: child, ...rowData });
         } else {
           flushGroup();
           if (child.children.length > 0 && child.tagName !== 'UL' && child.tagName !== 'OL' && child.tagName !== 'TABLE' && child.tagName !== 'PRE') {
@@ -200,7 +275,7 @@ export class HtmlToMarkdownService {
 
     convertChildRowsToList(doc.body);
 
-    // 4. Promote remaining standalone title divs inside containers
+    // 7. Promote remaining standalone title divs inside containers
     doc.body.querySelectorAll('div').forEach((el) => {
       const cls = (el.className || '').toLowerCase();
       const text = (el.textContent || '').trim();
@@ -215,7 +290,7 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // 5. Clean up <br> immediately following <strong>
+    // 8. Clean up <br> immediately following <strong>
     doc.body.querySelectorAll('strong, b').forEach((st) => {
       const next = st.nextSibling;
       if (next && next.nodeName === 'BR') {
@@ -224,7 +299,7 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // 6. Whitespace inside strong / em: pull whitespace out
+    // 9. Whitespace inside strong / em: pull whitespace out
     doc.body.querySelectorAll('strong, b, em, i').forEach((el) => {
       if (el.firstChild && el.firstChild.nodeType === 3) {
         const val = el.firstChild.nodeValue;
@@ -295,6 +370,8 @@ export class HtmlToMarkdownService {
     const purify = this.getPurify();
     const cleanHtml = purify.sanitize(rawHtml, {
       FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'link', 'meta', 'applet', 'base'],
+      ADD_TAGS: ['annotation', 'semantics'],
+      ADD_ATTR: ['encoding'],
       FORBID_ATTR: [
         'onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout', 'onfocus',
         'onblur', 'onchange', 'onsubmit', 'onkeydown', 'onkeypress', 'onkeyup'
@@ -305,9 +382,12 @@ export class HtmlToMarkdownService {
 
     // 3. Inspect DOM elements for counts & diagram detection
     let doc;
-    if (typeof DOMParser !== 'undefined') {
+    const ParserClass = typeof DOMParser !== 'undefined'
+      ? DOMParser
+      : (typeof globalThis !== 'undefined' && globalThis.DOMParser ? globalThis.DOMParser : null);
+    if (ParserClass) {
       try {
-        const parser = new DOMParser();
+        const parser = new ParserClass();
         doc = parser.parseFromString(`<body>${cleanHtml}</body>`, 'text/html');
       } catch {}
     }

@@ -191,4 +191,73 @@ describe('HtmlToMarkdownService (Slice 2)', () => {
     expect(res.markdown).toMatch(/>\s*-\s+\*\*Phase 1: Foundations\*\*\s+—\s+Python, PyTorch, and linear algebra\./);
     expect(res.markdown).toMatch(/>\s*-\s+\*\*Phase 2: RAG Systems\*\*\s+—\s+Embeddings, vector stores, and rerankers\./);
   });
+
+  it('strips ChatGPT code block action bars and copy buttons while preserving code fence', () => {
+    const html = `
+<div class="bg-black rounded-md mb-4">
+  <div class="flex items-center text-token-text-secondary bg-token-main-surface-secondary px-4 py-2 text-xs justify-between rounded-t-md">
+    <span>python</span>
+    <button class="flex gap-1 items-center">
+      <svg></svg>Copy code
+    </button>
+  </div>
+  <div class="p-4 overflow-y-auto">
+    <pre><code class="language-python">def add(a, b):
+    return a + b</code></pre>
+  </div>
+</div>
+`;
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).not.toContain('Copy code');
+    expect(res.markdown).not.toContain('python Copy');
+    expect(res.markdown).toContain('```python');
+    expect(res.markdown).toContain('def add(a, b):');
+    expect(res.markdown).not.toContain('> ```python');
+  });
+
+  it('converts Claude dark-mode numbered takeaway card to ordered list inside blockquote', () => {
+    const html = `
+<div class="border border-border-200 rounded-lg p-4 bg-bg-200">
+  <div class="font-semibold text-text-100 mb-2">Key Takeaways</div>
+  <p><strong>1. Architecture:</strong> Use modular microservices with clear API contracts.</p>
+  <p><strong>2. Performance:</strong> Keep latency under 50ms using connection pooling.</p>
+  <p><strong>3. Resilience:</strong> Implement circuit breakers and graceful fallbacks.</p>
+</div>
+`;
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toMatch(/>\s*###\s*Key Takeaways/);
+    expect(res.markdown).toMatch(/>\s*1\.\s+\*\*Architecture\*\*\s+—\s+Use modular microservices/);
+    expect(res.markdown).toMatch(/>\s*2\.\s+\*\*Performance\*\*\s+—\s+Keep latency under 50ms/);
+    expect(res.markdown).toMatch(/>\s*3\.\s+\*\*Resilience\*\*\s+—\s+Implement circuit breakers/);
+    expect(res.markdown).not.toContain(':** —');
+  });
+
+  it('preserves KaTeX math formulas into standard markdown $...$', () => {
+    const html = `
+<p>The formula is <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E = mc^2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="mord mathnormal">E</span><span class="mrel">=</span><span class="mord mathnormal">m</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="mord mathrm">2</span></span></span></span></span></span> in physics.</p>
+`;
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toContain('$E = mc^2$');
+    expect(res.markdown).not.toContain('E=mc2E = mc^2');
+  });
+
+  it('strips redundant bullet characters from Claude flex list items', () => {
+    const html = `
+<div class="rounded-xl border border-border-300 p-4">
+  <div class="font-bold mb-3">System Capabilities</div>
+  <div class="flex items-start gap-2 mb-2">
+    <span class="text-text-400">•</span>
+    <div><span class="font-semibold">Zero-latency sync</span>: Replicates state across nodes instantly.</div>
+  </div>
+  <div class="flex items-start gap-2 mb-2">
+    <span class="text-text-400">•</span>
+    <div><span class="font-semibold">Automatic failover</span>: Recovers from leader failure in &lt;100ms.</div>
+  </div>
+</div>
+`;
+    const res = htmlToMarkdownService.convert(html);
+    expect(res.markdown).toMatch(/>\s*-\s+\*\*Zero-latency sync\*\*\s*:\s*Replicates state across nodes instantly\./);
+    expect(res.markdown).toMatch(/>\s*-\s+\*\*Automatic failover\*\*\s*:\s*Recovers from leader failure in <100ms\./);
+    expect(res.markdown).not.toMatch(/-\s+•/);
+  });
 });
