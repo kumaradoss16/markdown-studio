@@ -13,6 +13,9 @@ import { remoteDraftService } from '../../services/remote-draft-service.js';
 import { revisionComparisonService } from '../../services/revision-comparison-service.js';
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
 import { workspaceStore } from '../../services/workspace-store.js';
+import { clipboardImportService } from '../../services/clipboard-import-service.js';
+import { htmlToMarkdownService } from '../../services/html-to-markdown-service.js';
+import { assetService } from '../../services/asset-service.js';
 import { diffModalComponent } from '../github/diff-modal.js';
 import '../github/publish-modal.js';
 
@@ -267,6 +270,11 @@ export class EditorComponent {
           },
         },
       ]),
+      EditorView.domEventHandlers({
+        paste: (event, view) => {
+          return this.handlePaste(event, view);
+        },
+      }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && this.currentDocId) {
           const newContent = update.state.doc.toString();
@@ -567,5 +575,140 @@ export class EditorComponent {
       if (sourceBtn) sourceBtn.classList.toggle('active', mode === 'SOURCE');
       if (splitBtn) splitBtn.classList.toggle('active', mode === 'DUAL SPLIT' || mode === 'SPLIT VERTICAL');
     });
+  }
+
+  handlePaste(event, view) {
+    if (!event || !event.clipboardData) return false;
+
+    try {
+      const inspectResult = clipboardImportService.inspectFromDataTransfer(event.clipboardData);
+      const contentType = clipboardImportService.determineContentType(inspectResult);
+
+      if (contentType === 'empty') {
+        return false;
+      }
+
+      if (contentType === 'text') {
+        // Let CodeMirror handle normal plain-text insertion natively
+        return false;
+      }
+
+      if (contentType === 'markdown') {
+        const textToInsert = inspectResult.text || '';
+        if (!textToInsert) return false;
+        event.preventDefault();
+        const tr = view.state.replaceSelection(textToInsert);
+        view.dispatch(tr);
+        if (this.currentDocId) {
+          documentStateManager.updateContent(this.currentDocId, view.state.doc.toString());
+        }
+        return true;
+      }
+
+      if (contentType === 'html' && inspectResult.html) {
+        event.preventDefault();
+        const convertResult = htmlToMarkdownService.convert(inspectResult.html);
+        let markdown = convertResult.markdown || '';
+
+        // Handle images if any data:image/ or embedded images
+        if (convertResult.images && convertResult.images.length > 0) {
+          const activeDoc = documentStateManager.getActiveDocument();
+          const docName = activeDoc ? activeDoc.name : 'pasted-image';
+          const { dirPath } = assetService.resolveAssetDirectory(activeDoc);
+
+          for (const imgRef of convertResult.images) {
+            const placeholder = `__MARKFORGE_IMG_${imgRef.index}__`;
+            if (imgRef.src && imgRef.src.startsWith('data:image/')) {
+              try {
+                const commaIdx = imgRef.src.indexOf(',');
+                if (commaIdx !== -1) {
+                  const base64 = imgRef.src.slice(commaIdx + 1);
+                  const binaryStr = atob(base64);
+                  const bytes = new Uint8Array(binaryStr.length);
+                  for (let b = 0; b < binaryStr.length; b++) {
+                    bytes[b] = binaryStr.charCodeAt(b);
+                  }
+                  const validation = assetService.validateImageBytes(bytes);
+                  if (validation.valid) {
+                    const filename = `image-${Date.now()}-${imgRef.index}.${validation.ext}`;
+                    const relativePath = `assets/${filename}`;
+                    assetService.saveAssetFile(dirPath, filename, validation.bytes).catch(() => {});
+                    markdown = markdown.replace(placeholder, relativePath);
+                    continue;
+                  }
+                }
+              } catch {}
+            }
+            markdown = markdown.replace(placeholder, imgRef.src);
+          }
+        }
+
+        // Handle inline paste: if the pasted markdown contains only one line of text (with an optional trailing newline),
+        // trim the trailing newline so inline cursor paste within a sentence does not break lines.
+        if (markdown.endsWith('\n') && !markdown.slice(0, -1).includes('\n')) {
+          markdown = markdown.slice(0, -1);
+          if (/\s$/.test(inspectResult.html) && !markdown.endsWith(' ')) {
+            markdown += ' ';
+          }
+        }
+
+        if (markdown) {
+          const tr = view.state.replaceSelection(markdown);
+          view.dispatch(tr);
+          if (this.currentDocId) {
+            documentStateManager.updateContent(this.currentDocId, view.state.doc.toString());
+          }
+          return true;
+        }
+
+        const fallbackText = inspectResult.text || '';
+        if (fallbackText) {
+          const tr = view.state.replaceSelection(fallbackText);
+          view.dispatch(tr);
+          if (this.currentDocId) {
+            documentStateManager.updateContent(this.currentDocId, view.state.doc.toString());
+          }
+          return true;
+        }
+        return false;
+      }
+
+      if (contentType === 'image' && inspectResult.images && inspectResult.images.length > 0) {
+        event.preventDefault();
+        const activeDoc = documentStateManager.getActiveDocument();
+        const docName = activeDoc ? activeDoc.name : 'pasted-image';
+        const { dirPath } = assetService.resolveAssetDirectory(activeDoc);
+
+        (async () => {
+          const mdLines = [];
+          for (let i = 0; i < inspectResult.images.length; i++) {
+            const img = inspectResult.images[i];
+            try {
+              const buffer = await img.blob.arrayBuffer();
+              const bytes = new Uint8Array(buffer);
+              const validation = assetService.validateImageBytes(bytes, img.mime);
+              if (validation.valid) {
+                const filename = await assetService.generateAssetFilename(docName, validation.ext, dirPath);
+                await assetService.saveAssetFile(dirPath, filename, validation.bytes);
+                mdLines.push(`![pasted-image](assets/${filename})`);
+              }
+            } catch {}
+          }
+          if (mdLines.length > 0 && this.view) {
+            const tr = this.view.state.replaceSelection(mdLines.join('\n\n') + '\n');
+            this.view.dispatch(tr);
+            if (this.currentDocId) {
+              documentStateManager.updateContent(this.currentDocId, this.view.state.doc.toString());
+            }
+          }
+        })();
+        return true;
+      }
+    } catch (err) {
+      console.warn('[EditorComponent] Error in paste pipeline:', err);
+      return false;
+    }
+
+    return false;
   }
 }

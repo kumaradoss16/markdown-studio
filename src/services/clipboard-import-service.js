@@ -136,15 +136,16 @@ export class ClipboardImportService {
   /**
    * Deterministic precedence calculation for clipboard payload ingestion.
    * Precedence:
-   * 1. Markdown-looking text/plain -> insert as-is.
-   * 2. text/html -> convert via HTML-to-Markdown service and use embedded image refs.
-   * 3. text/plain only -> insert as plain text.
-   * 4. Images only -> asset insert with alt pasted-image.
+   * 1. Rich HTML with structural or visual markup -> convert via HTML-to-Markdown service.
+   * 2. Markdown-looking text/plain without rich HTML markup -> insert as-is.
+   * 3. General text/html -> convert via HTML-to-Markdown service.
+   * 4. text/plain only -> insert as plain text.
+   * 5. Images only -> asset insert with alt pasted-image.
    * @param {{ text: string | null, html: string | null, images: any[] }} payload
    * @returns {'markdown' | 'html' | 'text' | 'image' | 'empty'}
    */
   determineContentType(payload) {
-    const { text, html, images } = payload;
+    const { text, html, images } = payload || {};
     const hasText = Boolean(text && text.trim().length > 0);
     const hasHtml = Boolean(html && html.trim().length > 0);
     const hasImages = Boolean(images && images.length > 0);
@@ -153,21 +154,33 @@ export class ClipboardImportService {
       return 'empty';
     }
 
-    // 1. Markdown-looking text/plain without rich HTML markup
-    if (hasText && isMarkdownLooking(text)) {
-      if (!hasHtml) {
-        return 'markdown';
-      }
-      // If HTML is trivial wrapper around same text
-      const cleanHtml = html.replace(/<[^>]+>/g, '').trim();
-      if (cleanHtml === text.trim()) {
-        return 'markdown';
+    // 1. If HTML is present, check whether it contains meaningful HTML tags/structures
+    if (hasHtml) {
+      // Check if HTML has meaningful semantic or visual tags beyond empty trivial container
+      const hasStructure = /<(?:h[1-6]|p|div|ul|ol|li|table|pre|code|blockquote|strong|b|em|i|a|img|svg|hr|span)[^>]*>/i.test(html);
+      if (hasStructure) {
+        // If HTML contains rich visual structures, cards, multi-column layouts, tables, or diagrams, ALWAYS prefer HTML!
+        const hasRichVisuals = /(?:display\s*:\s*(?:flex|grid)|grid|table|pre|class=|border|katex|math|mermaid|svg)/i.test(html);
+        if (hasRichVisuals) {
+          return 'html';
+        }
+
+        // If plain text is already strongly formatted Markdown (e.g. copied from raw .md file)
+        // and HTML is just a flat <p> wrapping of that markdown text:
+        if (hasText && isMarkdownLooking(text)) {
+          const strippedHtml = html.replace(/<[^>]+>/g, '').trim();
+          if (strippedHtml === text.trim() && !/<(?:table|pre|code|h[1-6]|ul|ol|blockquote)/i.test(html)) {
+            return 'markdown';
+          }
+        }
+
+        return 'html';
       }
     }
 
-    // 2. HTML present
-    if (hasHtml) {
-      return 'html';
+    // 2. Markdown-looking text/plain without rich HTML markup
+    if (hasText && isMarkdownLooking(text)) {
+      return 'markdown';
     }
 
     // 3. Plain text

@@ -133,9 +133,52 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // 5. Identify and transform summary cards / callout containers into <blockquote>
+    // 5. Identify and preserve complex HTML layouts & architecture diagrams
+    const isComplexLayout = (el) => {
+      if (!el || !['DIV', 'SECTION', 'ASIDE', 'FIGURE'].includes(el.tagName)) return false;
+      const cls = (el.className || '').toLowerCase();
+      if (cls.includes('prose') || cls.includes('markdown') || el.id === 'app' || el.tagName === 'BODY') return false;
+      if (el.getAttribute('data-preserve-html') === 'true' || el.closest('[data-preserve-html="true"]')) return false;
+
+      const style = (el.getAttribute('style') || '').toLowerCase();
+      const hasMultiColStyle = /display\s*:\s*(?:flex|grid)/.test(style);
+      const hasMultiColClass = /(?:^|\s)(?:grid|grid-cols-[\w-]+|columns-[\w-]+|metric-grid|deck-container|cad-wireframe-card)(?:\s|$)/.test(cls);
+      const hasDiagramClass = /(?:^|\s)(?:architecture|diagram|flowchart|pipeline|wireframe|system-arch|status-dashboard)(?:\s|$)/.test(cls);
+      const hasMetricClass = /(?:^|\s)(?:metric-card|metric-grid|deck-container|cad-wireframe-card)(?:\s|$)/.test(cls) || el.querySelector('.metric-card') !== null;
+      if (hasMetricClass) return true;
+
+      // Check if it contains visual connecting arrows (e.g., →, ➔, -->, =>) between child blocks
+      const hasConnectingArrows = /[\u2190-\u21FF\u2794-\u27BF]|→|-->|=>/.test(el.textContent) && el.children.length >= 2;
+      // Check if it contains an SVG diagram
+      const hasSvgDiagram = el.querySelector('svg') && (el.querySelector('svg path, svg rect, svg circle, svg ellipse, svg line, svg polyline') !== null);
+
+      if ((hasMultiColStyle || hasMultiColClass || hasDiagramClass || hasConnectingArrows || hasSvgDiagram) && el.children.length >= 2) {
+        const subPanels = Array.from(el.children).filter(c => ['DIV', 'SECTION', 'ARTICLE', 'SPAN', 'P'].includes(c.tagName));
+        if (subPanels.length >= 2) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    doc.body.querySelectorAll('div, section, aside, figure').forEach((el) => {
+      if (isComplexLayout(el)) {
+        el.setAttribute('data-preserve-html', 'true');
+      }
+    });
+
+    // Also preserve complex tables with colspan or rowspan
+    doc.body.querySelectorAll('table').forEach((table) => {
+      if (table.querySelector('[colspan], [rowspan]')) {
+        table.setAttribute('data-preserve-html', 'true');
+      }
+    });
+
+    // 6. Identify and transform summary cards / callout containers into <blockquote>
     const isSummaryCard = (el) => {
       if (!el || !['DIV', 'SECTION', 'ASIDE'].includes(el.tagName)) return false;
+      if (el.getAttribute('data-preserve-html') === 'true' || el.closest('[data-preserve-html="true"]')) return false;
       const cls = (el.className || '').toLowerCase();
       // Ignore root content containers
       if (cls.includes('prose') || cls.includes('markdown') || el.id === 'app' || el.tagName === 'BODY') return false;
@@ -166,7 +209,7 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // 6. Identify and transform labeled rows into clean <ul> / <ol> lists
+    // 7. Identify and transform labeled rows into clean <ul> / <ol> lists
     const parseLabeledRow = (node) => {
       if (!node || node.nodeType !== 1) return null;
       if (!['P', 'DIV'].includes(node.tagName)) return null;
@@ -401,13 +444,13 @@ export class HtmlToMarkdownService {
       counts.lists = doc.querySelectorAll('ul, ol').length;
       counts.links = doc.querySelectorAll('a[href]').length;
 
-      // Detect diagrams (mermaid classes or attributes)
-      doc.querySelectorAll('.mermaid, [data-diagram="mermaid"], code[class*="mermaid"]').forEach(() => {
-        counts.diagrams += 1;
-      });
-
       // Preprocess DOM to preserve structure, hierarchy, and emphasis
       this.preprocessDom(doc);
+
+      // Detect diagrams (mermaid classes or attributes or preserved HTML diagrams)
+      doc.querySelectorAll('.mermaid, [data-diagram="mermaid"], code[class*="mermaid"], [data-preserve-html="true"]').forEach(() => {
+        counts.diagrams += 1;
+      });
     }
 
     // 4. Configure Turndown
@@ -486,7 +529,7 @@ export class HtmlToMarkdownService {
       filter: function (node) {
         if (node.nodeName === 'PRE' && node.firstChild && node.firstChild.nodeName === 'CODE') {
           const cls = (node.firstChild.className || '') + ' ' + (node.className || '');
-          if (/(?:language|lang)-mermaid/i.test(cls)) return true;
+          if (/(?:language|lang|)-?mermaid/i.test(cls)) return true;
         }
         const cls = node.className || '';
         if (typeof cls === 'string' && cls.split(/\s+/).includes('mermaid')) return true;
@@ -499,7 +542,17 @@ export class HtmlToMarkdownService {
       }
     });
 
-    // Rule: Fenced code blocks with language extraction
+    // Rule: Preserved complex HTML blocks (architecture diagrams, multi-column metric grids, complex tables)
+    turndownService.addRule('preservedHtmlBlock', {
+      filter: function (node) {
+        return node.getAttribute && node.getAttribute('data-preserve-html') === 'true';
+      },
+      replacement: function (content, node) {
+        return '\n\n' + node.outerHTML + '\n\n';
+      }
+    });
+
+    // Rule: Fenced code blocks with language extraction and safe fence scaling
     turndownService.addRule('fencedCodeBlock', {
       filter: function (node, options) {
         return (
@@ -518,11 +571,22 @@ export class HtmlToMarkdownService {
           lang = langAttr;
         } else {
           const match = className.match(/(?:language|lang|highlight-source)-([a-zA-Z0-9_+-]+)/i);
-          if (match) lang = match[1];
+          if (match) {
+            lang = match[1];
+          } else if (/(?:^|\s|-)(?:mermaid)(?:\s|$)/i.test(className) || node.getAttribute?.('data-diagram') === 'mermaid') {
+            lang = 'mermaid';
+          }
         }
         const text = code.textContent || '';
         const cleanText = text.replace(/\r\n/g, '\n').replace(/\n+$/, '');
-        return '\n\n```' + lang + '\n' + cleanText + '\n```\n\n';
+        // Scale fence if code contains backticks
+        const backtickMatches = cleanText.match(/`{3,}/g) || [];
+        let maxBackticks = 2;
+        for (const m of backtickMatches) {
+          if (m.length > maxBackticks) maxBackticks = m.length;
+        }
+        const fence = '`'.repeat(maxBackticks + 1);
+        return '\n\n' + fence + lang + '\n' + cleanText + '\n' + fence + '\n\n';
       }
     });
 

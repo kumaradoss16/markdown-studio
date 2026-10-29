@@ -134,6 +134,16 @@ export class DocumentStateManager {
   }
 
   /**
+   * Checks whether a document has unsaved modifications.
+   * @param {string} id
+   * @returns {boolean}
+   */
+  isDirty(id) {
+    const doc = this.documents.get(id);
+    return doc ? doc.state === DocumentState.DIRTY : false;
+  }
+
+  /**
    * Marks a document as in-flight saving.
    * @param {string} id
    * @returns {number} The captured revision being saved
