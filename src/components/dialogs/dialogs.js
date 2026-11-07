@@ -343,7 +343,7 @@ export class DialogsComponent {
         </div>
         <div id="paletteItems" style="max-height: 320px; overflow-y: auto; padding: 6px 0;">
           <div class="sidebar-item" data-action="new-doc"><strong>New Document</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-text-muted);">⌘N</span></div>
-          <div class="sidebar-item" data-action="rich-paste"><strong>Rich Paste &amp; Visual Import...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">⇧⌘V</span></div>
+          <div class="sidebar-item" data-action="rich-paste"><strong>Clipboard Import &amp; Document Recovery...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">⇧⌘V</span></div>
           <div class="sidebar-item" data-action="recent-files"><strong>Recent Files &amp; Workspace History...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Recents</span></div>
           <div class="sidebar-item" data-action="templates"><strong>Technical Documentation Templates...</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-purple);">Templates</span></div>
           <div class="sidebar-item" data-action="manage-toc"><strong>Insert / Update Table of Contents (TOC)</strong> <span style="margin-left: auto; font-family: var(--font-editor); font-size: 10px; color: var(--color-accent-cyan);">📑 TOC</span></div>
@@ -1067,6 +1067,8 @@ export class DialogsComponent {
     const currentShowLineNumbers = settings.showLineNumbers !== undefined ? settings.showLineNumbers : true;
     const currentViewMode = settings.viewMode || 'DUAL SPLIT';
     const currentSyncScroll = settings.syncScroll !== undefined ? settings.syncScroll : true;
+    const currentSmartPaste = settings.smartPaste !== undefined ? settings.smartPaste : true;
+    const currentClipboardHistory = settings.clipboardHistoryEnabled === true;
     const presets = accentService.listPresets();
     const authStatus = gitHubAuthService.getStatus();
 
@@ -1297,6 +1299,14 @@ export class DialogsComponent {
                 <input type="checkbox" id="syncScrollInput" ${currentSyncScroll ? 'checked' : ''} />
                 <span>Synchronized Dual Scrolling (Editor &amp; Live Preview)</span>
               </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="smartPasteInput" ${currentSmartPaste ? 'checked' : ''} />
+                <span>Enable Smart Paste (Intelligent HTML &amp; AI Response format recovery on Ctrl+V)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="clipboardHistoryInput" ${currentClipboardHistory ? 'checked' : ''} />
+                <span>Enable Local Clipboard History (Opt-in, stored locally, sensitive tokens filtered)</span>
+              </label>
             </div>
           </div>
 
@@ -1360,6 +1370,8 @@ export class DialogsComponent {
     const showLineNumbersCheck = overlay.querySelector('#showLineNumbersInput');
     const wordWrapCheck = overlay.querySelector('#wordWrapInput');
     const syncScrollCheck = overlay.querySelector('#syncScrollInput');
+    const smartPasteCheck = overlay.querySelector('#smartPasteInput');
+    const clipboardHistoryCheck = overlay.querySelector('#clipboardHistoryInput');
     const badge = overlay.querySelector('#accentLabelBadge');
     const swatches = overlay.querySelectorAll('.accent-swatch-btn');
     const patInput = overlay.querySelector('#settingsGithubPatInput');
@@ -1500,6 +1512,8 @@ export class DialogsComponent {
       showLineNumbersCheck.checked = true;
       wordWrapCheck.checked = true;
       syncScrollCheck.checked = false;
+      if (smartPasteCheck) smartPasteCheck.checked = true;
+      if (clipboardHistoryCheck) clipboardHistoryCheck.checked = false;
       updatePreviewBox();
       this.showToast({ type: 'info', message: 'Controls reset to studio defaults. Click "Apply Settings" to save.' });
     });
@@ -1530,6 +1544,8 @@ export class DialogsComponent {
       const selectedShowLineNumbers = showLineNumbersCheck.checked;
       const selectedWordWrap = wordWrapCheck.checked;
       const selectedSyncScroll = syncScrollCheck.checked;
+      const selectedSmartPaste = smartPasteCheck ? smartPasteCheck.checked : true;
+      const selectedClipboardHistory = clipboardHistoryCheck ? clipboardHistoryCheck.checked : false;
       const newPat = patInput.value.trim();
 
       // Apply appearance tokens to DOM
@@ -1581,7 +1597,9 @@ export class DialogsComponent {
         viewMode: selectedViewMode,
         showLineNumbers: selectedShowLineNumbers,
         wordWrap: selectedWordWrap,
-        syncScroll: selectedSyncScroll
+        syncScroll: selectedSyncScroll,
+        smartPaste: selectedSmartPaste,
+        clipboardHistoryEnabled: selectedClipboardHistory
       });
 
       // Notify all components across the app

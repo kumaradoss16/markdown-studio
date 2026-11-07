@@ -47,6 +47,13 @@ Grab the latest production binaries from the [**GitHub Releases page**](https://
 - **Live GFM Preview:** GitHub Flavored Markdown rendering with strict DOMPurify sanitization preventing script execution, XSS, and dangerous URI schemes.
 - **Interactive Local Graph View:** Embedded SVG knowledge-graph visualization of note relationships.
 - **Draft Crash Recovery Journal:** Write-ahead snapshot journaling in local storage for crash protection.
+- **Clipboard Intelligence & Document Structure Recovery:**
+  - Preserves rich AI-generated responses from ChatGPT, Claude, Gemini, Copilot, and technical documentation.
+  - Recovers heading hierarchies, nested list indentations, GFM tables, fenced code blocks with language specifiers, KaTeX mathematical formulas (`$...$`, `$$...$$`), Mermaid diagrams, and safe inline tags (`<sup>`, `<sub>`, `<kbd>`).
+  - Preserves complex system architecture diagrams, multi-column card layouts, and telemetry panels as sanitized HTML blocks (`data-preserve-html="true"`).
+  - Smart Paste (`Ctrl+V`): Seamlessly converts rich clipboard data into Markdown in CodeMirror 6 with single undoable transactions, cursor preservation, and configurable toggle.
+  - Dedicated Clipboard Import Modal (`Ctrl+Shift+V` / Command Palette): Multi-format selector (Auto, HTML, Raw Markdown, Plain Text), manual paste fallback box, editable recovered Markdown, live preview, structure validation notices, and direct new-document/export actions.
+  - Optional Local Clipboard History: Opt-in local-first storage with automatic sensitive token scrubbing (API keys, PATs, JWTs) and user-controlled retention and purge.
 - **Live Status Bar:** Dynamic word count, character count, estimated reading time, file encoding (`UTF-8`), and cursor position (`Ln, Col`).
 
 ---

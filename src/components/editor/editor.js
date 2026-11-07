@@ -14,6 +14,7 @@ import { revisionComparisonService } from '../../services/revision-comparison-se
 import { publicationCoordinator } from '../../services/publication-coordinator.js';
 import { workspaceStore } from '../../services/workspace-store.js';
 import { clipboardImportService } from '../../services/clipboard-import-service.js';
+import { clipboardHistoryService } from '../../services/clipboard-history-service.js';
 import { htmlToMarkdownService } from '../../services/html-to-markdown-service.js';
 import { assetService } from '../../services/asset-service.js';
 import { diffModalComponent } from '../github/diff-modal.js';
@@ -154,7 +155,7 @@ export class EditorComponent {
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
             </svg>
           </button>
-          <button class="tool-btn" id="toolRichPaste" title="Rich Paste & Visual Import (⇧⌘V)" aria-label="Rich Paste">
+          <button class="tool-btn" id="toolRichPaste" title="Clipboard Import &amp; Document Recovery (⇧⌘V)" aria-label="Clipboard Import">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
               <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -580,6 +581,12 @@ export class EditorComponent {
   handlePaste(event, view) {
     if (!event || !event.clipboardData) return false;
 
+    // Check if smart paste is disabled in workspace settings
+    const settings = workspaceStore.getSettings();
+    if (settings && settings.smartPaste === false) {
+      return false;
+    }
+
     try {
       const inspectResult = clipboardImportService.inspectFromDataTransfer(event.clipboardData);
       const contentType = clipboardImportService.determineContentType(inspectResult);
@@ -601,6 +608,12 @@ export class EditorComponent {
         view.dispatch(tr);
         if (this.currentDocId) {
           documentStateManager.updateContent(this.currentDocId, view.state.doc.toString());
+        }
+        if (settings && settings.clipboardHistoryEnabled) {
+          clipboardHistoryService.addEntry(
+            { source: 'paste', format: 'markdown', snippet: textToInsert, markdown: textToInsert },
+            { enabled: true, limit: settings.clipboardHistoryLimit }
+          );
         }
         return true;
       }
@@ -657,6 +670,12 @@ export class EditorComponent {
           view.dispatch(tr);
           if (this.currentDocId) {
             documentStateManager.updateContent(this.currentDocId, view.state.doc.toString());
+          }
+          if (settings && settings.clipboardHistoryEnabled) {
+            clipboardHistoryService.addEntry(
+              { source: 'paste', format: 'html', snippet: markdown, markdown },
+              { enabled: true, limit: settings.clipboardHistoryLimit }
+            );
           }
           return true;
         }

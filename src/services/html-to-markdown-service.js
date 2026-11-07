@@ -1,6 +1,7 @@
 import TurndownService from 'turndown';
 import { gfm, tables, strikethrough, taskListItems } from 'turndown-plugin-gfm';
 import createDOMPurify from 'dompurify';
+import { documentStructureValidator } from './document-structure-validator.js';
 
 /**
  * Checks whether an element has bold font weight via Tailwind classes or CSS styles.
@@ -613,6 +614,31 @@ export class HtmlToMarkdownService {
       }
     });
 
+    // Rule: Safe inline HTML elements (sup, sub, kbd)
+    turndownService.addRule('safeInlineTags', {
+      filter: ['sup', 'sub', 'kbd'],
+      replacement: function (content, node) {
+        const tag = node.nodeName.toLowerCase();
+        return `<${tag}>${content}</${tag}>`;
+      }
+    });
+
+    // Rule: Ordered lists with explicit start attribute
+    turndownService.addRule('orderedListItemStart', {
+      filter: function (node) {
+        return node.nodeName === 'LI' && node.parentNode && node.parentNode.nodeName === 'OL' && node.parentNode.hasAttribute('start');
+      },
+      replacement: function (content, node) {
+        const parent = node.parentNode;
+        const start = parseInt(parent.getAttribute('start'), 10) || 1;
+        const siblings = Array.from(parent.children).filter(c => c.nodeName === 'LI');
+        const index = siblings.indexOf(node);
+        const itemNum = start + index;
+        const cleanContent = content.trim().replace(/^\n+/, '').replace(/\n+$/, '\n');
+        return `${itemNum}. ${cleanContent}\n`;
+      }
+    });
+
     // 5. Convert clean HTML or preprocessed DOM to Markdown
     let markdown = turndownService.turndown(doc ? doc.body : cleanHtml);
 
@@ -636,6 +662,16 @@ export class HtmlToMarkdownService {
     // Ensure trailing newline
     if (markdown.trim().length > 0 && !markdown.endsWith('\n')) {
       markdown += '\n';
+    }
+
+    // 7. Validate document structure and append notices
+    const validation = documentStructureValidator.validate(markdown);
+    for (const issue of validation.issues) {
+      if (issue.severity === 'warning' || issue.severity === 'error') {
+        if (!warnings.includes(issue.message)) {
+          warnings.push(issue.message);
+        }
+      }
     }
 
     return {

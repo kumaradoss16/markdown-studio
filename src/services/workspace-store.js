@@ -25,6 +25,9 @@ export const DEFAULT_SETTINGS = {
   wordWrap: true,
   showLineNumbers: true,
   syncScroll: false,
+  smartPaste: true,
+  clipboardHistoryEnabled: false,
+  clipboardHistoryLimit: 15,
   splitRatio: 50,
   viewMode: 'DUAL SPLIT',
   graph: {
